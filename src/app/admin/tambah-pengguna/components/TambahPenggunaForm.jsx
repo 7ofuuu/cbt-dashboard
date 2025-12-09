@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -64,20 +65,15 @@ export default function TambahPenggunaForm({ role = 'general' }) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="max-w-3xl mx-auto" autoComplete="off" noValidate>
-      <div className="mb-8">
-        <h2 className="text-2xl font-semibold text-gray-900">
-          <button
-            type="button"
-            onClick={() => router.back()}
-            className="text-blue-600 hover:text-blue-800 mr-2"
-          >
-            Daftar Pengguna
-          </button>
-          › <span>{getPageTitle()}</span>
-        </h2>
+    <div className="space-y-6">
+      {/* Breadcrumb */}
+      <div className="flex items-center gap-2 text-2xl font-semibold text-gray-900">
+        <Link href="/admin/dashboard" className="text-gray-500 hover:text-blue-600">Daftar Pengguna</Link>
+        <span className="text-gray-400">›</span>
+        <span>{getPageTitle()}</span>
       </div>
 
+      <form onSubmit={handleSubmit} className="w-full" autoComplete="off" noValidate>
       {/* Row 1: Nama and Username */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         <div className="space-y-2">
@@ -129,7 +125,7 @@ export default function TambahPenggunaForm({ role = 'general' }) {
             <SelectTrigger id="role">
               <SelectValue placeholder="Pilih Role *" />
             </SelectTrigger>
-            <SelectContent>
+            <SelectContent className="w-full">
               <SelectItem value="guru">Guru</SelectItem>
               <SelectItem value="siswa">Siswa</SelectItem>
               <SelectItem value="admin">Admin</SelectItem>
@@ -152,10 +148,9 @@ export default function TambahPenggunaForm({ role = 'general' }) {
                 <SelectTrigger id="jurusan">
                   <SelectValue placeholder="Pilih Jurusan *" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="w-full">
                   <SelectItem value="ipa">IPA</SelectItem>
                   <SelectItem value="ips">IPS</SelectItem>
-                  <SelectItem value="bahasa">Bahasa</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -168,7 +163,7 @@ export default function TambahPenggunaForm({ role = 'general' }) {
                 <SelectTrigger id="tingkat">
                   <SelectValue placeholder="Pilih Tingkat *" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="w-full">
                   <SelectItem value="X">X</SelectItem>
                   <SelectItem value="XI">XI</SelectItem>
                   <SelectItem value="XII">XII</SelectItem>
@@ -211,6 +206,7 @@ export default function TambahPenggunaForm({ role = 'general' }) {
           Konfirmasi
         </Button>
       </div>
-    </form>
+      </form>
+    </div>
   );
 }

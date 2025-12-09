@@ -1,13 +1,12 @@
-import TambahPenggunaForm from '../components/TambahPenggunaForm';
+'use client';
 
-export const metadata = {
-  title: 'Tambah Pengguna Guru',
-};
+import AdminLayout from '../../adminLayout';
+import TambahPenggunaForm from '../components/TambahPenggunaForm';
 
 export default function TambahPenggunaGuruPage() {
   return (
-    <div className="space-y-6">
+    <AdminLayout>
       <TambahPenggunaForm role="guru" />
-    </div>
+    </AdminLayout>
   );
 }

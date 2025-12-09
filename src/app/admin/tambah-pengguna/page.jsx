@@ -6,9 +6,7 @@ import TambahPenggunaForm from './components/TambahPenggunaForm';
 export default function TambahPenggunaPage() {
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        <TambahPenggunaForm role="general" />
-      </div>
+      <TambahPenggunaForm role="general" />
     </AdminLayout>
   );
 }
