@@ -18,7 +18,7 @@ export default function Sidebar() {
     },
     {
       name: 'Pengguna',
-      href: '/admin/pengguna',
+      href: '/admin/semua-pengguna',
       icon: (
         <Users className='w-5 h-5' />
       ),
