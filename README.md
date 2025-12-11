@@ -99,6 +99,11 @@ cbt-dashboard/
    pnpm install
    ```
 
+2. **Install icon dependencies**
+   ```bash
+   npm install lucide-react
+   ```
+
 3. **Run the development server**
    ```bash
    npm run dev
