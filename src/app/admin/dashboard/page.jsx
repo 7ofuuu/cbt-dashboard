@@ -2,8 +2,12 @@
 
 import Image from 'next/image';
 import AdminLayout from '../adminLayout';
+import { useAuth } from '@/hooks/useAuth';
 
 export default function DashboardAdmin() {
+  // Protect this page - only admin can access
+  useAuth(['admin']);
+
   // Sample data - replace with actual data from your backend
   const activities = [
     {
@@ -61,8 +65,16 @@ export default function DashboardAdmin() {
         <div className='bg-linear-to-r from-blue-800 to-blue-600 rounded-xl p-8 text-white'>
           <div className='flex items-center gap-6'>
             <div className='w-24 h-24 rounded-full bg-white/20 flex items-center justify-center overflow-hidden'>
-              <svg className='w-16 h-16 text-white' fill='currentColor' viewBox='0 0 20 20'>
-                <path fillRule='evenodd' d='M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z' clipRule='evenodd' />
+              <svg
+                className='w-16 h-16 text-white'
+                fill='currentColor'
+                viewBox='0 0 20 20'
+              >
+                <path
+                  fillRule='evenodd'
+                  d='M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z'
+                  clipRule='evenodd'
+                />
               </svg>
             </div>
             <div>
@@ -93,7 +105,10 @@ export default function DashboardAdmin() {
                   </thead>
                   <tbody className='bg-white divide-y divide-gray-200'>
                     {activities.map(activity => (
-                      <tr key={activity.id} className='hover:bg-gray-50'>
+                      <tr
+                        key={activity.id}
+                        className='hover:bg-gray-50'
+                      >
                         <td className='px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900'>{activity.name}</td>
                         <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-600'>{activity.class}</td>
                         <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-600'>{activity.subject}</td>
@@ -117,9 +132,18 @@ export default function DashboardAdmin() {
               </div>
               <div className='p-6'>
                 {users.map(user => (
-                  <div key={user.id} className='flex items-center gap-4 mb-6'>
+                  <div
+                    key={user.id}
+                    className='flex items-center gap-4 mb-6'
+                  >
                     <div className='w-12 h-12 rounded-full bg-gray-200 overflow-hidden'>
-                      <Image src={user.avatar} alt={user.name} width={48} height={48} className='w-full h-full object-cover' />
+                      <Image
+                        src={user.avatar}
+                        alt={user.name}
+                        width={48}
+                        height={48}
+                        className='w-full h-full object-cover'
+                      />
                     </div>
                     <div>
                       <p className='font-semibold text-gray-900'>{user.name}</p>
