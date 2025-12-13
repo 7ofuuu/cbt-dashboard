@@ -7,26 +7,81 @@ import { Label } from '@/components/ui/label';
 
 import { Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
-import { useRouter } from 'next/navigation'
-
+import { useRouter } from 'next/navigation';
+import request from '@/utils/request';
+import Cookies from 'js-cookie';
 
 export default function LoginPage() {
   const router = useRouter();
 
-    const [showPassword, setShowPassword] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [data, setData] = useState({ username: '', password: '' });
+  const [isLoading, setIsLoading] = useState(false);
+  const [message, setMessage] = useState({ type: '', text: '' });
 
-    function handleSubmit(event) {
-        event.preventDefault();
-        router.push('/admin/dashboard');
+  const onSubmit = async e => {
+    e.preventDefault();
+    setIsLoading(true);
+    setMessage({ type: '', text: '' });
+
+    try {
+      const response = await request.post('/auth/login', {
+        username: data.username,
+        password: data.password,
+      });
+
+      console.log('API Response:', response.data);
+
+      if (response?.data) {
+        const { token, user, message: apiMessage } = response.data;
+
+        if (token && user) {
+          // Store token and user data
+          Cookies.set('token', token);
+          Cookies.set('user', JSON.stringify(user));
+          Cookies.set('username', data.username);
+
+          // Store user profile if available
+          if (user.profile) {
+            localStorage.setItem('userProfile', JSON.stringify(user.profile));
+          }
+
+          setMessage({
+            type: 'success',
+            text: apiMessage || 'Login berhasil! Mengarahkan ke dashboard...',
+          });
+
+          // Role-based routing
+          const role = user.role?.toLowerCase();
+          setTimeout(() => {
+            if (role === 'admin') {
+              router.push('/admin/dashboard');
+            } else if (role === 'guru') {
+              router.push('/guru/dashboard');
+            } else {
+              router.push('/admin/dashboard'); // Default fallback
+            }
+          }, 1000);
+        }
+      }
+    } catch (error) {
+      console.error('Login error:', error);
+      setMessage({
+        type: 'error',
+        text: error?.response?.data?.message || 'Login gagal. Periksa username/password kamu.',
+      });
+    } finally {
+      setIsLoading(false);
     }
-
+  };
 
   return (
     <div className='flex min-h-screen items-center justify-center bg-gray-100 p-4'>
       <Card className='w-full max-w-sm py-8 bg-white'>
         <CardContent>
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={onSubmit}>
             <div className='flex flex-col gap-6'>
+              {message.text && <div className={`p-3 text-sm rounded-md ${message.type === 'success' ? 'text-green-600 bg-green-50 border border-green-200' : 'text-red-600 bg-red-50 border border-red-200'}`}>{message.text}</div>}
               <div className='grid gap-2'>
                 <Label
                   htmlFor='username'
@@ -39,6 +94,9 @@ export default function LoginPage() {
                   type='text'
                   placeholder='Masukan Username'
                   required
+                  value={data.username}
+                  onChange={e => setData({ ...data, username: e.target.value })}
+                  disabled={isLoading}
                   className='bg-white border-gray-300 text-gray-900 placeholder:text-gray-400'
                 />
               </div>
@@ -57,6 +115,9 @@ export default function LoginPage() {
                     type={showPassword ? 'text' : 'password'}
                     placeholder='Masukan Password'
                     required
+                    value={data.password}
+                    onChange={e => setData({ ...data, password: e.target.value })}
+                    disabled={isLoading}
                     className='pr-10 bg-white border-gray-300 text-gray-900 placeholder:text-gray-400'
                   />
                   <button
@@ -71,9 +132,10 @@ export default function LoginPage() {
               </div>
               <Button
                 type='submit'
-                className='w-full bg-[#03356C] text-white hover:bg-[#02509E] hover:cursor-pointer mt-2'
+                disabled={isLoading}
+                className='w-full bg-[#03356C] text-white hover:bg-[#02509E] hover:cursor-pointer mt-2 disabled:opacity-50 disabled:cursor-not-allowed'
               >
-                Login
+                {isLoading ? 'Logging in...' : 'Login'}
               </Button>
             </div>
           </form>
