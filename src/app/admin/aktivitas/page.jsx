@@ -1,6 +1,7 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
 import AdminLayout from '../adminLayout';
 import {
   Select,
@@ -10,18 +11,57 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Card, CardContent } from '@/components/ui/card';
+import { useAuth } from '@/hooks/useAuth';
+import request from '@/utils/request';
+import toast from 'react-hot-toast';
 
 export default function AktivitasPage() {
+  useAuth(['admin']);
+  
+  const router = useRouter();
   const [filters, setFilters] = useState({
-    jenis: '',
-    jurusan: '',
-    kelas: '',
-    mapel: '',
-    status: '',
+    jenis: 'all',
+    jurusan: 'all',
+    kelas: 'all',
+    status: 'all',
   });
 
   const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = 1;
+  const [activities, setActivities] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const totalPages = 10;
+
+  useEffect(() => {
+    fetchActivities();
+  }, [filters]);
+
+  const fetchActivities = async () => {
+    try {
+      setLoading(true);
+      const params = new URLSearchParams();
+      
+      if (filters.jurusan && filters.jurusan !== 'all') {
+        params.append('jurusan', filters.jurusan);
+      }
+      if (filters.kelas && filters.kelas !== 'all') {
+        params.append('kelas', filters.kelas);
+      }
+      if (filters.status && filters.status !== 'all') {
+        params.append('status', filters.status);
+      }
+
+      const response = await request.get(`/api/admin/activities?${params.toString()}`);
+      
+      if (response.data.success) {
+        setActivities(response.data.data);
+      }
+    } catch (error) {
+      console.error('Error fetching activities:', error);
+      toast.error('Gagal mengambil data aktivitas');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const handleFilterChange = (filterName, value) => {
     setFilters(prev => ({
@@ -30,8 +70,28 @@ export default function AktivitasPage() {
     }));
   };
 
-  // Dummy data - kosong untuk sekarang
-  const activities = [];
+  const handleCardClick = (ujianId) => {
+    router.push(`/admin/aktivitas/detail/${ujianId}`);
+  };
+
+  const getCardColor = (jenisUjian) => {
+    const colors = {
+      'Ujian Akhir Semester': 'bg-blue-500',
+      'Ujian Tengah Semester': 'bg-orange-500',
+      'Ujian Harian': 'bg-purple-500',
+    };
+    return colors[jenisUjian] || 'bg-blue-500';
+  };
+
+  const formatDate = (date) => {
+    return new Date(date).toLocaleString('id-ID', {
+      hour: '2-digit',
+      minute: '2-digit',
+      day: '2-digit',
+      month: 'long',
+      year: 'numeric'
+    });
+  };
 
   return (
     <AdminLayout>
@@ -39,30 +99,17 @@ export default function AktivitasPage() {
         <h2 className="text-2xl font-semibold text-gray-900">Aktivitas</h2>
 
       {/* Filters */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-        <div>
-          <Select value={filters.jenis} onValueChange={(value) => handleFilterChange('jenis', value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Semua Jenis Ujian" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="semua">Semua Jenis Ujian</SelectItem>
-              <SelectItem value="harian">Ujian Harian</SelectItem>
-              <SelectItem value="tengah">Ujian Tengah Semester</SelectItem>
-              <SelectItem value="akhir">Ujian Akhir Semester</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <div>
           <Select value={filters.jurusan} onValueChange={(value) => handleFilterChange('jurusan', value)}>
             <SelectTrigger>
               <SelectValue placeholder="Semua Jurusan" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="semua">Semua Jurusan</SelectItem>
-              <SelectItem value="ipa">IPA</SelectItem>
-              <SelectItem value="ips">IPS</SelectItem>
-              <SelectItem value="bahasa">Bahasa</SelectItem>
+              <SelectItem value="all">Semua Jurusan</SelectItem>
+              <SelectItem value="IPA">IPA</SelectItem>
+              <SelectItem value="IPS">IPS</SelectItem>
+              <SelectItem value="Bahasa">Bahasa</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -72,23 +119,10 @@ export default function AktivitasPage() {
               <SelectValue placeholder="Semua Kelas" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="semua">Semua Kelas</SelectItem>
-              <SelectItem value="x">Kelas X</SelectItem>
-              <SelectItem value="xi">Kelas XI</SelectItem>
-              <SelectItem value="xii">Kelas XII</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-        <div>
-          <Select value={filters.mapel} onValueChange={(value) => handleFilterChange('mapel', value)}>
-            <SelectTrigger>
-              <SelectValue placeholder="Semua Mapel" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="semua">Semua Mapel</SelectItem>
-              <SelectItem value="matematika">Matematika</SelectItem>
-              <SelectItem value="bahasa">Bahasa Indonesia</SelectItem>
-              <SelectItem value="inggris">Bahasa Inggris</SelectItem>
+              <SelectItem value="all">Semua Kelas</SelectItem>
+              <SelectItem value="X">Kelas X</SelectItem>
+              <SelectItem value="XI">Kelas XI</SelectItem>
+              <SelectItem value="XII">Kelas XII</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -98,40 +132,49 @@ export default function AktivitasPage() {
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="semua">Semua Status</SelectItem>
-              <SelectItem value="ongoing">Sedang Berlangsung</SelectItem>
-              <SelectItem value="completed">Selesai</SelectItem>
-              <SelectItem value="pending">Akan Datang</SelectItem>
+              <SelectItem value="all">Semua Status</SelectItem>
+              <SelectItem value="ON_PROGRESS">On Progress</SelectItem>
+              <SelectItem value="SUBMITTED">Submitted</SelectItem>
+              <SelectItem value="BLOCKED">Blocked</SelectItem>
             </SelectContent>
           </Select>
         </div>
       </div>
 
       {/* Activities Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {activities.length === 0 ? (
-          <div className="col-span-full text-center py-12 text-gray-500">
-            <p className="text-lg">Belum ada aktivitas. Aktivitas akan muncul di sini.</p>
-          </div>
-        ) : (
-          activities.map(activity => (
-            <Card key={activity.id} className="hover:shadow-lg transition-shadow cursor-pointer">
-              <CardContent className="pt-6">
-                <h3 className="font-semibold text-gray-900 mb-3">{activity.title}</h3>
-                <div className="space-y-2 text-sm">
-                  <p className="text-gray-600"><span className="font-medium">Jenis:</span> {activity.jenis}</p>
-                  <p className="text-gray-600"><span className="font-medium">Jurusan:</span> {activity.jurusan}</p>
-                  <p className="text-gray-600"><span className="font-medium">Kelas:</span> {activity.kelas}</p>
-                  <p className="text-gray-600"><span className="font-medium">Mapel:</span> {activity.mapel}</p>
-                  <div className="pt-2 border-t border-gray-200">
-                    <p className="text-gray-600"><span className="font-medium">Peserta:</span> {activity.selesai}/{activity.peserta}</p>
+      {loading ? (
+        <div className="col-span-full text-center py-12 text-gray-500">
+          <p className="text-lg">Memuat data...</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {activities.length === 0 ? (
+            <div className="col-span-full text-center py-12 text-gray-500">
+              <p className="text-lg">Belum ada aktivitas ujian</p>
+            </div>
+          ) : (
+            activities.map(activity => (
+              <Card 
+                key={activity.ujian_id} 
+                className={`${getCardColor(activity.jenis_ujian)} text-white hover:shadow-lg transition-shadow cursor-pointer`}
+                onClick={() => handleCardClick(activity.ujian_id)}
+              >
+                <CardContent className="pt-6">
+                  <h3 className="text-xl font-bold mb-1">{activity.jenis_ujian}</h3>
+                  <div className="space-y-1 text-sm mt-4">
+                    <p><span className="font-medium">Mapel :</span> {activity.mata_pelajaran}</p>
+                    <p><span className="font-medium">Jurusan/Tingkat :</span> {activity.tingkat} - {activity.jurusan || 'Umum'}</p>
+                    <p><span className="font-medium">Peserta :</span> {activity.peserta_count}</p>
+                    <p><span className="font-medium">Status :</span> {activity.status}</p>
+                    <p><span className="font-medium">Dimulai pada :</span> {formatDate(activity.tanggal_mulai)}</p>
+                    <p><span className="font-medium">Berakhir pada :</span> {formatDate(activity.tanggal_selesai)}</p>
                   </div>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
+                </CardContent>
+              </Card>
+            ))
+          )}
+        </div>
+      )}
 
         {/* Pagination */}
         <div className="flex justify-center items-center gap-4 py-6">
