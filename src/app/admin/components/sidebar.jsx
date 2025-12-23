@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import { House, Users, History } from 'lucide-react';
+import { House, Users, History, UserPlus } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 
 export default function Sidebar() {
@@ -15,6 +15,11 @@ export default function Sidebar() {
       name: 'Beranda',
       href: '/admin/dashboard',
       icon: <House className='w-5 h-5' />,
+    },
+    {
+      name: 'Tambah Pengguna',
+      href: '/admin/tambah-pengguna',
+      icon: <UserPlus className='w-5 h-5' />,
     },
     {
       name: 'Semua Siswa',

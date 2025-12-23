@@ -50,14 +50,19 @@ export default function AktivitasPage() {
         params.append('status', filters.status);
       }
 
-      const response = await request.get(`/api/admin/activities?${params.toString()}`);
+      const response = await request.get(`/admin/activities?${params.toString()}`);
       
       if (response.data.success) {
         setActivities(response.data.data);
       }
     } catch (error) {
       console.error('Error fetching activities:', error);
-      toast.error('Gagal mengambil data aktivitas');
+      // Only show toast if it's not a 404 or network error on initial load
+      if (error.response && error.response.status !== 404) {
+        const errorMsg = error.response?.data?.message || 'Gagal mengambil data aktivitas';
+        toast.error(errorMsg);
+      }
+      setActivities([]); // Set empty array on error
     } finally {
       setLoading(false);
     }
