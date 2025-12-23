@@ -4,10 +4,11 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import { House, Users, History } from 'lucide-react';
-import { logout } from '@/utils/auth';
+import { useAuthContext } from '@/contexts/AuthContext';
 
 export default function Sidebar() {
   const pathname = usePathname();
+  const { logout } = useAuthContext();
 
   const menuItems = [
     {

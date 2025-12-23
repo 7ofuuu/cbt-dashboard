@@ -9,10 +9,11 @@ import { Eye, EyeOff } from 'lucide-react';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import request from '@/utils/request';
-import Cookies from 'js-cookie';
+import { useAuthContext } from '@/contexts/AuthContext';
 
 export default function LoginPage() {
   const router = useRouter();
+  const { login: authLogin } = useAuthContext();
 
   const [showPassword, setShowPassword] = useState(false);
   const [data, setData] = useState({ username: '', password: '' });
@@ -36,10 +37,8 @@ export default function LoginPage() {
         const { token, user, message: apiMessage } = response.data;
 
         if (token && user) {
-          // Store token and user data
-          Cookies.set('token', token);
-          Cookies.set('user', JSON.stringify(user));
-          Cookies.set('username', data.username);
+          // Use AuthContext login method
+          authLogin(token, user);
 
           // Store user profile if available
           if (user.profile) {
@@ -54,10 +53,12 @@ export default function LoginPage() {
           // Role-based routing
           const role = user.role?.toLowerCase();
           setTimeout(() => {
-            if (role === 'admin') {
-              router.push('/admin/dashboard');
+            if (role === 'siswa') {
+              router.push('/siswa/dashboard');
             } else if (role === 'guru') {
               router.push('/guru/dashboard');
+            } else if (role === 'admin') {
+              router.push('/admin/dashboard');
             } else {
               router.push('/admin/dashboard'); // Default fallback
             }
