@@ -46,18 +46,17 @@ export default function DetailAktivitasPesertaPage() {
       <h2 className="text-2xl font-semibold text-gray-900">
         <button
           onClick={() => router.push('/admin/aktivitas/peserta')}
-          className="text-blue-600 hover:text-blue-800 mr-2"
-        >
-          Aktivitas › Peserta
+          className="text-blue-600 hover:text-blue-800 mr-2">
+          Aktivitas Peserta
         </button>
-        › <span>Detail</span>
+        <span>Detail</span>
       </h2>
 
       <div className="space-y-6">
         {/* User Detail Section */}
         <div className="bg-white rounded-lg border border-gray-200 p-6">
           <div className="flex items-start gap-6">
-            <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-gray-200 flex-shrink-0">
+            <div className="relative w-24 h-24 rounded-lg overflow-hidden bg-gray-200 shrink-0">
               <Image
                 src={peserta.foto}
                 alt={peserta.nama}
