@@ -17,8 +17,13 @@ export default function Sidebar() {
       icon: <House className='w-5 h-5' />,
     },
     {
-      name: 'Pengguna',
-      href: '/admin/semua-pengguna',
+      name: 'Semua Siswa',
+      href: '/admin/semua-siswa',
+      icon: <Users className='w-5 h-5' />,
+    },
+    {
+      name: 'Semua Guru',
+      href: '/admin/semua-guru',
       icon: <Users className='w-5 h-5' />,
     },
     {
