@@ -10,6 +10,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
+import { Home } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
@@ -92,19 +94,25 @@ export default function DetailAktivitasPage({ params }) {
 
   return (
     <AdminLayout>
-      <div className="space-y-6">
-        {/* Breadcrumb */}
-        <div className="flex items-center gap-2 text-sm text-gray-600">
-          <button 
-            onClick={() => router.push('/admin/aktivitas')}
-            className="hover:text-gray-900"
-          >
-            Aktivitas
-          </button>
-          <span>&gt;</span>
-          <span className="text-gray-900 font-semibold">Detail</span>
-        </div>
+      <Breadcrumb className="mb-4">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href='/admin/dashboard'>
+              <Home className='w-4 h-4' />
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href='/admin/aktivitas'>Aktivitas</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Detail</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
 
+      <div className="space-y-6">
         <h2 className="text-2xl font-semibold text-gray-900">
           Aktivitas &gt; Detail
         </h2>

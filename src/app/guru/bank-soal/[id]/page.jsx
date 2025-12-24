@@ -54,26 +54,22 @@ export default function DetailBankSoalPage() {
       const bankId = decodeURIComponent(params.id);
       const [mata_pelajaran, tingkat, jurusan] = bankId.split('-');
       
-      // Fetch soals dengan filter
-      const filters = {
-        mata_pelajaran,
-        tingkat,
-      };
-      if (jurusan && jurusan !== 'umum') {
-        filters.jurusan = jurusan;
-      }
-
-      const res = await request.get('/soal', { params: filters });
+      // Gunakan endpoint baru yang spesifik untuk bank soal
+      // GET /soal/bank/:mataPelajaran/:tingkat/:jurusan
+      const res = await request.get(`/soal/bank/${mata_pelajaran}/${tingkat}/${jurusan || 'umum'}`);
+      
       const data = res.data?.soals || [];
+      const stats = res.data?.stats || {};
+      const info = res.data?.bankInfo || {};
       
       setSoals(data);
       setBankInfo({
-        mata_pelajaran,
-        tingkat,
-        jurusan: jurusan === 'umum' ? null : jurusan,
-        jumlah_soal: data.length,
-        jumlah_pg: data.filter(s => s.tipe_soal !== 'ESSAY').length,
-        jumlah_essay: data.filter(s => s.tipe_soal === 'ESSAY').length
+        mata_pelajaran: info.mata_pelajaran || mata_pelajaran,
+        tingkat: info.tingkat || tingkat,
+        jurusan: info.jurusan,
+        jumlah_soal: stats.total_soal || data.length,
+        jumlah_pg: (stats.total_pg_single || 0) + (stats.total_pg_multiple || 0),
+        jumlah_essay: stats.total_essay || 0
       });
     } catch (err) {
       console.error(err);
