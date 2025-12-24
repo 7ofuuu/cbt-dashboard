@@ -187,7 +187,7 @@ export default function EditSoalPage() {
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbLink href='/guru/banksoal'>Bank Soal</BreadcrumbLink>
+              <BreadcrumbLink href='/guru/bank-soal'>Bank Soal</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>

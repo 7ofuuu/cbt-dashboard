@@ -386,11 +386,11 @@ export default function KelolaBankSoalPage() {
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbLink href='/guru/banksoal'>Bank Soal</BreadcrumbLink>
+              <BreadcrumbLink href='/guru/bank-soal'>Bank Soal</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbLink href={`/guru/banksoal/${params.id}`}>Detail</BreadcrumbLink>
+              <BreadcrumbLink href={`/guru/bank-soal/${params.id}`}>Detail</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>

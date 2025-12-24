@@ -116,7 +116,7 @@ export default function DetailBankSoalPage() {
       
       await Promise.all(deletePromises);
       toast.success(`Bank soal "${bankInfo.mata_pelajaran}" berhasil dihapus`);
-      router.push('/guru/banksoal');
+      router.push('/guru/bank-soal');
     } catch (err) {
       toast.error('Gagal menghapus bank soal');
       console.error(err);
@@ -188,7 +188,7 @@ export default function DetailBankSoalPage() {
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbLink href='/guru/banksoal'>Bank Soal</BreadcrumbLink>
+              <BreadcrumbLink href='/guru/bank-soal'>Bank Soal</BreadcrumbLink>
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
