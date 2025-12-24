@@ -13,22 +13,22 @@ export default function Sidebar() {
   const menuItems = [
     {
       name: 'Beranda',
-      href: '/dashboard-admin',
+      href: '/guru/dashboard',
       icon: <House className='w-5 h-5' />,
     },
     {
       name: 'Bank Soal',
-      href: '/dashboard-admin/pengguna',
+      href: '/guru/banksoal',
       icon: <Clipboard className='w-5 h-5' />,
     },
     {
       name: 'Jadwal Ujian',
-      href: '/dashboard-admin/aktivitas',
+      href: '/guru/jadwal-ujian',
       icon: <Calendar className='w-5 h-5' />,
     },
     {
       name: 'Hasil Ujian',
-      href: '/dashboard-admin/aktivitas',
+      href: '/guru/hasil-ujian',
       icon: <Book className='w-5 h-5' />,
     },
   ];
@@ -44,7 +44,7 @@ export default function Sidebar() {
         {/* Menu Items */}
         <div className='flex-1 px-3'>
           {menuItems.map(item => {
-            const isActive = pathname === item.href;
+            const isActive = pathname?.startsWith(item.href);
             return (
               <Link
                 key={item.name}
