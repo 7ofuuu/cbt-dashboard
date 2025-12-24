@@ -1,116 +1,100 @@
-'use client';
+"use client";
 
 import Image from 'next/image';
 import Link from 'next/link';
 import GuruLayout from '../guruLayout';
 import { useAuth } from '@/hooks/useAuth';
-import { Card } from '@/components/ui/card';
+import Link from 'next/link';
 
 export default function DashboardPage() {
   useAuth(['guru']);
 
   const ujian = [
     {
-      id: 1,
       title: 'Matematika',
       kelas: 'XII - IPA',
       peserta: 86,
       status: 'Tidak Aktif',
       mulai: '08:30, 20 Juni 2025',
       akhir: '09:30, 20 Juni 2025',
-      color: 'bg-teal-700 text-white',
     },
     {
-      id: 2,
       title: 'Bahasa Indonesia',
       kelas: 'XII - IPA',
       peserta: 86,
       status: 'Tidak Aktif',
       mulai: '08:30, 20 Juni 2025',
       akhir: '09:30, 20 Juni 2025',
-      color: 'bg-sky-700 text-white',
     },
   ];
 
   const bankSoal = [
-    { id: 1, title: 'Sosiologi', kelas: 'XII - IPS', color: 'bg-orange-500' },
-    { id: 2, title: 'Geografi', kelas: 'XII - IPS', color: 'bg-orange-500' },
-    { id: 3, title: 'Ekonomi', kelas: 'XII - IPS', color: 'bg-orange-500' },
-    { id: 4, title: 'Bahasa Indonesia', kelas: 'XII - Wajib', color: 'bg-violet-400' },
-    { id: 5, title: 'Bahasa Inggris', kelas: 'XII - Wajib', color: 'bg-violet-400' },
+    { title: 'Sosiologi', jurusan: 'XII - IPS', pg: 98, essay: 5, dibuat: '20 Juni 2025', color: 'bg-orange-400' },
+    { title: 'Geografi', jurusan: 'XII - IPS', pg: 98, essay: 5, dibuat: '20 Juni 2025', color: 'bg-orange-400' },
+    { title: 'Ekonomi', jurusan: 'XII - IPS', pg: 98, essay: 5, dibuat: '20 Juni 2025', color: 'bg-orange-400' },
+    { title: 'Bahasa Indonesia', jurusan: 'XII - Wajib', pg: 98, essay: 5, dibuat: '20 Juni 2025', color: 'bg-pink-400' },
+    { title: 'Bahasa Inggris', jurusan: 'XII - Wajib', pg: 98, essay: 5, dibuat: '20 Juni 2025', color: 'bg-violet-400' },
   ];
 
   return (
     <GuruLayout>
-      <div className='space-y-6'>
-        {/* Hero */}
-        <div className='rounded-xl p-6 bg-gradient-to-r from-blue-900 to-blue-700 text-white'>
-          <div className='flex items-center gap-6'>
-            <div className='w-24 h-24 rounded-full bg-white/20 flex items-center justify-center overflow-hidden'>
-              <Image
-                src='/dashboard_img.png'
-                alt='Teacher'
-                width={96}
-                height={96}
-                className='w-20 h-20 object-contain'
-              />
-            </div>
-            <div>
-              <h2 className='text-3xl font-bold mb-1'>Selamat Datang Guru</h2>
-              <p className='text-blue-100 max-w-2xl'>Akses bank soal, jadwalkan ujian, dan hasilkan laporan nilai secara otomatis dalam beberapa klik.</p>
-            </div>
+      <div className="space-y-8">
+        <header className="bg-gradient-to-r from-sky-800 to-sky-700 text-white rounded-lg p-6 flex items-center gap-6">
+          <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center">
+            <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l6.16-3.422A12.083 12.083 0 0118 18.75V21l-6-3-6 3v-2.25c0-2.487-.56-4.59-1.84-7.172L12 14z" />
+            </svg>
           </div>
-        </div>
+          <div>
+            <h1 className="text-3xl font-extrabold">Selamat Datang Guru</h1>
+            <p className="text-sm opacity-90">Akses bank soal, jadwalkan ujian, dan hasilkan laporan nilai secara otomatis dalam beberapa klik.</p>
+          </div>
+        </header>
 
-        {/* Ujian Section */}
         <section>
-          <div className='flex items-center justify-between mb-4'>
-            <h3 className='text-2xl font-bold'>Ujian</h3>
-            <Link href='/guru/ujian' className='text-blue-800 font-medium hover:underline'>Lihat semua ››</Link>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold">Ujian</h2>
+            <Link href="#" className="text-sky-700 font-medium">Lihat semua ››</Link>
           </div>
 
-          <div className='grid grid-cols-1 sm:grid-cols-2 gap-4'>
-            {ujian.map(u => (
-              <Card key={u.id} className='rounded-lg'>
-                <div className='-mt-6 px-6'>
-                  <div className={`rounded-t-lg px-4 py-3 ${u.color}`}>
-                    <h4 className='text-white font-semibold'>{u.title}</h4>
-                    <p className='text-white text-sm'>{u.kelas}</p>
-                  </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {ujian.map((u, idx) => (
+              <div key={idx} className="bg-white rounded-lg shadow-sm overflow-hidden">
+                <div className="bg-sky-700 text-white p-4">
+                  <h3 className="font-semibold">{u.title}</h3>
+                  <div className="text-xs opacity-90">{u.kelas}</div>
                 </div>
-                <div className='px-6 pt-4 pb-6 bg-white rounded-b-lg -mt-2'>
-                  <div className='text-sm text-gray-600 mb-1 flex justify-between'><span>Peserta :</span><span className='font-medium'>{u.peserta}</span></div>
-                  <div className='text-sm text-gray-600 mb-1 flex justify-between'><span>Status :</span><span className='font-medium'>{u.status}</span></div>
-                  <div className='text-sm text-gray-600 mb-1 flex justify-between'><span>Dimulai pada :</span><span className='font-medium'>{u.mulai}</span></div>
-                  <div className='text-sm text-gray-600 flex justify-between'><span>Berakhir pada :</span><span className='font-medium'>{u.akhir}</span></div>
+                <div className="p-4 text-sm text-gray-700">
+                  <div className="flex justify-between"><span>Peserta :</span><span>{u.peserta}</span></div>
+                  <div className="flex justify-between"><span>Status :</span><span>{u.status}</span></div>
+                  <div className="flex justify-between"><span>Dimulai pada :</span><span>{u.mulai}</span></div>
+                  <div className="flex justify-between"><span>Berakhir pada :</span><span>{u.akhir}</span></div>
                 </div>
-              </Card>
+              </div>
             ))}
           </div>
         </section>
 
-        {/* Bank Soal Section */}
         <section>
-          <div className='flex items-center justify-between mb-4'>
-            <h3 className='text-2xl font-bold'>Bank Soal</h3>
-            <Link href='/guru/banksoal' className='text-blue-800 font-medium hover:underline'>Lihat semua ››</Link>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-2xl font-bold">Bank Soal</h2>
+            <Link href="#" className="text-sky-700 font-medium">Lihat semua ››</Link>
           </div>
 
-          <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4'>
-            {bankSoal.map(b => (
-              <Card key={b.id} className='rounded-lg'>
-                <div className='-mt-6 px-6'>
-                  <div className={`rounded-t-lg px-4 py-3 ${b.color} text-white` }>
-                    <h4 className='font-semibold'>{b.title}</h4>
-                    <p className='text-sm'>{b.kelas}</p>
-                  </div>
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
+            {bankSoal.map((b, i) => (
+              <div key={i} className="bg-white rounded-lg shadow-sm overflow-hidden">
+                <div className={`${b.color} text-white p-4`}>
+                  <h3 className="font-semibold">{b.title}</h3>
+                  <div className="text-xs opacity-90">{b.jurusan}</div>
                 </div>
-                <div className='px-6 pt-4 pb-6 bg-white rounded-b-lg -mt-2 text-sm text-gray-600'>
-                  <div className='mb-2'>Isi Pilihan Ganda : <span className='font-medium'>98</span></div>
-                  <div className='mb-2'>Isi Essay : <span className='font-medium'>5</span></div>
-                  <div>Dibuat pada : <span className='font-medium'>20 Juni 2025</span></div>
+                <div className="p-4 text-sm text-gray-700">
+                  <div className="flex justify-between"><span>Isi Pilihan Ganda :</span><span>{b.pg}</span></div>
+                  <div className="flex justify-between"><span>Isi Essay :</span><span>{b.essay}</span></div>
+                  <div className="flex justify-between"><span>Dibuat pada :</span><span>{b.dibuat}</span></div>
                 </div>
-              </Card>
+              </div>
             ))}
           </div>
         </section>
@@ -118,3 +102,4 @@ export default function DashboardPage() {
     </GuruLayout>
   );
 }
+
