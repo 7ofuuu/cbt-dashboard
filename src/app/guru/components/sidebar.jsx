@@ -13,7 +13,7 @@ export default function Sidebar() {
   const menuItems = [
     {
       name: 'Beranda',
-      href: '/guru-dashboard',
+      href: '/guru/dashboard',
       icon: <House className='w-5 h-5' />,
     },
     {
