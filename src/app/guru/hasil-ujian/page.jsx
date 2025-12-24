@@ -1,41 +1,64 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Search } from 'lucide-react';
 import GuruLayout from '../guruLayout';
 import HasilUjianCard from './components/HasilUjianCard';
+import request from '@/utils/request';
 
 export default function HasilUjianPage() {
   const [searchQuery, setSearchQuery] = useState('');
+    const [isLoading, setIsLoading] = useState(false);
+  const[ujianData, setUjianData] = useState('');
+//   const hasilUjianData = [
+//     {
+//       id: 1,
+//       mataPelajaran: 'Matematika',
+//       kelas: 'XII - IPA',
+//       jumlahKelas: 4,
+//       totalSiswa: 80,
+//       selesai: 76,
+//     },
+//     {
+//       id: 2,
+//       mataPelajaran: 'Kimia',
+//       kelas: 'XII - IPA',
+//       jumlahKelas: 4,
+//       totalSiswa: 80,
+//       selesai: 79,
+//     },
+//     {
+//       id: 3,
+//       mataPelajaran: 'Fisika',
+//       kelas: 'XII - IPA',
+//       jumlahKelas: 4,
+//       totalSiswa: 80,
+//       selesai: 80,
+//     },
+//   ];
 
-  const hasilUjianData = [
-    {
-      id: 1,
-      mataPelajaran: 'Matematika',
-      kelas: 'XII - IPA',
-      jumlahKelas: 4,
-      totalSiswa: 80,
-      selesai: 76,
-    },
-    {
-      id: 2,
-      mataPelajaran: 'Kimia',
-      kelas: 'XII - IPA',
-      jumlahKelas: 4,
-      totalSiswa: 80,
-      selesai: 79,
-    },
-    {
-      id: 3,
-      mataPelajaran: 'Fisika',
-      kelas: 'XII - IPA',
-      jumlahKelas: 4,
-      totalSiswa: 80,
-      selesai: 80,
-    },
-  ];
+useEffect(() => {
+    fetchUjian();
+  }, []);
 
-  const filteredData = hasilUjianData.filter(ujian =>
+const fetchUjian = async () => {
+    setIsLoading(true);
+    try {
+      const response = await request.get('/ujian');
+        console.log('Fetched ujian data:', response.data.data);
+      if (response?.data?.data) {
+        setUjianData(response.data.data);
+        
+      }
+    } catch (error) {
+      console.error('Error fetching ujian:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+
+  const filteredData = ujianData.filter(ujian =>
     ujian.mataPelajaran.toLowerCase().includes(searchQuery.toLowerCase()) ||
     ujian.kelas.toLowerCase().includes(searchQuery.toLowerCase())
   );
