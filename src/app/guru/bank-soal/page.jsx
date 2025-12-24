@@ -117,7 +117,7 @@ export default function BankSoalPage() {
 
   const handleViewDetail = (bank) => {
     const bankId = `${bank.mata_pelajaran}-${bank.tingkat}-${bank.jurusan || 'umum'}`;
-    router.push(`/guru/banksoal/${encodeURIComponent(bankId)}`);
+    router.push(`/guru/bank-soal/${encodeURIComponent(bankId)}`);
   };
 
   return (

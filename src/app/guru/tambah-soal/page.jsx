@@ -97,7 +97,7 @@ export default function TambahSoalPage() {
       }
 
       toast.success(`${created} soal berhasil ditambahkan`);
-      router.push('/guru/banksoal');
+      router.push('/guru/bank-soal');
     } catch (err) {
       console.error(err);
       toast.error(err?.response?.data?.error || 'Gagal menyimpan soal');
@@ -166,7 +166,7 @@ export default function TambahSoalPage() {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink href='/guru/banksoal'>Bank Soal</BreadcrumbLink>
+            <BreadcrumbLink href='/guru/bank-soal'>Bank Soal</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
