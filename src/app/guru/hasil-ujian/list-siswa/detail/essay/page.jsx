@@ -91,7 +91,6 @@ export default function BeriNilaiEssayPage() {
   const [tempScores, setTempScores] = useState({});
   const [savedFlags, setSavedFlags] = useState({});
 
-  // Load from sessionStorage on mount
   useEffect(() => {
     try {
       const raw = sessionStorage.getItem(storageKey);
@@ -105,7 +104,6 @@ export default function BeriNilaiEssayPage() {
     } catch {}
   }, [storageKey]);
 
-  // Save to sessionStorage when scores change
   useEffect(() => {
     try {
       sessionStorage.setItem(storageKey, JSON.stringify(scores));
@@ -132,14 +130,12 @@ export default function BeriNilaiEssayPage() {
   const allNumbers = useMemo(() => [...pages[1], ...pages[2]].map(q => q.number), []);
 
   const handleSubmit = () => {
-    // Validasi semua soal sudah diisi
     const missing = allNumbers.filter(n => !(n in scores) || scores[n] === '' || scores[n] === null || scores[n] === undefined);
     if (missing.length) {
       toast.error(`Nilai belum lengkap untuk soal: ${missing.join(', ')}`);
       return;
     }
     
-    // Validasi nilai valid (0-100)
     const invalid = allNumbers.filter(n => {
       const val = Number(scores[n]);
       return !Number.isFinite(val) || val < 0 || val > 100;
@@ -149,7 +145,6 @@ export default function BeriNilaiEssayPage() {
       return;
     }
 
-    // Siap submit - nanti tinggal ganti dengan API endpoint backend kamu
     const payload = {
       mataPelajaran,
       kelas,
@@ -160,7 +155,6 @@ export default function BeriNilaiEssayPage() {
     console.log('Data yang akan dikirim ke backend:', payload);
     toast.success('Nilai essay berhasil disubmit!');
     
-    // Clear sessionStorage setelah submit
     try { sessionStorage.removeItem(storageKey); } catch {}
     
     // Nanti bisa ditambahkan:
@@ -174,7 +168,7 @@ export default function BeriNilaiEssayPage() {
   return (
     <GuruLayout>
       <div>
-        {/* Breadcrumb */}
+        {}
         <div className='mb-6 text-sm'>
           <h1 className='text-2xl font-bold text-gray-900 mb-4'>
             <Link href='/guru/hasil-ujian' className='text-gray-600 hover:text-gray-900'>Hasil Ujian</Link>
@@ -195,7 +189,7 @@ export default function BeriNilaiEssayPage() {
           </h1>
         </div>
 
-        {/* Questions */}
+        {}
         <div className='bg-white rounded-lg border border-gray-200 p-6'>
           {data.map((q) => (
             <Question
@@ -211,7 +205,7 @@ export default function BeriNilaiEssayPage() {
             />
           ))}
 
-          {/* Bottom actions */}
+          {}
           <div className='grid grid-cols-3 items-center pt-2'>
             <div>
               {page === 2 ? (
@@ -221,7 +215,7 @@ export default function BeriNilaiEssayPage() {
               ) : null}
             </div>
 
-            {/* Pagination centered */}
+            {}
             <div className='flex items-center justify-center gap-2'>
               <Link
                 href={`/guru/hasil-ujian/list-siswa/detail/essay?mata=${encodeURIComponent(mataPelajaran)}&kelas=${encodeURIComponent(kelas)}&siswaId=${encodeURIComponent(siswaId)}&page=1`}

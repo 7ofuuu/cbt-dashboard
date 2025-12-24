@@ -8,7 +8,6 @@ import HasilUjianCard from './components/HasilUjianCard';
 export default function HasilUjianPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Data mock - ganti dengan API call jika diperlukan
   const hasilUjianData = [
     {
       id: 1,
@@ -36,7 +35,6 @@ export default function HasilUjianPage() {
     },
   ];
 
-  // Filter data berdasarkan search
   const filteredData = hasilUjianData.filter(ujian =>
     ujian.mataPelajaran.toLowerCase().includes(searchQuery.toLowerCase()) ||
     ujian.kelas.toLowerCase().includes(searchQuery.toLowerCase())

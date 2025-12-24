@@ -17,7 +17,7 @@ export default function DetailNilaiPage() {
   return (
     <GuruLayout>
       <div>
-        {/* Breadcrumb */}
+        {}
         <div className='mb-6 text-sm'>
           <h1 className='text-lg font-semibold text-gray-600 mb-4'>
             <span className='text-gray-400'>...</span>
@@ -30,11 +30,11 @@ export default function DetailNilaiPage() {
           </h1>
         </div>
 
-        {/* Card Container */}
+        {}
         <div className='bg-white rounded-lg border border-gray-200 overflow-hidden'>
-          {/* Student Info Header */}
+          {}
           <div className='flex border-b border-gray-200'>
-            {/* Left: Avatar + Name + Email + Badge */}
+            {}
             <div className='flex-1 flex items-center gap-3 p-4'>
               <div className='w-14 h-14 rounded-full overflow-hidden bg-gray-300 flex-shrink-0'>
                 <Image src='/next.svg' alt={nama} width={56} height={56} className='w-full h-full object-cover' />
@@ -51,7 +51,7 @@ export default function DetailNilaiPage() {
               </div>
             </div>
 
-            {/* Right: Subject & Class */}
+            {}
             <div className='flex-1 flex items-center justify-center border-l border-gray-200'>
               <div className='text-center'>
                 <p className='text-lg font-semibold text-gray-900'>{mataPelajaran}</p>
@@ -60,7 +60,7 @@ export default function DetailNilaiPage() {
             </div>
           </div>
 
-          {/* Form Section */}
+          {}
           <div className='grid grid-cols-[220px_1fr] gap-y-4 p-6'>
             <div className='text-gray-700 text-sm self-center'>Mulai di</div>
             <input

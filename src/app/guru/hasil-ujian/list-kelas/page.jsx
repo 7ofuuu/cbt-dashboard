@@ -13,14 +13,12 @@ export default function ListKelasPage() {
   
   const mataPelajaran = params?.get('mata') || 'Matematika';
   
-  // Recompute filtered data setiap render
   const getFilteredData = () => {
     return kelasData.filter(kelas =>
       kelas.nama.toLowerCase().includes(searchQuery.toLowerCase())
     );
   };
 
-  // Data mock - ganti dengan API call jika diperlukan
   const kelasData = [
     {
       id: 1,
