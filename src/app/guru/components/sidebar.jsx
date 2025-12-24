@@ -18,7 +18,7 @@ export default function Sidebar() {
     },
     {
       name: 'Bank Soal',
-      href: '/guru/',
+      href: '/guru/banksoal',
       icon: <Clipboard className='w-5 h-5' />,
     },
     {
@@ -44,7 +44,7 @@ export default function Sidebar() {
         {/* Menu Items */}
         <div className='flex-1 px-3'>
           {menuItems.map(item => {
-            const isActive = pathname === item.href;
+            const isActive = pathname?.startsWith(item.href);
             return (
               <Link
                 key={item.name}
