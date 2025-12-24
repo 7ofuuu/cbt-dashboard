@@ -4,28 +4,98 @@ import { useState } from 'react';
 import Link from 'next/link';
 import GuruLayout from '../../guruLayout';
 import { useAuth } from '@/hooks/useAuth';
+import request from '@/utils/request'; 
+import { useRouter } from 'next/navigation';
+import toast from 'react-hot-toast';
 
 export default function TambahJadwalPage() {
   useAuth(['guru']);
+
+ const router = useRouter();
 
   const [form, setForm] = useState({
     nama: '',
     tanggal: '',
     pukul: '',
-    tingkat: '',
+    tingkat: '', // e.g., "X"
     jurusan: '',
     mapel: '',
   });
 
-  function update(field) {
-    return (e) => setForm((s) => ({ ...s, [field]: e.target.value }));
-  }
+  const update = (field) => (e) => setForm((s) => ({ ...s, [field]: e.target.value }));
 
-  function handleSubmit(e) {
+  // Helper to convert UI "X" to API "10"
+  const getTingkatValue = (t) => {
+    const map = { 'X': '10', 'XI': '11', 'XII': '12' };
+    return map[t] || t;
+  };
+
+  async function handleSubmit(e) {
     e.preventDefault();
-    console.log('Simpan jadwal:', form);
-    // TODO: call API to save
-    alert('Jadwal disimpan (contoh)');
+    
+    try {
+      const examPayload = {
+        nama_ujian: form.nama,
+        mata_pelajaran: form.mapel,
+        tingkat: getTingkatValue(form.tingkat),
+        jurusan: form.jurusan,
+        tanggal_mulai: `${form.tanggal}T${form.pukul}:00.000Z`,
+        tanggal_selesai: `${form.tanggal}T23:59:00.000Z`, 
+        durasi_menit: 120,
+        is_acak_soal: true
+      };
+
+      const createRes = await request.post('/ujian', examPayload);
+      const newUjianId = createRes.data.ujian_id; 
+
+      const soalRes = await request.get('/soal', {
+        params: {
+          mata_pelajaran: form.mapel,
+          tingkat: getTingkatValue(form.tingkat)
+        }
+      });
+
+      const rawSoals = soalRes.data.soals || soalRes.data || []; 
+      const currentTingkat = getTingkatValue(form.tingkat);
+
+      const filteredSoals = rawSoals.filter(soal => 
+        String(soal.tingkat) === String(currentTingkat) && 
+      soal.mata_pelajaran === form.mapel
+      );
+
+      if (filteredSoals.length === 0) {
+        toast.error("Tidak ada soal yang cocok ditemukan.");
+        return;
+      }
+      
+      const availableSoals = soalRes.data.soals || [
+
+      ];
+
+      if (availableSoals.length === 0) {
+        toast.error("Tidak ada soal yang ditemukan untuk kriteria ini.");
+        return;
+      }
+
+      // 3. ASSIGN SOAL TO UJIAN (Looping)
+      const assignPromises = filteredSoals.map((soal, index) => {
+        return request.post('/ujian/assign-soal', {
+          ujian_id: newUjianId,
+          soal_id: soal.soal_id, 
+          bobot_nilai: 10,
+          urutan: index + 1
+        });
+      });
+
+      await Promise.all(assignPromises);
+
+      toast.success('Jadwal dan Soal berhasil disimpan!');
+      router.push('/guru/jadwal-ujian');
+
+    } catch (error) {
+      console.error(error);
+      toast.error('Gagal membuat jadwal atau assign soal.');
+    }
   }
 
   return (
@@ -33,7 +103,7 @@ export default function TambahJadwalPage() {
       <div className="p-6">
         <div className="mb-6">
           <h1 className="text-2xl font-bold inline">Jadwal Ujian</h1>
-          <span className="mx-2">›</span>
+          <span className="mx-2"></span>
           <span className="text-xl font-semibold">Tambah Jadwal</span>
         </div>
 
@@ -71,13 +141,13 @@ export default function TambahJadwalPage() {
 
               <div className="flex gap-3 flex-wrap">
                 <select value={form.tingkat} onChange={update('tingkat')} className="px-4 py-2 border rounded-full">
-                  <option value="">Semua Tingkat</option>
+                  <option value="">Pilih Tingkat</option>
                   <option value="X">X</option>
                   <option value="XI">XI</option>
                   <option value="XII">XII</option>
                 </select>
                 <select value={form.jurusan} onChange={update('jurusan')} className="px-4 py-2 border rounded-full">
-                  <option value="">Semua Jurusan</option>
+                  <option value="">Pilih Jurusan</option>
                   <option value="IPA">IPA</option>
                   <option value="IPS">IPS</option>
                 </select>
