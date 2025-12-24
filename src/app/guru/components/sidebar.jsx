@@ -18,7 +18,11 @@ export default function Sidebar() {
     },
     {
       name: 'Bank Soal',
+<<<<<<< HEAD
+      href: '/guru/bank-soal',
+=======
       href: '/guru/banksoal',
+>>>>>>> 85de83e3720368c4b12acaf0eb7796923a21bfcb
       icon: <Clipboard className='w-5 h-5' />,
     },
     {
