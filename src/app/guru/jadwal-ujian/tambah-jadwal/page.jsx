@@ -17,14 +17,13 @@ export default function TambahJadwalPage() {
     nama: '',
     tanggal: '',
     pukul: '',
-    tingkat: '', // e.g., "X"
+    tingkat: '', 
     jurusan: '',
     mapel: '',
   });
 
   const update = (field) => (e) => setForm((s) => ({ ...s, [field]: e.target.value }));
 
-  // Helper to convert UI "X" to API "10"
   const getTingkatValue = (t) => {
     const map = { 'X': '10', 'XI': '11', 'XII': '12' };
     return map[t] || t;
@@ -33,14 +32,17 @@ export default function TambahJadwalPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     
+    const startTime = new Date(`${form.tanggal}T${form.pukul}:00.000+07:00`);
+    const endTime = new Date(startTime.getTime()  + 120 * 60000);
+   
     try {
       const examPayload = {
         nama_ujian: form.nama,
         mata_pelajaran: form.mapel,
         tingkat: getTingkatValue(form.tingkat),
         jurusan: form.jurusan,
-        tanggal_mulai: `${form.tanggal}T${form.pukul}:00.000Z`,
-        tanggal_selesai: `${form.tanggal}T23:59:00.000Z`, 
+        tanggal_mulai: startTime.toISOString(),
+        tanggal_selesai: endTime.toISOString(), 
         durasi_menit: 120,
         is_acak_soal: true
       };
@@ -77,7 +79,6 @@ export default function TambahJadwalPage() {
         return;
       }
 
-      // 3. ASSIGN SOAL TO UJIAN (Looping)
       const assignPromises = filteredSoals.map((soal, index) => {
         return request.post('/ujian/assign-soal', {
           ujian_id: newUjianId,

@@ -54,7 +54,7 @@ export default function DashboardPage() {
         <section>
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-2xl font-bold">Ujian</h2>
-            <Link href="#" className="text-sky-700 font-medium">Lihat semua ››</Link>
+            <Link href="#" className="text-sky-700 font-medium">Lihat semua</Link>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
