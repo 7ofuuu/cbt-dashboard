@@ -28,7 +28,7 @@ export default function Sidebar() {
     },
     {
       name: 'Hasil Ujian',
-      href: '/dashboard-admin/aktivitas',
+      href: '/guru/hasil-ujian',
       icon: <Book className='w-5 h-5' />,
     },
   ];
