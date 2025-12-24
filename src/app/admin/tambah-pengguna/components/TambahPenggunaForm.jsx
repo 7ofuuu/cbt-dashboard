@@ -22,10 +22,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { useRouter } from 'next/navigation';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
-import { Eye, EyeOff, CheckCircle2, XCircle, AlertCircle, RotateCcw, Upload } from 'lucide-react';
+import { Eye, EyeOff, CheckCircle2, XCircle, AlertCircle, RotateCcw, Upload, Home } from 'lucide-react';
 import BatchImportDialog from '@/components/admin/BatchImportDialog';
 
 export default function TambahPenggunaForm({ role = 'general' }) {
@@ -190,12 +191,23 @@ export default function TambahPenggunaForm({ role = 'general' }) {
 
   return (
     <div className="space-y-6">
+      {/* Breadcrumb */}
+      <Breadcrumb className="mb-4">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href='/admin/dashboard'>
+              <Home className='w-4 h-4' />
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>{getPageTitle()}</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       {/* Header */}
-      <div className="flex items-center gap-2 text-2xl font-semibold text-gray-900">
-        <Link href="/admin/dashboard" className="text-gray-500 hover:text-blue-600">Daftar Pengguna</Link>
-        <span className="text-gray-400">›</span>
-        <span>{getPageTitle()}</span>
-      </div>
+      <h2 className="text-2xl font-semibold text-gray-900">{getPageTitle()}</h2>
 
       <form onSubmit={handleSubmitClick} className="w-full" autoComplete="off" noValidate>
       {/* Row 1: Nama and Username */}
