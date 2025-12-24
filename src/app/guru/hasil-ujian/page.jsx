@@ -8,47 +8,46 @@ import request from '@/utils/request';
 
 export default function HasilUjianPage() {
   const [searchQuery, setSearchQuery] = useState('');
-    const [isLoading, setIsLoading] = useState(false);
-  const[ujianData, setUjianData] = useState('');
-//   const hasilUjianData = [
-//     {
-//       id: 1,
-//       mataPelajaran: 'Matematika',
-//       kelas: 'XII - IPA',
-//       jumlahKelas: 4,
-//       totalSiswa: 80,
-//       selesai: 76,
-//     },
-//     {
-//       id: 2,
-//       mataPelajaran: 'Kimia',
-//       kelas: 'XII - IPA',
-//       jumlahKelas: 4,
-//       totalSiswa: 80,
-//       selesai: 79,
-//     },
-//     {
-//       id: 3,
-//       mataPelajaran: 'Fisika',
-//       kelas: 'XII - IPA',
-//       jumlahKelas: 4,
-//       totalSiswa: 80,
-//       selesai: 80,
-//     },
-//   ];
+  const [isLoading, setIsLoading] = useState(false);
+  const [ujianData, setUjianData] = useState([]);
+  //   const hasilUjianData = [
+  //     {
+  //       id: 1,
+  //       mataPelajaran: 'Matematika',
+  //       kelas: 'XII - IPA',
+  //       jumlahKelas: 4,
+  //       totalSiswa: 80,
+  //       selesai: 76,
+  //     },
+  //     {
+  //       id: 2,
+  //       mataPelajaran: 'Kimia',
+  //       kelas: 'XII - IPA',
+  //       jumlahKelas: 4,
+  //       totalSiswa: 80,
+  //       selesai: 79,
+  //     },
+  //     {
+  //       id: 3,
+  //       mataPelajaran: 'Fisika',
+  //       kelas: 'XII - IPA',
+  //       jumlahKelas: 4,
+  //       totalSiswa: 80,
+  //       selesai: 80,
+  //     },
+  //   ];
 
-useEffect(() => {
+  useEffect(() => {
     fetchUjian();
   }, []);
 
-const fetchUjian = async () => {
+  const fetchUjian = async () => {
     setIsLoading(true);
     try {
       const response = await request.get('/ujian');
-        console.log('Fetched ujian data:', response.data.data);
+      console.log('Fetched ujian data:', response.data.ujians);
       if (response?.data?.data) {
         setUjianData(response.data.data);
-        
       }
     } catch (error) {
       console.error('Error fetching ujian:', error);
