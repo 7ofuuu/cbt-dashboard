@@ -32,6 +32,11 @@ export default function Sidebar() {
       icon: <Users className='w-5 h-5' />,
     },
     {
+      name: 'Semua Admin',
+      href: '/admin/semua-admin',
+      icon: <Users className='w-5 h-5' />,
+    },
+    {
       name: 'Aktivitas',
       href: '/admin/aktivitas',
       icon: <History className='w-5 h-5' />,
