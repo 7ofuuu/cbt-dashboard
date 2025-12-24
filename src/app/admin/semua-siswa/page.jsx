@@ -10,8 +10,10 @@ import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import { useRouter } from 'next/navigation';
 
 export default function SemuaPenggunaPage() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [tingkatFilter, setTingkatFilter] = useState('all');
   const [jurusanFilter, setJurusanFilter] = useState('all');
@@ -183,7 +185,8 @@ export default function SemuaPenggunaPage() {
                 filteredUsers.map(user => (
                   <TableRow
                     key={user.id}
-                    className='hover:bg-gray-50'
+                    className='hover:bg-gray-50 cursor-pointer'
+                    onClick={() => router.push(`/admin/detail-pengguna/${user.id}`)}
                   >
                     <TableCell>
                       <div className='w-10 h-10 rounded-full bg-gray-200 overflow-hidden'>

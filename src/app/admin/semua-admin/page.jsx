@@ -10,8 +10,10 @@ import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import { useRouter } from 'next/navigation';
 
 export default function SemuaAdminPage() {
+  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -118,7 +120,8 @@ export default function SemuaAdminPage() {
                 filteredUsers.map(user => (
                   <TableRow
                     key={user.id}
-                    className='hover:bg-gray-50'
+                    className='hover:bg-gray-50 cursor-pointer'
+                    onClick={() => router.push(`/admin/detail-pengguna/${user.id}`)}
                   >
                     <TableCell>
                       <div className='w-10 h-10 rounded-full bg-gray-200 overflow-hidden'>
