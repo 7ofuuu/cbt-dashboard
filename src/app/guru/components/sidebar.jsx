@@ -13,12 +13,12 @@ export default function Sidebar() {
   const menuItems = [
     {
       name: 'Beranda',
-      href: '/guru-dashboard',
+      href: '/guru/dashboard',
       icon: <House className='w-5 h-5' />,
     },
     {
       name: 'Bank Soal',
-      href: '/guru/',
+      href: '/guru/bank-soal',
       icon: <Clipboard className='w-5 h-5' />,
     },
     {
@@ -28,7 +28,7 @@ export default function Sidebar() {
     },
     {
       name: 'Hasil Ujian',
-      href: '/dashboard-admin/aktivitas',
+      href: '/guru/hasil-ujian',
       icon: <Book className='w-5 h-5' />,
     },
   ];
