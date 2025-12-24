@@ -7,17 +7,20 @@ import AdminLayout from '../../../adminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
-import { Home } from 'lucide-react';
+import { Home, AlertTriangle, Shield, Key } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
+import { use } from 'react';
 
 export default function TerblokirPage({ params }) {
   useAuth(['admin']);
   
   const router = useRouter();
-  const { pesertaUjianId } = params;
+  const { pesertaUjianId } = use(params);
   
   const [pesertaData, setPesertaData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -36,7 +39,7 @@ export default function TerblokirPage({ params }) {
   const fetchParticipantDetail = async () => {
     try {
       setLoading(true);
-      const response = await request.get(`/api/admin/activities/participant/${pesertaUjianId}`);
+      const response = await request.get(`/admin/activities/participant/${pesertaUjianId}`);
       
       if (response.data.success) {
         const data = response.data.data;
@@ -60,7 +63,7 @@ export default function TerblokirPage({ params }) {
 
     try {
       setIsBlocking(true);
-      const response = await request.post(`/api/admin/activities/${pesertaUjianId}/block`, {
+      const response = await request.post(`/admin/activities/${pesertaUjianId}/block`, {
         block_reason: blockReason
       });
 
@@ -79,7 +82,7 @@ export default function TerblokirPage({ params }) {
   const handleGenerateCode = async () => {
     try {
       setIsGenerating(true);
-      const response = await request.post(`/api/admin/activities/${pesertaUjianId}/generate-unlock`);
+      const response = await request.post(`/admin/activities/${pesertaUjianId}/generate-unlock`);
 
       if (response.data.success) {
         toast.success('Kode unlock berhasil di-generate');
@@ -102,7 +105,7 @@ export default function TerblokirPage({ params }) {
 
     try {
       setIsUnblocking(true);
-      const response = await request.post(`/api/admin/activities/${pesertaUjianId}/unblock`, {
+      const response = await request.post(`/admin/activities/${pesertaUjianId}/unblock`, {
         unlock_code: unlockCode
       });
 
@@ -169,105 +172,170 @@ export default function TerblokirPage({ params }) {
       </Breadcrumb>
 
       <div className="space-y-6">
-        <h2 className="text-2xl font-semibold text-gray-900">
-          Aktivitas &gt; Detail &gt; Terblokir
-        </h2>
-
-        {/* Student Info Card */}
-        <div className="bg-white rounded-lg shadow p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden">
-                <svg 
-                  className="w-8 h-8 text-gray-400" 
-                  fill="currentColor" 
-                  viewBox="0 0 20 20"
-                >
-                  <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-xl font-semibold text-gray-900">{pesertaData.nama}</h3>
-                <p className="text-gray-600">{pesertaData.tingkat} {pesertaData.kelas}</p>
-              </div>
-            </div>
-            <div>
-              <span className={`px-4 py-2 inline-flex text-sm font-semibold rounded-full ${
-                pesertaData.is_blocked 
-                  ? 'bg-red-100 text-red-800' 
-                  : 'bg-green-100 text-green-800'
-              }`}>
-                Status: {pesertaData.status}
-              </span>
-            </div>
-          </div>
+        <div className="flex items-center justify-between">
+          <h2 className="text-2xl font-semibold text-gray-900">
+            Manajemen Peserta Terblokir
+          </h2>
+          <Badge variant={pesertaData.is_blocked ? "destructive" : "default"} className="text-sm">
+            {pesertaData.is_blocked ? (
+              <>
+                <Shield className="w-4 h-4 mr-1" />
+                Terblokir
+              </>
+            ) : (
+              'Aktif'
+            )}
+          </Badge>
         </div>
 
+        {/* Student Info Card */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="text-lg">Informasi Peserta</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-600">Nama</p>
+                <p className="font-semibold text-gray-900">{pesertaData.nama}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Kelas</p>
+                <p className="font-semibold text-gray-900">{pesertaData.tingkat} {pesertaData.kelas}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Jurusan</p>
+                <p className="font-semibold text-gray-900">{pesertaData.jurusan}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Ujian</p>
+                <p className="font-semibold text-gray-900">{pesertaData.nama_ujian}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Mata Pelajaran</p>
+                <p className="font-semibold text-gray-900">{pesertaData.mata_pelajaran}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600">Status</p>
+                <Badge variant={pesertaData.is_blocked ? "destructive" : "default"}>
+                  {pesertaData.status}
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Block Form */}
-        <div className="bg-white rounded-lg shadow p-6 space-y-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Keterangan Pelanggaran
-            </label>
-            <Textarea
-              placeholder="Keluar dari aplikasi"
-              value={blockReason}
-              onChange={(e) => setBlockReason(e.target.value)}
-              rows={4}
-              disabled={pesertaData.is_blocked}
-              className="w-full"
-            />
-          </div>
-
-          {!pesertaData.is_blocked && (
-            <Button
-              onClick={handleBlock}
-              disabled={isBlocking || !blockReason.trim()}
-              className="w-full bg-red-600 hover:bg-red-700"
-            >
-              {isBlocking ? 'Memblokir...' : 'Blokir Peserta'}
-            </Button>
-          )}
-
-          {pesertaData.is_blocked && (
-            <>
+        {!pesertaData.is_blocked ? (
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-lg flex items-center">
+                <AlertTriangle className="w-5 h-5 mr-2 text-red-600" />
+                Blokir Peserta
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Generative Code
+                  Keterangan Pelanggaran *
                 </label>
-                <div className="flex gap-2">
-                  <Input
-                    placeholder="ex: u8Bp9"
-                    value={unlockCode}
-                    onChange={(e) => setUnlockCode(e.target.value.toUpperCase())}
-                    className="flex-1"
-                  />
-                  <Button
-                    onClick={handleGenerateCode}
-                    disabled={isGenerating}
-                    className="bg-red-600 hover:bg-red-700"
-                  >
-                    {isGenerating ? 'Generating...' : 'Generate Code'}
-                  </Button>
-                </div>
+                <Textarea
+                  placeholder="Masukkan alasan pemblokiran (contoh: Keluar dari aplikasi tanpa izin)"
+                  value={blockReason}
+                  onChange={(e) => setBlockReason(e.target.value)}
+                  rows={4}
+                  className="w-full"
+                />
               </div>
 
               <Button
-                onClick={handleUnblock}
-                disabled={isUnblocking || !unlockCode.trim()}
-                className="w-full bg-green-600 hover:bg-green-700"
+                onClick={handleBlock}
+                disabled={isBlocking || !blockReason.trim()}
+                className="w-full bg-red-600 hover:bg-red-700"
+                size="lg"
               >
-                {isUnblocking ? 'Membuka blokir...' : 'Unblock Peserta'}
+                {isBlocking ? 'Memblokir...' : 'Blokir Peserta'}
               </Button>
-            </>
-          )}
-        </div>
+            </CardContent>
+          </Card>
+        ) : (
+          <>
+            {/* Block Reason Card */}
+            <Card className="border-red-200 bg-red-50">
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center text-red-800">
+                  <AlertTriangle className="w-5 h-5 mr-2" />
+                  Alasan Pemblokiran
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-gray-700">{pesertaData.block_reason || 'Tidak ada keterangan'}</p>
+              </CardContent>
+            </Card>
+
+            {/* Unlock Code Card */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg flex items-center">
+                  <Key className="w-5 h-5 mr-2 text-blue-600" />
+                  Kode Unlock
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">{pesertaData.unlock_code && (
+                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                    <p className="text-sm text-blue-800 mb-2">Kode saat ini:</p>
+                    <p className="text-3xl font-bold text-blue-900 tracking-widest text-center">
+                      {pesertaData.unlock_code}
+                    </p>
+                  </div>
+                )}
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Kode Unlock (5 Karakter)
+                  </label>
+                  <div className="flex gap-2">
+                    <Input
+                      placeholder="Contoh: AB12C"
+                      value={unlockCode}
+                      onChange={(e) => setUnlockCode(e.target.value.toUpperCase())}
+                      maxLength={5}
+                      className="flex-1 text-center text-2xl font-bold tracking-widest"
+                    />
+                    <Button
+                      onClick={handleGenerateCode}
+                      disabled={isGenerating}
+                      className="bg-blue-600 hover:bg-blue-700 whitespace-nowrap"
+                    >
+                      {isGenerating ? 'Generating...' : 'Generate Code'}
+                    </Button>
+                  </div>
+                  {unlockCode && (
+                    <p className="text-xs text-gray-500 mt-2">
+                      Kode ini akan digunakan siswa untuk membuka blokir
+                    </p>
+                  )}
+                </div>
+
+                <Button
+                  onClick={handleUnblock}
+                  disabled={isUnblocking || !unlockCode.trim()}
+                  className="w-full bg-green-600 hover:bg-green-700"
+                  size="lg"
+                >
+                  {isUnblocking ? 'Membuka blokir...' : 'Unblock Peserta'}
+                </Button>
+              </CardContent>
+            </Card>
+          </>
+        )}
 
         {/* Back Button */}
         <Button
           onClick={() => router.back()}
           variant="outline"
           className="w-full"
+          size="lg"
         >
           Kembali
         </Button>

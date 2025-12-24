@@ -15,55 +15,58 @@ import { Home } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
+import { use } from 'react';
 
 export default function DetailAktivitasPage({ params }) {
   useAuth(['admin']);
   
   const router = useRouter();
-  const { ujianId } = params;
+  const { ujianId } = use(params);
   
   const [filters, setFilters] = useState({
     jurusan: 'all',
-    kelas: 'all',
+    tingkat: 'all',
     status: 'all',
   });
 
   const [ujianData, setUjianData] = useState(null);
   const [pesertaData, setPesertaData] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [currentPage, setCurrentPage] = useState(1);
-  const totalPages = 10;
 
   useEffect(() => {
     if (ujianId) {
-      fetchParticipants();
+      fetchUjianDetail();
     }
-  }, [ujianId, filters]);
+  }, [ujianId]);
 
-  const fetchParticipants = async () => {
+  const fetchUjianDetail = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams();
+      // Gunakan endpoint admin activities untuk mendapatkan data ujian dan peserta
+      const response = await request.get(`/admin/activities/${ujianId}/participants`);
       
-      if (filters.jurusan && filters.jurusan !== 'all') {
-        params.append('jurusan', filters.jurusan);
-      }
-      if (filters.kelas && filters.kelas !== 'all') {
-        params.append('kelas', filters.kelas);
-      }
-      if (filters.status && filters.status !== 'all') {
-        params.append('status', filters.status);
-      }
-
-      const response = await request.get(`/api/admin/activities/${ujianId}/participants?${params.toString()}`);
-      
-      if (response.data.success) {
-        setUjianData(response.data.data.ujian);
-        setPesertaData(response.data.data.peserta);
+      if (response.data && response.data.success) {
+        const { ujian, peserta } = response.data.data;
+        setUjianData(ujian);
+        
+        // Transform peserta dari backend ke format tabel
+        const formattedPeserta = peserta.map(p => ({
+          peserta_ujian_id: p.peserta_ujian_id,
+          nama: p.nama,
+          tingkat: p.tingkat,
+          jurusan: p.jurusan,
+          kelas: p.kelas,
+          mata_pelajaran: ujian.mata_pelajaran,
+          status: p.status,
+          status_raw: p.status_ujian,
+          is_blocked: p.is_blocked
+        }));
+        
+        setPesertaData(formattedPeserta);
       }
     } catch (error) {
-      console.error('Error fetching participants:', error);
-      toast.error('Gagal mengambil data peserta');
+      console.error('Error fetching ujian detail:', error);
+      toast.error('Gagal mengambil data ujian');
     } finally {
       setLoading(false);
     }
@@ -75,6 +78,28 @@ export default function DetailAktivitasPage({ params }) {
       [filterName]: value,
     }));
   };
+
+  // Filter peserta data berdasarkan filters
+  const filteredPesertaData = pesertaData.filter(peserta => {
+    if (filters.jurusan !== 'all' && peserta.jurusan !== filters.jurusan) {
+      return false;
+    }
+    if (filters.tingkat !== 'all' && peserta.tingkat !== filters.tingkat) {
+      return false;
+    }
+    if (filters.status !== 'all') {
+      const statusMap = {
+        'ON_PROGRESS': 'On Progress',
+        'SUBMITTED': 'Submitted',
+        'BLOCKED': 'Blocked',
+        'BELUM_MULAI': 'Belum Mulai'
+      };
+      if (peserta.status !== statusMap[filters.status]) {
+        return false;
+      }
+    }
+    return true;
+  });
 
   const handleRowClick = (pesertaUjianId, status) => {
     if (status === 'Blocked') {
@@ -113,9 +138,19 @@ export default function DetailAktivitasPage({ params }) {
       </Breadcrumb>
 
       <div className="space-y-6">
-        <h2 className="text-2xl font-semibold text-gray-900">
-          Aktivitas &gt; Detail
-        </h2>
+        <div>
+          <h2 className="text-2xl font-semibold text-gray-900">
+            {ujianData ? ujianData.nama_ujian : 'Detail Ujian'}
+          </h2>
+          {ujianData && (
+            <div className="mt-2 text-sm text-gray-600">
+              <span className="font-medium">{ujianData.mata_pelajaran}</span> • 
+              <span className="ml-2">Tingkat {ujianData.tingkat}</span>
+              {ujianData.jurusan && <span className="ml-2">• {ujianData.jurusan}</span>}
+              <span className="ml-2">• {filteredPesertaData.length} Peserta</span>
+            </div>
+          )}
+        </div>
 
         {/* Filters */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -133,15 +168,15 @@ export default function DetailAktivitasPage({ params }) {
             </Select>
           </div>
           <div>
-            <Select value={filters.kelas} onValueChange={(value) => handleFilterChange('kelas', value)}>
+            <Select value={filters.tingkat} onValueChange={(value) => handleFilterChange('tingkat', value)}>
               <SelectTrigger>
-                <SelectValue placeholder="Semua Kelas" />
+                <SelectValue placeholder="Semua Tingkat" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Semua Kelas</SelectItem>
-                <SelectItem value="01">01</SelectItem>
-                <SelectItem value="02">02</SelectItem>
-                <SelectItem value="03">03</SelectItem>
+                <SelectItem value="all">Semua Tingkat</SelectItem>
+                <SelectItem value="X">Kelas X</SelectItem>
+                <SelectItem value="XI">Kelas XI</SelectItem>
+                <SelectItem value="XII">Kelas XII</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -152,6 +187,7 @@ export default function DetailAktivitasPage({ params }) {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Status</SelectItem>
+                <SelectItem value="BELUM_MULAI">Belum Mulai</SelectItem>
                 <SelectItem value="ON_PROGRESS">On Progress</SelectItem>
                 <SelectItem value="SUBMITTED">Submitted</SelectItem>
                 <SelectItem value="BLOCKED">Blocked</SelectItem>
@@ -178,10 +214,10 @@ export default function DetailAktivitasPage({ params }) {
                       Tingkat
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                      Kelas
+                      Jurusan
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
-                      Mata Pelajaran
+                      Kelas
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">
                       Status
@@ -189,18 +225,18 @@ export default function DetailAktivitasPage({ params }) {
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {pesertaData.length === 0 ? (
+                  {filteredPesertaData.length === 0 ? (
                     <tr>
                       <td colSpan="5" className="px-6 py-12 text-center text-gray-500">
-                        Tidak ada data peserta
+                        {loading ? 'Memuat data...' : 'Tidak ada data peserta yang sesuai dengan filter'}
                       </td>
                     </tr>
                   ) : (
-                    pesertaData.map((peserta) => (
+                    filteredPesertaData.map((peserta) => (
                       <tr 
                         key={peserta.peserta_ujian_id}
                         onClick={() => handleRowClick(peserta.peserta_ujian_id, peserta.status)}
-                        className={`${peserta.status === 'Blocked' ? 'cursor-pointer hover:bg-gray-50' : ''}`}
+                        className={`${peserta.is_blocked ? 'cursor-pointer hover:bg-gray-50' : ''}`}
                       >
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {peserta.nama}
@@ -209,10 +245,10 @@ export default function DetailAktivitasPage({ params }) {
                           {peserta.tingkat}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {peserta.kelas}
+                          {peserta.jurusan || '-'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {peserta.mata_pelajaran}
+                          {peserta.kelas}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusStyle(peserta.status)}`}>
@@ -226,26 +262,10 @@ export default function DetailAktivitasPage({ params }) {
               </table>
             </div>
 
-            {/* Pagination */}
-            <div className="bg-white px-4 py-3 flex items-center justify-center border-t border-gray-200">
-              <div className="flex items-center gap-4">
-                <button 
-                  className="text-gray-600 hover:text-gray-900 disabled:opacity-50"
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
-                >
-                  &lt;
-                </button>
-                <span className="text-gray-600">
-                  {currentPage} dari {totalPages}
-                </span>
-                <button 
-                  className="text-gray-600 hover:text-gray-900 disabled:opacity-50"
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
-                >
-                  &gt;
-                </button>
+            {/* Total Info */}
+            <div className="bg-gray-50 px-4 py-3 flex items-center justify-between border-t border-gray-200">
+              <div className="text-sm text-gray-700">
+                Menampilkan <span className="font-medium">{filteredPesertaData.length}</span> dari <span className="font-medium">{pesertaData.length}</span> peserta
               </div>
             </div>
           </div>

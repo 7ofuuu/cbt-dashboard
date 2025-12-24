@@ -19,16 +19,14 @@ export default function TambahJadwalPage() {
     tingkat: '', 
     jurusan: '',
     mapel: '',
+    autoAssignSiswa: true, // Default: otomatis assign siswa
   });
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const update = (field) => (e) => setForm((s) => ({ ...s, [field]: e.target.value }));
 
-  const getTingkatValue = (t) => {
-    const map = { 'X': '10', 'XI': '11', 'XII': '12' };
-    return map[t] || t;
-  };
+  // Removed getTingkatValue - send tingkat as-is (X, XI, XII) to match database
 
   async function handleSubmit(e) {
     e.preventDefault();
@@ -44,26 +42,79 @@ export default function TambahJadwalPage() {
       const examPayload = {
         nama_ujian: form.nama,
         mata_pelajaran: form.mapel,
-        tingkat: getTingkatValue(form.tingkat),
+        tingkat: form.tingkat, // ✅ Send as-is: "X", "XI", "XII"
         jurusan: form.jurusan,
         tanggal_mulai: startTime.toISOString(),
         tanggal_selesai: endTime.toISOString(), 
         durasi_menit: 120,
-        is_acak_soal: true
+        is_acak_soal: true,
+        auto_assign_siswa: form.autoAssignSiswa // Kirim flag auto-assign
       };
 
 
       const createRes = await request.post('/ujian', examPayload);
-      const newUjianId = createRes.data.ujian_id; 
+      const newUjianId = createRes.data.ujian_id;
+      const siswaAssigned = createRes.data.jumlah_siswa_assigned || 0;
+      const autoAssignEnabled = createRes.data.auto_assign_enabled;
+      const warning = createRes.data.warning;
 
-      toast.success('Jadwal berhasil dibuat! Silahkan pilih Bank Soal.');
+      // Provide appropriate feedback based on auto-assign result
+      if (autoAssignEnabled) {
+        if (siswaAssigned > 0) {
+          toast.success(`✅ Jadwal berhasil dibuat! ${siswaAssigned} siswa telah di-assign secara otomatis.`, {
+            duration: 4000
+          });
+        } else if (warning) {
+          toast.success('✅ Jadwal berhasil dibuat!', { duration: 2000 });
+          // Use toast() with custom styling instead of toast.warning()
+          toast(warning, { 
+            icon: '⚠️',
+            duration: 5000,
+            style: {
+              background: '#FEF3C7',
+              color: '#92400E',
+              border: '1px solid #FCD34D'
+            }
+          });
+        } else {
+          toast.success('✅ Jadwal berhasil dibuat!', { duration: 2000 });
+          toast('⚠️ Tidak ada siswa yang di-assign. Silahkan assign manual.', { 
+            duration: 5000,
+            style: {
+              background: '#FEF3C7',
+              color: '#92400E',
+              border: '1px solid #FCD34D'
+            }
+          });
+        }
+      } else {
+        toast.success('✅ Jadwal berhasil dibuat! Silahkan pilih siswa untuk di-assign.', { duration: 4000 });
+      }
       
   
       router.push(`/guru/jadwal-ujian/tambah-jadwal/pilih-bank?ujianId=${newUjianId}`);
 
     } catch (error) {
-      console.error(error);
-      toast.error('Gagal membuat jadwal ujian.');
+      console.error('Error creating ujian:', error);
+      
+      // More detailed error message
+      let errorMessage = 'Gagal membuat jadwal ujian.';
+      
+      if (error.response) {
+        // Server responded with error
+        console.error('Response error:', error.response.data);
+        errorMessage = error.response.data.error || error.response.data.message || errorMessage;
+      } else if (error.request) {
+        // Request made but no response
+        console.error('No response from server');
+        errorMessage = 'Server tidak merespons. Pastikan backend sudah berjalan.';
+      } else {
+        // Something else happened
+        console.error('Error message:', error.message);
+        errorMessage = error.message || errorMessage;
+      }
+      
+      toast.error(errorMessage, { duration: 5000 });
     } finally {
       setIsSubmitting(false);
     }
@@ -133,6 +184,29 @@ export default function TambahJadwalPage() {
                 <option value="Bahasa Indonesia">Bahasa Indonesia</option>
                 <option value="Bahasa Inggris">Bahasa Inggris</option>
               </select>
+
+              {/* Auto-assign siswa checkbox */}
+              <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <input
+                    type="checkbox"
+                    id="autoAssign"
+                    checked={form.autoAssignSiswa}
+                    onChange={(e) => setForm(s => ({ ...s, autoAssignSiswa: e.target.checked }))}
+                    className="w-4 h-4 mt-1 text-sky-800 border-gray-300 rounded focus:ring-sky-500"
+                  />
+                  <div className="flex-1">
+                    <label htmlFor="autoAssign" className="text-sm font-medium text-gray-900 cursor-pointer">
+                      🎯 Otomatis assign siswa berdasarkan tingkat dan jurusan
+                    </label>
+                    <p className="text-xs text-gray-600 mt-1">
+                      {form.autoAssignSiswa 
+                        ? `Semua siswa dengan Tingkat ${form.tingkat || '...'} dan Jurusan ${form.jurusan || '...'} akan otomatis di-assign ke ujian ini.`
+                        : 'Siswa tidak akan di-assign otomatis. Anda perlu assign secara manual setelah ujian dibuat.'}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
 
