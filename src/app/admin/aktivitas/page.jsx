@@ -218,7 +218,7 @@ export default function AktivitasPage() {
 
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-semibold text-gray-900">Aktivitas</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Aktivitas</h2>
           <Button
             onClick={fetchActivities}
             variant="outline"
@@ -370,7 +370,7 @@ export default function AktivitasPage() {
                 onClick={() => handleCardClick(activity.ujian_id)}
               >
                 <div className={`${getCardColor(activity.jenis_ujian)} text-white p-4`}>
-                  <h3 className="text-xl font-semibold">{activity.jenis_ujian}</h3>
+                  <h3 className="text-xl font-semibold">{activity.nama_ujian}</h3>
                 </div>
                 <CardContent className="p-4">
                   <div className="space-y-2 text-sm text-gray-700">
