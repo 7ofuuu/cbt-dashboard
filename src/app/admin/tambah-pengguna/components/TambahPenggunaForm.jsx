@@ -191,7 +191,7 @@ export default function TambahPenggunaForm({ role = 'general' }) {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <h2 className="text-2xl font-semibold text-gray-900">{getPageTitle()}</h2>
+      <h2 className="text-2xl font-bold text-gray-900">{getPageTitle()}</h2>
 
       <form onSubmit={handleSubmitClick} className="w-full" autoComplete="off" noValidate>
       {/* Row 1: Nama and Username */}
