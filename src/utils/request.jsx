@@ -34,7 +34,7 @@ const expiredTokenHandler = () => {
   localStorage.clear();
   Cookies.remove('token');
   setTimeout(() => {
-    window.location.href = '/sign-in';
+    window.location.href = '/login';
   }, 2000);
 
   // return error;
@@ -46,7 +46,7 @@ const errorHandler = error => {
     expiredTokenHandler();
     toast.error(error?.response?.data?.message);
   } else if (error.code === 'ERR_NETWORK') {
-    window.history.pushState({}, 'Redirect Network Error', '/sign-in');
+    window.history.pushState({}, 'Redirect Network Error', '/login');
     console.log(error);
     if (error.response?.status === 401) {
       expiredTokenHandler();
