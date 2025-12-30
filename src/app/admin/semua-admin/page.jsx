@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
+import { PageHeader } from '@/components/ui/page-header';
 import { Plus, Search, Home } from 'lucide-react';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
@@ -71,10 +72,10 @@ export default function SemuaAdminPage() {
         </BreadcrumbList>
       </Breadcrumb>
       <div className='space-y-6'>
-        {/* Header */}
-        <div>
-          <h2 className='text-2xl font-bold text-gray-900'>Daftar Admin</h2>
-        </div>
+        <PageHeader
+          title="Daftar Admin"
+          description="Kelola dan lihat semua pengguna dengan role admin"
+        />
 
         {/* Search */}
         <div className='flex flex-col sm:flex-row gap-4'>

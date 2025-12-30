@@ -11,6 +11,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
+import { PageHeader } from '@/components/ui/page-header';
 import { Home } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import request from '@/utils/request';
@@ -19,13 +20,11 @@ import { use } from 'react';
 
 export default function DetailAktivitasPage({ params }) {
   useAuth(['admin']);
-  
+
   const router = useRouter();
   const { ujianId } = use(params);
-  
+
   const [filters, setFilters] = useState({
-    jurusan: 'all',
-    tingkat: 'all',
     status: 'all',
   });
 
@@ -44,11 +43,11 @@ export default function DetailAktivitasPage({ params }) {
       setLoading(true);
       // Gunakan endpoint admin activities untuk mendapatkan data ujian dan peserta
       const response = await request.get(`/admin/activities/${ujianId}/participants`);
-      
+
       if (response.data && response.data.success) {
         const { ujian, peserta } = response.data.data;
         setUjianData(ujian);
-        
+
         // Transform peserta dari backend ke format tabel
         const formattedPeserta = peserta.map(p => ({
           peserta_ujian_id: p.peserta_ujian_id,
@@ -61,7 +60,7 @@ export default function DetailAktivitasPage({ params }) {
           status_raw: p.status_ujian,
           is_blocked: p.is_blocked
         }));
-        
+
         setPesertaData(formattedPeserta);
       }
     } catch (error) {
@@ -70,6 +69,35 @@ export default function DetailAktivitasPage({ params }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Helper function to convert kelas format to "IPA 1" style
+  const convertKelas = (kelas, jurusan) => {
+    if (!kelas) return kelas;
+
+    // Handle new format: "IPA 01" -> "IPA 1"
+    let match = kelas.match(/^(IPA|IPS)\s+0?(\d+)$/);
+    if (match) {
+      return `${match[1]} ${match[2]}`;
+    }
+
+    // Handle old format: "X-1" -> "IPA 1" (using jurusan from separate column)
+    match = kelas.match(/^[XVI]+-(\d+)$/);
+    if (match && jurusan) {
+      return `${jurusan} ${match[1]}`;
+    }
+
+    return kelas;
+  };
+
+  // Helper function to convert tingkat for display
+  const convertTingkat = (tingkat) => {
+    const romanToNumber = {
+      'X': '10',
+      'XI': '11',
+      'XII': '12'
+    };
+    return romanToNumber[tingkat] || tingkat;
   };
 
   const handleFilterChange = (filterName, value) => {
@@ -81,12 +109,6 @@ export default function DetailAktivitasPage({ params }) {
 
   // Filter peserta data berdasarkan filters
   const filteredPesertaData = pesertaData.filter(peserta => {
-    if (filters.jurusan !== 'all' && peserta.jurusan !== filters.jurusan) {
-      return false;
-    }
-    if (filters.tingkat !== 'all' && peserta.tingkat !== filters.tingkat) {
-      return false;
-    }
     if (filters.status !== 'all') {
       const statusMap = {
         'ON_PROGRESS': 'On Progress',
@@ -138,48 +160,13 @@ export default function DetailAktivitasPage({ params }) {
       </Breadcrumb>
 
       <div className="space-y-6">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">
-            {ujianData ? ujianData.nama_ujian : 'Detail Ujian'}
-          </h2>
-          {ujianData && (
-            <div className="mt-2 text-sm text-gray-600">
-              <span className="font-medium">{ujianData.mata_pelajaran}</span> • 
-              <span className="ml-2">Tingkat {ujianData.tingkat}</span>
-              {ujianData.jurusan && <span className="ml-2">• {ujianData.jurusan}</span>}
-              <span className="ml-2">• {filteredPesertaData.length} Peserta</span>
-            </div>
-          )}
-        </div>
+        <PageHeader
+          title={ujianData ? ujianData.nama_ujian : 'Detail Ujian'}
+          description={ujianData ? `${ujianData.mata_pelajaran} • Tingkat ${convertTingkat(ujianData.tingkat)}${ujianData.jurusan ? ` • ${ujianData.jurusan}` : ''} • ${filteredPesertaData.length} Peserta` : ''}
+        />
 
         {/* Filters */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div>
-            <Select value={filters.jurusan} onValueChange={(value) => handleFilterChange('jurusan', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Semua Jurusan" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Semua Jurusan</SelectItem>
-                <SelectItem value="IPA">IPA</SelectItem>
-                <SelectItem value="IPS">IPS</SelectItem>
-                <SelectItem value="Bahasa">Bahasa</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div>
-            <Select value={filters.tingkat} onValueChange={(value) => handleFilterChange('tingkat', value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Semua Tingkat" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Semua Tingkat</SelectItem>
-                <SelectItem value="X">Kelas X</SelectItem>
-                <SelectItem value="XI">Kelas XI</SelectItem>
-                <SelectItem value="XII">Kelas XII</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
           <div>
             <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
               <SelectTrigger>
@@ -233,7 +220,7 @@ export default function DetailAktivitasPage({ params }) {
                     </tr>
                   ) : (
                     filteredPesertaData.map((peserta) => (
-                      <tr 
+                      <tr
                         key={peserta.peserta_ujian_id}
                         onClick={() => handleRowClick(peserta.peserta_ujian_id, peserta.status)}
                         className={`${peserta.is_blocked ? 'cursor-pointer hover:bg-gray-50' : ''}`}
@@ -242,13 +229,13 @@ export default function DetailAktivitasPage({ params }) {
                           {peserta.nama}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {peserta.tingkat}
+                          {convertTingkat(peserta.tingkat)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                           {peserta.jurusan || '-'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                          {peserta.kelas}
+                          {convertKelas(peserta.kelas, peserta.jurusan)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusStyle(peserta.status)}`}>

@@ -26,7 +26,7 @@ import { useRouter } from 'next/navigation';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
 import { Eye, EyeOff, CheckCircle2, XCircle, AlertCircle, RotateCcw, Upload } from 'lucide-react';
-import BatchImportDialog from '@/components/admin/BatchImportDialog';
+import BatchImportDialog from './BatchImportDialog';
 
 export default function TambahPenggunaForm({ role = 'general' }) {
   const router = useRouter();
@@ -36,7 +36,8 @@ export default function TambahPenggunaForm({ role = 'general' }) {
   const [showBatchImport, setShowBatchImport] = useState(false);
   const [usernameAvailable, setUsernameAvailable] = useState(null);
   const [checkingUsername, setCheckingUsername] = useState(false);
-  
+  const [checkError, setCheckError] = useState(null);
+
   // Debug: Log role to verify it's being passed correctly
   useEffect(() => {
     console.log('🔍 TambahPenggunaForm role:', role);
@@ -55,7 +56,7 @@ export default function TambahPenggunaForm({ role = 'general' }) {
   // Password strength calculation
   const getPasswordStrength = (password) => {
     if (!password) return { strength: 0, label: '', color: '' };
-    
+
     let strength = 0;
     if (password.length >= 6) strength++;
     if (password.length >= 8) strength++;
@@ -72,7 +73,7 @@ export default function TambahPenggunaForm({ role = 'general' }) {
 
   // Check username availability (debounced)
   useEffect(() => {
-    if (!formData.username || formData.username.length < 4) {
+    if (!formData.username) {
       setUsernameAvailable(null);
       return;
     }
@@ -86,15 +87,22 @@ export default function TambahPenggunaForm({ role = 'general' }) {
 
   const checkUsernameAvailability = async (username) => {
     try {
+      console.log('🔍 Checking username availability for:', username);
       setCheckingUsername(true);
       const response = await request.get(`/users?username=${username}`);
-      
+      console.log('✅ Response received:', response.data);
+
       // If users found with this username, it's taken
       const isTaken = response.data.users?.some(u => u.username === username);
+      console.log('📊 Is username taken?', isTaken);
+      console.log('📊 Setting usernameAvailable to:', !isTaken);
       setUsernameAvailable(!isTaken);
+      setCheckError(null);
     } catch (error) {
-      console.error('Error checking username:', error);
+      console.error('❌ Error checking username:', error);
+      console.error('❌ Error response:', error?.response);
       setUsernameAvailable(null);
+      setCheckError('Gagal mengecek ketersediaan username');
     } finally {
       setCheckingUsername(false);
     }
@@ -164,7 +172,9 @@ export default function TambahPenggunaForm({ role = 'general' }) {
 
     } catch (error) {
       console.error('Error creating user:', error);
-      const errorMessage = error?.response?.data?.error || 'Gagal menambahkan pengguna';
+      console.error('Error response:', error?.response);
+      console.error('Error data:', error?.response?.data);
+      const errorMessage = error?.response?.data?.error || error?.message || 'Gagal menambahkan pengguna';
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);
@@ -194,228 +204,242 @@ export default function TambahPenggunaForm({ role = 'general' }) {
       <h2 className="text-2xl font-bold text-gray-900">{getPageTitle()}</h2>
 
       <form onSubmit={handleSubmitClick} className="w-full" autoComplete="off" noValidate>
-      {/* Row 1: Nama and Username */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div className="space-y-2">
-          <Label htmlFor="nama">Nama</Label>
-          <Input
-            id="nama"
-            type="text"
-            name="nama"
-            placeholder="masukan nama *"
-            value={formData.nama}
-            onChange={handleInputChange}
-            required
-          />
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="username">Username</Label>
-          <div className="relative">
+        {/* Row 1: Nama and Username */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="space-y-2">
+            <Label htmlFor="nama">Nama</Label>
             <Input
-              id="username"
+              id="nama"
               type="text"
-              name="username"
-              placeholder="Username *"
-              value={formData.username}
+              name="nama"
+              placeholder="masukan nama *"
+              value={formData.nama}
               onChange={handleInputChange}
               required
-              minLength={4}
-              className="pr-10"
             />
-            {formData.username.length >= 4 && (
-              <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                {checkingUsername ? (
-                  <AlertCircle className="h-4 w-4 text-gray-400 animate-pulse" />
-                ) : usernameAvailable === true ? (
-                  <CheckCircle2 className="h-4 w-4 text-green-500" />
-                ) : usernameAvailable === false ? (
-                  <XCircle className="h-4 w-4 text-red-500" />
-                ) : null}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="username">Username</Label>
+            <div className="relative">
+              <Input
+                id="username"
+                type="text"
+                name="username"
+                placeholder="Username *"
+                value={formData.username}
+                onChange={handleInputChange}
+                required
+                minLength={4}
+                className={`pr-10 ${usernameAvailable === true
+                  ? 'border-green-500 focus-visible:ring-green-500'
+                  : usernameAvailable === false
+                    ? 'border-red-500 focus-visible:ring-red-500'
+                    : ''
+                  }`}
+              />
+              {formData.username && (
+                <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                  {checkingUsername ? (
+                    <AlertCircle className="h-4 w-4 text-gray-400 animate-pulse" />
+                  ) : usernameAvailable === true ? (
+                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                  ) : usernameAvailable === false ? (
+                    <XCircle className="h-4 w-4 text-red-500" />
+                  ) : null}
+                </div>
+              )}
+            </div>
+            {formData.username && usernameAvailable === false && (
+              <p className="text-xs text-red-500 mt-1">Username sudah digunakan</p>
+            )}
+            {formData.username && usernameAvailable === true && (
+              <p className="text-xs text-green-500 mt-1">Username tersedia</p>
+            )}
+            {checkError && (
+              <p className="text-xs text-yellow-600 mt-1">{checkError}</p>
+            )}
+          </div>
+        </div>
+
+        {/* Row 2: Password and Role */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+          <div className="space-y-2">
+            <Label htmlFor="password">Password</Label>
+            <div className="relative">
+              <Input
+                id="password"
+                type={showPassword ? 'text' : 'password'}
+                name="password"
+                placeholder="masukan password *"
+                value={formData.password}
+                onChange={handleInputChange}
+                required
+                minLength={6}
+                className="pr-10"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
+                tabIndex={-1}
+              >
+                {showPassword ? (
+                  <EyeOff className="h-4 w-4" />
+                ) : (
+                  <Eye className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+            {/* Password Strength Indicator */}
+            {formData.password && (
+              <div className="space-y-1">
+                <div className="flex gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <div
+                      key={i}
+                      className={`h-1 flex-1 rounded-full transition-colors ${i < passwordStrength.strength ? passwordStrength.color : 'bg-gray-200'
+                        }`}
+                    />
+                  ))}
+                </div>
+                <p className={`text-xs ${passwordStrength.strength <= 2 ? 'text-red-500' :
+                  passwordStrength.strength <= 3 ? 'text-yellow-500' :
+                    'text-green-500'
+                  }`}>
+                  Kekuatan: {passwordStrength.label}
+                </p>
               </div>
             )}
           </div>
-          {formData.username.length >= 4 && usernameAvailable === false && (
-            <p className="text-xs text-red-500">Username sudah digunakan</p>
-          )}
-          {formData.username.length >= 4 && usernameAvailable === true && (
-            <p className="text-xs text-green-500">Username tersedia</p>
-          )}
-        </div>
-      </div>
-
-      {/* Row 2: Password and Role */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        <div className="space-y-2">
-          <Label htmlFor="password">Password</Label>
-          <div className="relative">
-            <Input
-              id="password"
-              type={showPassword ? 'text' : 'password'}
-              name="password"
-              placeholder="masukan password *"
-              value={formData.password}
-              onChange={handleInputChange}
-              required
-              minLength={6}
-              className="pr-10"
-            />
-            <button
-              type="button"
-              onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700 focus:outline-none"
-              tabIndex={-1}
+          <div className="space-y-2">
+            <Label htmlFor="role">Role</Label>
+            <Select
+              value={formData.role}
+              onValueChange={(value) => handleSelectChange('role', value)}
+              disabled={role !== 'general'}
             >
-              {showPassword ? (
-                <EyeOff className="h-4 w-4" />
-              ) : (
-                <Eye className="h-4 w-4" />
-              )}
-            </button>
+              <SelectTrigger id="role">
+                <SelectValue placeholder="Pilih Role *" />
+              </SelectTrigger>
+              <SelectContent className="w-full">
+                <SelectItem value="guru">Guru</SelectItem>
+                <SelectItem value="siswa">Siswa</SelectItem>
+                <SelectItem value="admin">Admin</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-          {/* Password Strength Indicator */}
-          {formData.password && (
-            <div className="space-y-1">
-              <div className="flex gap-1">
-                {[...Array(5)].map((_, i) => (
-                  <div
-                    key={i}
-                    className={`h-1 flex-1 rounded-full transition-colors ${
-                      i < passwordStrength.strength ? passwordStrength.color : 'bg-gray-200'
-                    }`}
-                  />
-                ))}
+        </div>
+
+        {/* Additional fields for Siswa role */}
+        {formData.role === 'siswa' && (
+          <>
+            {/* Row 3: Jurusan and Tingkat */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div className="space-y-2">
+                <Label htmlFor="jurusan">Jurusan</Label>
+                <Select
+                  value={formData.jurusan}
+                  onValueChange={(value) => handleSelectChange('jurusan', value)}
+                >
+                  <SelectTrigger id="jurusan">
+                    <SelectValue placeholder="Pilih Jurusan *" />
+                  </SelectTrigger>
+                  <SelectContent className="w-full">
+                    <SelectItem value="IPA">IPA</SelectItem>
+                    <SelectItem value="IPS">IPS</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              <p className={`text-xs ${
-                passwordStrength.strength <= 2 ? 'text-red-500' : 
-                passwordStrength.strength <= 3 ? 'text-yellow-500' : 
-                'text-green-500'
-              }`}>
-                Kekuatan: {passwordStrength.label}
-              </p>
+              <div className="space-y-2">
+                <Label htmlFor="tingkat">Tingkat</Label>
+                <Select
+                  value={formData.tingkat}
+                  onValueChange={(value) => handleSelectChange('tingkat', value)}
+                >
+                  <SelectTrigger id="tingkat">
+                    <SelectValue placeholder="Pilih Tingkat *" />
+                  </SelectTrigger>
+                  <SelectContent className="w-full">
+                    <SelectItem value="X">X</SelectItem>
+                    <SelectItem value="XI">XI</SelectItem>
+                    <SelectItem value="XII">XII</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
-          )}
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="role">Role</Label>
-          <Select
-            value={formData.role}
-            onValueChange={(value) => handleSelectChange('role', value)}
-            disabled={role !== 'general'}
-          >
-            <SelectTrigger id="role">
-              <SelectValue placeholder="Pilih Role *" />
-            </SelectTrigger>
-            <SelectContent className="w-full">
-              <SelectItem value="guru">Guru</SelectItem>
-              <SelectItem value="siswa">Siswa</SelectItem>
-              <SelectItem value="admin">Admin</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
 
-      {/* Additional fields for Siswa role */}
-      {formData.role === 'siswa' && (
-        <>
-          {/* Row 3: Jurusan and Tingkat */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div className="space-y-2">
-              <Label htmlFor="jurusan">Jurusan</Label>
-              <Select
-                value={formData.jurusan}
-                onValueChange={(value) => handleSelectChange('jurusan', value)}
-              >
-                <SelectTrigger id="jurusan">
-                  <SelectValue placeholder="Pilih Jurusan *" />
-                </SelectTrigger>
-                <SelectContent className="w-full">
-                  <SelectItem value="IPA">IPA</SelectItem>
-                  <SelectItem value="IPS">IPS</SelectItem>
-                </SelectContent>
-              </Select>
+            {/* Row 4: Kelas */}
+            <div className="mb-6">
+              <div className="space-y-2">
+                <Label htmlFor="kelas">Kelas</Label>
+                <Input
+                  id="kelas"
+                  type="text"
+                  name="kelas"
+                  placeholder="contoh: IPA 01 atau IPS 02 *"
+                  value={formData.kelas}
+                  onChange={handleInputChange}
+                  required
+                  pattern="^(IPA|IPS)\s+(0[1-9]|[1-9][0-9])$"
+                  title="Format: IPA/IPS diikuti spasi dan nomor kelas (contoh: IPA 01, IPS 02)"
+                  className={formData.kelas && !/^(IPA|IPS)\s+(0[1-9]|[1-9][0-9])$/.test(formData.kelas) ? 'border-red-500' : ''}
+                />
+                {formData.kelas && !/^(IPA|IPS)\s+(0[1-9]|[1-9][0-9])$/.test(formData.kelas) && (
+                  <p className="text-xs text-red-500 mt-1">
+                    Format kelas tidak valid. Gunakan format: IPA/IPS diikuti spasi dan nomor (contoh: IPA 01)
+                  </p>
+                )}
+              </div>
             </div>
-            <div className="space-y-2">
-              <Label htmlFor="tingkat">Tingkat</Label>
-              <Select
-                value={formData.tingkat}
-                onValueChange={(value) => handleSelectChange('tingkat', value)}
+          </>
+        )}
+
+        {/* Form Actions */}
+        <div className="flex gap-4 justify-between mt-8 pt-6 border-t border-gray-200">
+          {/* Left side: Batch Import Button (always visible when role is selected) */}
+          <div>
+            {formData.role && formData.role !== 'general' && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setShowBatchImport(true)}
+                className="gap-2 bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
               >
-                <SelectTrigger id="tingkat">
-                  <SelectValue placeholder="Pilih Tingkat *" />
-                </SelectTrigger>
-                <SelectContent className="w-full">
-                  <SelectItem value="X">X</SelectItem>
-                  <SelectItem value="XI">XI</SelectItem>
-                  <SelectItem value="XII">XII</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
+                <Upload className="h-4 w-4" />
+                Import CSV/Excel
+              </Button>
+            )}
           </div>
 
-          {/* Row 4: Kelas */}
-          <div className="mb-6">
-            <div className="space-y-2">
-              <Label htmlFor="kelas">Kelas</Label>
-              <Input
-                id="kelas"
-                type="text"
-                name="kelas"
-                placeholder="contoh: IPA 01 *"
-                value={formData.kelas}
-                onChange={handleInputChange}
-                required
-              />
-            </div>
-          </div>
-        </>
-      )}
-
-      {/* Form Actions */}
-      <div className="flex gap-4 justify-between mt-8 pt-6 border-t border-gray-200">
-        {/* Left side: Batch Import Button (always visible when role is selected) */}
-        <div>
-          {formData.role && formData.role !== 'general' && (
+          {/* Right side: Action buttons */}
+          <div className="flex gap-4">
             <Button
               type="button"
               variant="outline"
-              onClick={() => setShowBatchImport(true)}
-              className="gap-2 bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
+              onClick={handleResetForm}
+              disabled={isLoading}
+              className="gap-2"
             >
-              <Upload className="h-4 w-4" />
-              Import CSV/Excel
+              <RotateCcw className="h-4 w-4" />
+              Reset Form
             </Button>
-          )}
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleCancel}
+              disabled={isLoading}
+            >
+              Batalkan
+            </Button>
+            <Button
+              type="submit"
+              className="bg-blue-600 hover:bg-blue-700"
+              disabled={isLoading || (usernameAvailable === false) || checkingUsername}
+            >
+              {isLoading ? 'Menyimpan...' : 'Konfirmasi'}
+            </Button>
+          </div>
         </div>
-        
-        {/* Right side: Action buttons */}
-        <div className="flex gap-4">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleResetForm}
-            disabled={isLoading}
-            className="gap-2"
-          >
-            <RotateCcw className="h-4 w-4" />
-            Reset Form
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={handleCancel}
-            disabled={isLoading}
-          >
-            Batalkan
-          </Button>
-          <Button
-            type="submit"
-            className="bg-blue-600 hover:bg-blue-700"
-            disabled={isLoading || (usernameAvailable === false) || checkingUsername}
-          >
-            {isLoading ? 'Menyimpan...' : 'Konfirmasi'}
-          </Button>
-        </div>
-      </div>
       </form>
 
       {/* Confirmation Dialog */}
@@ -423,37 +447,39 @@ export default function TambahPenggunaForm({ role = 'general' }) {
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Konfirmasi Tambah Pengguna</AlertDialogTitle>
-            <AlertDialogDescription className="space-y-2">
-              <p>Apakah Anda yakin ingin menambahkan pengguna dengan data berikut?</p>
-              <div className="mt-4 space-y-2 text-sm">
-                <div className="flex justify-between">
-                  <span className="font-medium">Nama:</span>
-                  <span>{formData.nama}</span>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <p>Apakah Anda yakin ingin menambahkan pengguna dengan data berikut?</p>
+                <div className="mt-4 space-y-2">
+                  <div className="flex justify-between">
+                    <span className="font-medium">Nama:</span>
+                    <span>{formData.nama}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium">Username:</span>
+                    <span>{formData.username}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="font-medium">Role:</span>
+                    <span className="capitalize">{formData.role}</span>
+                  </div>
+                  {formData.role === 'siswa' && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Kelas:</span>
+                        <span>{formData.kelas}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Tingkat:</span>
+                        <span>{formData.tingkat}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Jurusan:</span>
+                        <span>{formData.jurusan}</span>
+                      </div>
+                    </>
+                  )}
                 </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Username:</span>
-                  <span>{formData.username}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="font-medium">Role:</span>
-                  <span className="capitalize">{formData.role}</span>
-                </div>
-                {formData.role === 'siswa' && (
-                  <>
-                    <div className="flex justify-between">
-                      <span className="font-medium">Kelas:</span>
-                      <span>{formData.kelas}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-medium">Tingkat:</span>
-                      <span>{formData.tingkat}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="font-medium">Jurusan:</span>
-                      <span>{formData.jurusan}</span>
-                    </div>
-                  </>
-                )}
               </div>
             </AlertDialogDescription>
           </AlertDialogHeader>

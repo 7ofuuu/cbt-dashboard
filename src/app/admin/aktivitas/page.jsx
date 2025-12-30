@@ -15,6 +15,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
+import { PageHeader } from '@/components/ui/page-header';
 import { Home, Search, X, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import request from '@/utils/request';
@@ -22,7 +23,7 @@ import toast from 'react-hot-toast';
 
 export default function AktivitasPage() {
   useAuth(['admin']);
-  
+
   const router = useRouter();
   const [filters, setFilters] = useState({
     search: '',
@@ -49,7 +50,7 @@ export default function AktivitasPage() {
     try {
       setLoading(true);
       const params = new URLSearchParams();
-      
+
       if (filters.jurusan && filters.jurusan !== 'all') {
         params.append('jurusan', filters.jurusan);
       }
@@ -61,11 +62,11 @@ export default function AktivitasPage() {
       }
 
       const response = await request.get(`/admin/activities?${params.toString()}`);
-      
+
       if (response.data.success) {
         const data = response.data.data;
         setActivities(data);
-        
+
         // Extract unique mata pelajaran
         const mapelSet = new Set(data.map(a => a.mata_pelajaran));
         setUniqueMapel(Array.from(mapelSet).sort());
@@ -121,7 +122,7 @@ export default function AktivitasPage() {
     // Search filter
     if (filters.search.trim()) {
       const q = filters.search.toLowerCase();
-      result = result.filter(a => 
+      result = result.filter(a =>
         a.jenis_ujian?.toLowerCase().includes(q) ||
         a.mata_pelajaran?.toLowerCase().includes(q) ||
         a.tingkat?.toLowerCase().includes(q) ||
@@ -145,7 +146,7 @@ export default function AktivitasPage() {
       result = result.filter(a => {
         const mulai = new Date(a.tanggal_mulai);
         const selesai = new Date(a.tanggal_selesai);
-        
+
         switch (filters.tanggal) {
           case 'berlangsung':
             return now >= mulai && now <= selesai;
@@ -217,8 +218,10 @@ export default function AktivitasPage() {
       </Breadcrumb>
 
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-bold text-gray-900">Aktivitas</h2>
+        <PageHeader
+          title="Aktivitas Ujian"
+          description="Monitor dan kelola semua aktivitas ujian yang sedang berlangsung"
+        >
           <Button
             onClick={fetchActivities}
             variant="outline"
@@ -226,7 +229,7 @@ export default function AktivitasPage() {
           >
             <RefreshCw className='w-4 h-4' /> Segarkan
           </Button>
-        </div>
+        </PageHeader>
 
         {/* Search Bar */}
         <div className="relative">
@@ -364,43 +367,43 @@ export default function AktivitasPage() {
               </div>
             ) : (
               filteredAndSortedActivities().map(activity => (
-              <Card 
-                key={activity.ujian_id} 
-                className="hover:shadow-lg transition-shadow cursor-pointer overflow-hidden border"
-                onClick={() => handleCardClick(activity.ujian_id)}
-              >
-                <div className={`${getCardColor(activity.jenis_ujian)} text-white p-4`}>
-                  <h3 className="text-xl font-semibold">{activity.nama_ujian}</h3>
-                </div>
-                <CardContent className="p-4">
-                  <div className="space-y-2 text-sm text-gray-700">
-                    <div className="flex justify-between border-b py-1">
-                      <span className="font-medium">Mapel:</span>
-                      <span>{activity.mata_pelajaran}</span>
-                    </div>
-                    <div className="flex justify-between border-b py-1">
-                      <span className="font-medium">Tingkat/Jurusan:</span>
-                      <span>{activity.tingkat} - {activity.jurusan || 'Umum'}</span>
-                    </div>
-                    <div className="flex justify-between border-b py-1">
-                      <span className="font-medium">Peserta:</span>
-                      <span>{activity.peserta_count}</span>
-                    </div>
-                    <div className="flex justify-between border-b py-1">
-                      <span className="font-medium">Status:</span>
-                      <span>{activity.status}</span>
-                    </div>
-                    <div className="flex flex-col mt-2">
-                      <span className="font-medium text-xs text-gray-400 uppercase">Mulai:</span>
-                      <span>{formatDate(activity.tanggal_mulai)}</span>
-                    </div>
-                    <div className="flex flex-col mt-1">
-                      <span className="font-medium text-xs text-gray-400 uppercase">Selesai:</span>
-                      <span>{formatDate(activity.tanggal_selesai)}</span>
-                    </div>
+                <Card
+                  key={activity.ujian_id}
+                  className="hover:shadow-lg transition-shadow cursor-pointer overflow-hidden border"
+                  onClick={() => handleCardClick(activity.ujian_id)}
+                >
+                  <div className={`${getCardColor(activity.jenis_ujian)} text-white p-4`}>
+                    <h3 className="text-xl font-semibold">{activity.nama_ujian}</h3>
                   </div>
-                </CardContent>
-              </Card>
+                  <CardContent className="p-4">
+                    <div className="space-y-2 text-sm text-gray-700">
+                      <div className="flex justify-between border-b py-1">
+                        <span className="font-medium">Mapel:</span>
+                        <span>{activity.mata_pelajaran}</span>
+                      </div>
+                      <div className="flex justify-between border-b py-1">
+                        <span className="font-medium">Tingkat/Jurusan:</span>
+                        <span>{activity.tingkat} - {activity.jurusan || 'Umum'}</span>
+                      </div>
+                      <div className="flex justify-between border-b py-1">
+                        <span className="font-medium">Peserta:</span>
+                        <span>{activity.peserta_count}</span>
+                      </div>
+                      <div className="flex justify-between border-b py-1">
+                        <span className="font-medium">Status:</span>
+                        <span>{activity.status}</span>
+                      </div>
+                      <div className="flex flex-col mt-2">
+                        <span className="font-medium text-xs text-gray-400 uppercase">Mulai:</span>
+                        <span>{formatDate(activity.tanggal_mulai)}</span>
+                      </div>
+                      <div className="flex flex-col mt-1">
+                        <span className="font-medium text-xs text-gray-400 uppercase">Selesai:</span>
+                        <span>{formatDate(activity.tanggal_selesai)}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
               ))
             )}
           </div>
