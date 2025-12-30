@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Search } from 'lucide-react';
+import { Search, Home } from 'lucide-react';
+import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
+import { PageHeader } from '@/components/ui/page-header';
 import GuruLayout from '../guruLayout';
 import HasilUjianCard from './components/HasilUjianCard';
 import request from '@/utils/request';
@@ -10,32 +12,6 @@ export default function HasilUjianPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [ujianData, setUjianData] = useState([]);
-  //   const hasilUjianData = [
-  //     {
-  //       id: 1,
-  //       mataPelajaran: 'Matematika',
-  //       kelas: 'XII - IPA',
-  //       jumlahKelas: 4,
-  //       totalSiswa: 80,
-  //       selesai: 76,
-  //     },
-  //     {
-  //       id: 2,
-  //       mataPelajaran: 'Kimia',
-  //       kelas: 'XII - IPA',
-  //       jumlahKelas: 4,
-  //       totalSiswa: 80,
-  //       selesai: 79,
-  //     },
-  //     {
-  //       id: 3,
-  //       mataPelajaran: 'Fisika',
-  //       kelas: 'XII - IPA',
-  //       jumlahKelas: 4,
-  //       totalSiswa: 80,
-  //       selesai: 80,
-  //     },
-  //   ];
 
   useEffect(() => {
     fetchUjian();
@@ -56,7 +32,6 @@ export default function HasilUjianPage() {
     }
   };
 
-
   const filteredData = ujianData.filter(ujian =>
     ujian.mataPelajaran.toLowerCase().includes(searchQuery.toLowerCase()) ||
     ujian.kelas.toLowerCase().includes(searchQuery.toLowerCase())
@@ -64,22 +39,36 @@ export default function HasilUjianPage() {
 
   return (
     <GuruLayout>
-      <div>
-        {/* Header Section */}
-        <div className='mb-6'>
-          <h1 className='text-2xl font-bold text-gray-900 mb-4'>Hasil Ujian</h1>
+      <Breadcrumb className="mb-6">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href='/guru/dashboard'>
+              <Home className='w-4 h-4' />
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Hasil Ujian</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
 
-          {/* Search Bar */}
-          <div className='relative'>
-            <input
-              type='text'
-              placeholder='Cari Ujian'
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className='w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm'
-            />
-            <Search className='absolute right-4 top-3 w-5 h-5 text-gray-400' />
-          </div>
+      <div>
+        <PageHeader
+          title="Hasil Ujian"
+          description="Lihat dan analisis hasil ujian siswa"
+        />
+
+        {/* Search Bar */}
+        <div className='relative mb-6'>
+          <input
+            type='text'
+            placeholder='Cari Ujian'
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className='w-full px-4 py-2.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm'
+          />
+          <Search className='absolute right-4 top-3 w-5 h-5 text-gray-400' />
         </div>
 
         {/* Cards Grid */}

@@ -8,7 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Trash2, Save, ArrowLeft } from 'lucide-react';
+import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
+import { PageHeader } from '@/components/ui/page-header';
+import { Trash2, Save, Home } from 'lucide-react';
 import Image from 'next/image';
 import axios from 'axios';
 import Cookies from 'js-cookie';
@@ -193,18 +195,31 @@ export default function UserDetailPage() {
 
   return (
     <AdminLayout>
+      <Breadcrumb className="mb-6">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href='/admin/dashboard'>
+              <Home className='w-4 h-4' />
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href={`/admin/semua-${user.role === 'admin' ? 'admin' : user.role === 'guru' ? 'guru' : 'siswa'}`}>
+              Daftar {user.role === 'admin' ? 'Admin' : user.role === 'guru' ? 'Guru' : 'Siswa'}
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Detail Pengguna</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       <div className='space-y-6'>
-        {/* Breadcrumb */}
-        <div className='flex items-center gap-2 text-sm'>
-          <Link
-            href='/admin/semua-pengguna'
-            className='text-gray-400 hover:text-gray-600'
-          >
-            Daftar Pengguna
-          </Link>
-          <span className='text-gray-400'>{'>'}</span>
-          <span className='text-gray-900 font-semibold'>Detail Pengguna</span>
-        </div>
+        <PageHeader
+          title="Detail Pengguna"
+          description="Lihat dan edit informasi pengguna"
+        />
 
         {/* User Header Card */}
         <div className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>

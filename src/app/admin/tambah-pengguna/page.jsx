@@ -3,6 +3,7 @@
 import AdminLayout from '../adminLayout';
 import TambahPenggunaForm from './components/TambahPenggunaForm';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
+import { PageHeader } from '@/components/ui/page-header';
 import { Home } from 'lucide-react';
 
 export default function TambahPenggunaPage() {
@@ -21,6 +22,12 @@ export default function TambahPenggunaPage() {
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
+
+      <PageHeader
+        title="Tambah Pengguna"
+        description="Tambahkan pengguna baru (admin, guru, atau siswa) ke sistem CBT"
+      />
+
       <TambahPenggunaForm role="general" />
     </AdminLayout>
   );

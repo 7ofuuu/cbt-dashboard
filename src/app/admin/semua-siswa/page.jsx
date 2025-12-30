@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
+import { PageHeader } from '@/components/ui/page-header';
 import { Plus, Search, Home } from 'lucide-react';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
@@ -87,10 +88,10 @@ export default function SemuaPenggunaPage() {
         </BreadcrumbList>
       </Breadcrumb>
       <div className='space-y-6'>
-        {/* Header */}
-        <div className='flex items-center justify-between'>
-          <h2 className='text-2xl font-bold text-gray-900'>Daftar Pengguna</h2>
-        </div>
+        <PageHeader
+          title="Daftar Siswa"
+          description="Kelola dan lihat semua pengguna dengan role siswa"
+        />
 
         {/* Search and Filters */}
         <div className='flex flex-col sm:flex-row gap-4'>
