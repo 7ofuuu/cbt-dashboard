@@ -14,10 +14,10 @@ export default function HasilUjianPage() {
   const [ujianData, setUjianData] = useState([]);
 
   useEffect(() => {
-    fetchUjian();
+    fetchHasilUjian();
   }, []);
 
-  const fetchUjian = async () => {
+  const fetchHasilUjian = async () => {
     setIsLoading(true);
     try {
       const response = await request.get('/hasil-ujian/completed-ujian');
@@ -37,7 +37,7 @@ export default function HasilUjianPage() {
         setUjianData(processedData);
       }
     } catch (error) {
-      console.error('Error fetching ujian:', error);
+      console.error('Error fetching hasil ujian:', error);
     } finally {
       setIsLoading(false);
     }

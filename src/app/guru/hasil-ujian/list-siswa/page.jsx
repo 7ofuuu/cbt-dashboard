@@ -2,26 +2,52 @@
 
 import Image from 'next/image';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { Search } from 'lucide-react';
 import GuruLayout from '../../guruLayout';
+import request from '@/utils/request';
 
 export default function ListSiswaPage() {
   const params = useSearchParams();
   const mataPelajaran = params.get('mata') || 'Matematika';
   const kelas = params.get('kelas') || 'XII - IPA 1';
+  const ujianId = params.get('ujianId');
 
   const [query, setQuery] = useState('');
+  const [siswaData, setSiswaData] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Mock data siswa
-  const siswaData = [
-    { id: 1, email: 'braum@gmail.com', nama: 'Braum Chad', nilai: null, kelas: 'IPA 01', selesai: '06 Apr 2025' },
-    { id: 2, email: 'bradley@gmail.com', nama: 'Bradley Walker', nilai: 94, kelas: 'IPA 01', selesai: '06 Apr 2025' },
-    { id: 3, email: 'allen@gmail.com', nama: 'Allen Wane', nilai: null, kelas: 'IPA 01', selesai: '06 Apr 2025' },
-    { id: 4, email: 'bruce@gmail.com', nama: 'Bruce Ley', nilai: 86, kelas: 'IPA 01', selesai: '06 Apr 2025' },
-    { id: 5, email: 'bruce@gmail.com', nama: 'Bruce Ley', nilai: 86, kelas: 'IPA 01', selesai: '06 Apr 2025' },
-  ];
+  useEffect(() => {
+    if (ujianId) {
+      fetchSiswaList();
+    }
+  }, [ujianId]);
+
+  const fetchSiswaList = async () => {
+    setIsLoading(true);
+    try {
+      const response = await request.get(`/hasil-ujian/ujian/${ujianId}`);
+      console.log('Fetched hasil ujian:', response.data);
+      
+      if (response?.data?.hasil && Array.isArray(response.data.hasil)) {
+        const transformedSiswa = response.data.hasil.map((item) => ({
+          id: item.peserta_ujian_id,
+          email: item.pesertaUjian?.siswa?.email || '-',
+          nama: item.pesertaUjian?.siswa?.nama_lengkap || 'Unknown',
+          nilai: item.nilai_akhir,
+          kelas: item.pesertaUjian?.siswa?.kelas || '-',
+          selesai: item.tanggal_submit ? new Date(item.tanggal_submit).toLocaleDateString('id-ID') : '-',
+          statusUjian: item.pesertaUjian?.status_ujian,
+        }));
+        setSiswaData(transformedSiswa);
+      }
+    } catch (error) {
+      console.error('Error fetching siswa list:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const filtered = siswaData.filter((s) => {
     const target = `${s.email} ${s.nama} ${s.kelas}`.toLowerCase();
@@ -70,7 +96,7 @@ export default function ListSiswaPage() {
             </thead>
             <tbody>
               {filtered.map((s) => (
-                <tr key={s.id} className='border-t hover:bg-gray-50 cursor-pointer' onClick={() => window.location.href = `/guru/hasil-ujian/list-siswa/detail?mata=${encodeURIComponent(mataPelajaran)}&kelas=${encodeURIComponent(kelas)}&siswaId=${s.id}&nama=${encodeURIComponent(s.nama)}&email=${encodeURIComponent(s.email)}&kelasCode=${encodeURIComponent(s.kelas)}`}>
+                <tr key={s.id} className='border-t hover:bg-gray-50 cursor-pointer' onClick={() => window.location.href = `/guru/hasil-ujian/list-siswa/detail?mata=${encodeURIComponent(mataPelajaran)}&kelas=${encodeURIComponent(kelas)}&pesertaUjianId=${s.id}`}>
                   <td className='px-4 py-3'>
                     <div className='w-10 h-10 rounded-full overflow-hidden bg-gray-200'>
                       <Image src='/next.svg' alt={s.nama} width={40} height={40} className='w-full h-full object-cover' />

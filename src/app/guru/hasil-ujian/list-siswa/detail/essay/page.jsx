@@ -2,14 +2,12 @@
 
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import toast, { Toaster } from 'react-hot-toast';
 import GuruLayout from '../../../../guruLayout';
+import request from '@/utils/request';
 
-function Question({ number, text, answer, score, tempScore, onTempScoreChange, onSave, saved }) {
-  const isValid = tempScore !== '' && !isNaN(tempScore) && tempScore >= 0 && tempScore <= 100;
-  const hasChanged = String(tempScore) !== String(score ?? '');
-  
+function Question({ jawabanId, number, text, answer, score, onScoreChange }) {
   return (
     <div className='border-l-4 border-blue-500 pl-4 py-4 mb-6'>
       <p className='font-semibold text-gray-800 mb-1'>Pertanyaan {number}</p>
@@ -17,7 +15,7 @@ function Question({ number, text, answer, score, tempScore, onTempScoreChange, o
 
       <p className='text-gray-600 font-medium mb-2'>Jawaban</p>
       <div className='border rounded-lg p-4 text-gray-800 bg-white'>
-        {answer}
+        {answer || 'Tidak ada jawaban'}
       </div>
 
       <div className='mt-3 flex items-center gap-3'>
@@ -26,23 +24,11 @@ function Question({ number, text, answer, score, tempScore, onTempScoreChange, o
           type='number'
           min={0}
           max={100}
-          value={tempScore}
-          onChange={(e) => onTempScoreChange(e.target.value)}
+          value={score || ''}
+          onChange={(e) => onScoreChange(jawabanId, e.target.value)}
           placeholder='Angka 0-100'
           className='w-32 px-3 py-2 border rounded-lg text-sm'
         />
-        <button
-          onClick={onSave}
-          disabled={!isValid || !hasChanged}
-          className={`px-4 py-2 rounded-lg font-medium transition ${
-            !isValid || !hasChanged
-              ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700 text-white'
-          }`}
-        >
-          Simpan
-        </button>
-        {saved && <span className='text-green-600 font-medium'>✓ Tersimpan</span>}
       </div>
     </div>
   );
@@ -52,123 +38,129 @@ export default function BeriNilaiEssayPage() {
   const params = useSearchParams();
   const mataPelajaran = params.get('mata') || 'Matematika';
   const kelas = params.get('kelas') || 'XII - IPA 1';
-  const siswaId = params.get('siswaId') || '2';
+  const pesertaUjianId = params.get('pesertaUjianId');
   const page = Number(params.get('page') || '1');
 
-  const pages = {
-    1: [
-      {
-        number: 1,
-        text: 'Diketahui fungsi f(x)=3x+2. Hitung nilai f(4). Tuliskan langkah penyelesaiannya!',
-        answer:
-          'Masukkan nilai x=4 ke dalam fungsi: f(4)=3(4)+2=12+2=14. Jadi, nilai f(4) adalah 14.',
-      },
-      {
-        number: 2,
-        text: 'Diketahui fungsi f(x)=3x+2. Hitung nilai f(4). Tuliskan langkah penyelesaiannya!',
-        answer:
-          'Aljabar adalah cabang matematika yang menggunakan huruf/simbol (xxx, yyy, aaa) untuk mewakili bilangan yang belum diketahui. Contoh: x+3=7 ⇒ x=7-3. Dengan aljabar, kita bisa mencari nilainya.',
-      },
-    ],
-    2: [
-      {
-        number: 3,
-        text: 'Diketahui fungsi f(x)=3x+2. Hitung nilai f(4). Tuliskan langkah penyelesaiannya!',
-        answer:
-          'Masukkan nilai x=4 ke dalam fungsi: f(4)=3(4)+2=12+2=14. Jadi, nilai f(4) adalah 14.',
-      },
-      {
-        number: 4,
-        text: 'Diketahui fungsi f(x)=3x+2. Hitung nilai f(4). Tuliskan langkah penyelesaiannya!',
-        answer:
-          'Masukkan nilai x=4 ke dalam fungsi: f(4)=3(4)+2=12+2=14. Jadi, nilai f(4) adalah 14.',
-      },
-    ],
-  };
-
-  const storageKey = useMemo(() => `essayScores:${mataPelajaran}:${kelas}:${siswaId}`, [mataPelajaran, kelas, siswaId]);
+  const [essayQuestions, setEssayQuestions] = useState([]);
   const [scores, setScores] = useState({});
-  const [tempScores, setTempScores] = useState({});
-  const [savedFlags, setSavedFlags] = useState({});
+  const [isLoading, setIsLoading] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
+    if (pesertaUjianId) {
+      fetchEssayData();
+    }
+  }, [pesertaUjianId]);
+
+  const fetchEssayData = async () => {
+    setIsLoading(true);
     try {
-      const raw = sessionStorage.getItem(storageKey);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (parsed && typeof parsed === 'object') {
-          setScores(parsed);
-          setTempScores(parsed);
+      const response = await request.get(`/hasil-ujian/peserta/${pesertaUjianId}`);
+      console.log('Fetched essay data:', response.data);
+      
+      if (response?.data?.hasil?.jawabans && Array.isArray(response.data.hasil.jawabans)) {
+        // Filter only essay questions
+        const essayJawabans = response.data.hasil.jawabans.filter(
+          (jawaban) => jawaban.soal?.tipe_soal === 'ESSAY'
+        );
+        
+        setEssayQuestions(essayJawabans);
+        
+        // Initialize scores with existing nilai_manual
+        const initialScores = {};
+        essayJawabans.forEach((jawaban) => {
+          initialScores[jawaban.jawaban_id] = jawaban.nilai_manual || '';
+        });
+        setScores(initialScores);
+      }
+    } catch (error) {
+      console.error('Error fetching essay data:', error);
+      toast.error('Gagal memuat data essay');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleScoreChange = (jawabanId, value) => {
+    setScores((prev) => ({
+      ...prev,
+      [jawabanId]: value,
+    }));
+  };
+
+  const handleSubmit = async () => {
+    // Validate all scores
+    const invalidScores = Object.entries(scores).filter(([jawabanId, score]) => {
+      if (score === '' || score === null || score === undefined) return true;
+      const num = Number(score);
+      return isNaN(num) || num < 0 || num > 100;
+    });
+
+    if (invalidScores.length > 0) {
+      toast.error('Harap isi semua nilai dengan benar (0-100)');
+      return;
+    }
+
+    setIsSubmitting(true);
+    let successCount = 0;
+    let failCount = 0;
+
+    try {
+      // Loop through each question and submit score
+      for (const question of essayQuestions) {
+        const jawabanId = question.jawaban_id;
+        const nilaiManual = Number(scores[jawabanId]);
+
+        try {
+          await request.put('/hasil-ujian/nilai-manual', {
+            jawaban_id: jawabanId,
+            nilai_manual: nilaiManual,
+          });
+          successCount++;
+        } catch (error) {
+          console.error(`Error submitting score for jawaban ${jawabanId}:`, error);
+          failCount++;
         }
       }
-    } catch {}
-  }, [storageKey]);
 
-  useEffect(() => {
-    try {
-      sessionStorage.setItem(storageKey, JSON.stringify(scores));
-    } catch {}
-  }, [scores, storageKey]);
-
-  const handleTempScoreChange = (n, v) => {
-    setTempScores((s) => ({ ...s, [n]: v }));
-    setSavedFlags((f) => ({ ...f, [n]: false }));
-  };
-
-  const handleSaveScore = (n) => {
-    const val = tempScores[n];
-    const num = Number(val);
-    if (!isNaN(num) && num >= 0 && num <= 100) {
-      setScores((s) => ({ ...s, [n]: num }));
-      setSavedFlags((f) => ({ ...f, [n]: true }));
-      toast.success(`Nilai soal ${n} tersimpan`);
-      setTimeout(() => setSavedFlags((f) => ({ ...f, [n]: false })), 2000);
+      if (failCount === 0) {
+        toast.success('Semua nilai essay berhasil disimpan!');
+        // Redirect back to detail page
+        setTimeout(() => {
+          window.location.href = `/guru/hasil-ujian/list-siswa/detail?mata=${encodeURIComponent(mataPelajaran)}&kelas=${encodeURIComponent(kelas)}&pesertaUjianId=${pesertaUjianId}`;
+        }, 1500);
+      } else {
+        toast.error(`${successCount} nilai berhasil, ${failCount} gagal disimpan`);
+      }
+    } catch (error) {
+      console.error('Error in submit process:', error);
+      toast.error('Terjadi kesalahan saat menyimpan nilai');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  const data = pages[page] || pages[1];
-  const allNumbers = useMemo(() => [...pages[1], ...pages[2]].map(q => q.number), []);
+  // Pagination logic
+  const itemsPerPage = 2;
+  const totalPages = Math.ceil(essayQuestions.length / itemsPerPage);
+  const startIndex = (page - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentQuestions = essayQuestions.slice(startIndex, endIndex);
 
-  const handleSubmit = () => {
-    const missing = allNumbers.filter(n => !(n in scores) || scores[n] === '' || scores[n] === null || scores[n] === undefined);
-    if (missing.length) {
-      toast.error(`Nilai belum lengkap untuk soal: ${missing.join(', ')}`);
-      return;
-    }
-    
-    const invalid = allNumbers.filter(n => {
-      const val = Number(scores[n]);
-      return !Number.isFinite(val) || val < 0 || val > 100;
-    });
-    if (invalid.length) {
-      toast.error(`Nilai tidak valid untuk soal: ${invalid.join(', ')}`);
-      return;
-    }
-
-    const payload = {
-      mataPelajaran,
-      kelas,
-      siswaId,
-      scores
-    };
-    
-    console.log('Data yang akan dikirim ke backend:', payload);
-    toast.success('Nilai essay berhasil disubmit!');
-    
-    try { sessionStorage.removeItem(storageKey); } catch {}
-    
-    // Nanti bisa ditambahkan:
-    // fetch('URL_BACKEND_KAMU/api/submit-nilai', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify(payload)
-    // });
-  };
+  if (isLoading) {
+    return (
+      <GuruLayout>
+        <div className='flex justify-center items-center h-64'>
+          <p className='text-gray-600'>Loading...</p>
+        </div>
+      </GuruLayout>
+    );
+  }
 
   return (
     <GuruLayout>
       <div>
-        {}
+        {/* Breadcrumb */}
         <div className='mb-6 text-sm'>
           <h1 className='text-2xl font-bold text-gray-900 mb-4'>
             <Link href='/guru/hasil-ujian' className='text-gray-600 hover:text-gray-900'>Hasil Ujian</Link>
@@ -181,7 +173,7 @@ export default function BeriNilaiEssayPage() {
               {kelas}
             </Link>
             {' › '}
-            <Link href={`/guru/hasil-ujian/list-siswa/detail?mata=${encodeURIComponent(mataPelajaran)}&kelas=${encodeURIComponent(kelas)}&siswaId=${encodeURIComponent(siswaId)}`} className='text-gray-600 hover:text-gray-900'>
+            <Link href={`/guru/hasil-ujian/list-siswa/detail?mata=${encodeURIComponent(mataPelajaran)}&kelas=${encodeURIComponent(kelas)}&pesertaUjianId=${encodeURIComponent(pesertaUjianId)}`} className='text-gray-600 hover:text-gray-900'>
               Beri Nilai
             </Link>
             {' › '}
@@ -189,46 +181,49 @@ export default function BeriNilaiEssayPage() {
           </h1>
         </div>
 
-        {}
+        {/* Questions */}
         <div className='bg-white rounded-lg border border-gray-200 p-6'>
-          {data.map((q) => (
-            <Question
-              key={q.number}
-              number={q.number}
-              text={q.text}
-              answer={q.answer}
-              score={scores[q.number]}
-              tempScore={tempScores[q.number] ?? scores[q.number] ?? ''}
-              onTempScoreChange={(v) => handleTempScoreChange(q.number, v)}
-              onSave={() => handleSaveScore(q.number)}
-              saved={savedFlags[q.number]}
-            />
-          ))}
+          {currentQuestions.length > 0 ? (
+            currentQuestions.map((question, index) => (
+              <Question
+                key={question.jawaban_id}
+                jawabanId={question.jawaban_id}
+                number={startIndex + index + 1}
+                text={question.soal?.teks_soal || 'Soal tidak tersedia'}
+                answer={question.teks_jawaban}
+                score={scores[question.jawaban_id]}
+                onScoreChange={handleScoreChange}
+              />
+            ))
+          ) : (
+            <p className='text-gray-500 text-center py-8'>Tidak ada soal essay</p>
+          )}
 
-          {}
+          {/* Footer with submit and pagination */}
           <div className='grid grid-cols-3 items-center pt-2'>
             <div>
-              {page === 2 ? (
-                <button onClick={handleSubmit} className='bg-blue-900 hover:bg-blue-800 text-white px-6 py-2 rounded-lg font-semibold'>
-                  Submit nilai
+              {page === totalPages && essayQuestions.length > 0 ? (
+                <button 
+                  onClick={handleSubmit} 
+                  disabled={isSubmitting}
+                  className='bg-blue-900 hover:bg-blue-800 text-white px-6 py-2 rounded-lg font-semibold disabled:bg-gray-400 disabled:cursor-not-allowed'
+                >
+                  {isSubmitting ? 'Menyimpan...' : 'Submit nilai'}
                 </button>
               ) : null}
             </div>
 
-            {}
+            {/* Pagination */}
             <div className='flex items-center justify-center gap-2'>
-              <Link
-                href={`/guru/hasil-ujian/list-siswa/detail/essay?mata=${encodeURIComponent(mataPelajaran)}&kelas=${encodeURIComponent(kelas)}&siswaId=${encodeURIComponent(siswaId)}&page=1`}
-                className={`px-2 py-1 rounded ${page === 1 ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
-              >
-                1
-              </Link>
-              <Link
-                href={`/guru/hasil-ujian/list-siswa/detail/essay?mata=${encodeURIComponent(mataPelajaran)}&kelas=${encodeURIComponent(kelas)}&siswaId=${encodeURIComponent(siswaId)}&page=2`}
-                className={`px-2 py-1 rounded ${page === 2 ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}
-              >
-                2
-              </Link>
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
+                <Link
+                  key={pageNum}
+                  href={`/guru/hasil-ujian/list-siswa/detail/essay?mata=${encodeURIComponent(mataPelajaran)}&kelas=${encodeURIComponent(kelas)}&pesertaUjianId=${encodeURIComponent(pesertaUjianId)}&page=${pageNum}`}
+                  className={`px-3 py-1 rounded ${page === pageNum ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+                >
+                  {pageNum}
+                </Link>
+              ))}
             </div>
 
             <div />
