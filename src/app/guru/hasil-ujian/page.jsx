@@ -20,10 +20,21 @@ export default function HasilUjianPage() {
   const fetchUjian = async () => {
     setIsLoading(true);
     try {
-      const response = await request.get('/ujian');
-      console.log('Fetched ujian data:', response.data.ujians);
-      if (response?.data?.data) {
-        setUjianData(response.data.data);
+      const response = await request.get('/hasil-ujian/completed-ujian');
+      console.log('Fetched ujian data:', response.data);
+
+      if (response?.data?.ujians && Array.isArray(response.data.ujians)) {
+        const processedData = response.data.ujians.map(ujian => ({
+          id: ujian.ujian_id,
+          mataPelajaran: ujian.mata_pelajaran,
+          kelas: `${ujian.tingkat} - ${ujian.jurusan}`,
+          jumlahKelas: ujian.statistics?.total_peserta > 0 ? [...new Set(ujian.peserta_results?.map(p => p.siswa?.kelas).filter(Boolean))].length : 0,
+          totalSiswa: ujian.statistics?.total_peserta || 0,
+          selesai: ujian.statistics?.total_selesai || 0,
+        }));
+
+        console.log('Processed data:', processedData);
+        setUjianData(processedData);
       }
     } catch (error) {
       console.error('Error fetching ujian:', error);
@@ -32,10 +43,7 @@ export default function HasilUjianPage() {
     }
   };
 
-  const filteredData = ujianData.filter(ujian =>
-    ujian.mataPelajaran.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    ujian.kelas.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredData = ujianData.filter(ujian => ujian.mataPelajaran?.toLowerCase().includes(searchQuery.toLowerCase()) || ujian.kelas?.toLowerCase().includes(searchQuery.toLowerCase()));
 
   return (
     <GuruLayout>
