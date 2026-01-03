@@ -36,10 +36,8 @@ export default function AktivitasPage() {
     sortBy: 'terbaru',
   });
 
-  const [currentPage, setCurrentPage] = useState(1);
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
-  const totalPages = 10;
   const [uniqueMapel, setUniqueMapel] = useState([]);
 
   useEffect(() => {
@@ -409,12 +407,12 @@ export default function AktivitasPage() {
           </div>
         )}
 
-        {/* Pagination */}
-        <div className="flex justify-center items-center gap-4 py-6">
-          <button className="text-gray-600 hover:text-gray-900">&lt;</button>
-          <span className="text-gray-600">{currentPage} dari {totalPages}</span>
-          <button className="text-gray-600 hover:text-gray-900">&gt;</button>
-        </div>
+        {/* Results Counter */}
+        {!loading && filteredAndSortedActivities().length > 0 && (
+          <div className="text-center py-4 text-gray-600">
+            Menampilkan {filteredAndSortedActivities().length} dari {activities.length} ujian
+          </div>
+        )}
       </div>
     </AdminLayout>
   );
