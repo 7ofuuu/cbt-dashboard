@@ -11,7 +11,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Upload, Download, AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
-import request from '@/utils/request';
+import axios from 'axios';
+import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 
 export default function BatchImportDialog({ open, onOpenChange, role = 'siswa', onSuccess }) {
@@ -52,8 +53,14 @@ export default function BatchImportDialog({ open, onOpenChange, role = 'siswa', 
           const text = await selectedFile.text();
           const users = parseCSV(text);
 
-          // Get existing usernames from backend
-          const response = await request.get('/users');
+          // Get existing usernames from Laravel backend
+          const token = Cookies.get('token');
+          const response = await axios.get(`${process.env.NEXT_PUBLIC_LARAVEL_API}/users`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
           const existingUsernames = response.data.users?.map(u => u.username.toLowerCase()) || [];
 
           // Check duplicates
@@ -172,13 +179,19 @@ export default function BatchImportDialog({ open, onOpenChange, role = 'siswa', 
         return;
       }
 
-      // Send batch request with progress simulation
+      // Send batch request to Laravel backend with progress simulation
       setUploadProgress(50);
-      const response = await request.post('/users/batch', {
+      const token = Cookies.get('token');
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_LARAVEL_API}/users/batch`, {
         users: users.map(user => ({
           ...user,
           role
         }))
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
       setUploadProgress(100);
 
@@ -199,7 +212,7 @@ export default function BatchImportDialog({ open, onOpenChange, role = 'siswa', 
 
     } catch (error) {
       console.error('Import error:', error);
-      toast.error(error?.response?.data?.error || 'Gagal import pengguna');
+      toast.error(error?.response?.data?.error || error?.response?.data?.message || 'Gagal import pengguna');
       setResult(null);
     } finally {
       setImporting(false);
