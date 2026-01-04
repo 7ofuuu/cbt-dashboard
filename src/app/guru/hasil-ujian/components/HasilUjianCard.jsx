@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 export default function HasilUjianCard({ ujian }) {
   return (
-    <Link href={`/guru/hasil-ujian/list-kelas?mata=${ujian.mataPelajaran}`}>
+    <Link href={`/guru/hasil-ujian/list-kelas?mata=${ujian.mataPelajaran}&ujianId=${ujian.id}`}>
       <div className='bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow cursor-pointer h-full overflow-hidden'>
         {}
         <div className='bg-cyan-500 text-white px-5 py-3 rounded-t-lg'>

@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 
-export default function KelasCard({ kelas }) {
+export default function KelasCard({ kelas, mataPelajaran, ujianId }) {
   return (
-    <Link href={`/guru/hasil-ujian/list-siswa?mata=${encodeURIComponent(kelas.mataPelajaran || 'Matematika')}&kelas=${encodeURIComponent(kelas.nama)}`}>
+    <Link href={`/guru/hasil-ujian/list-siswa?mata=${encodeURIComponent(kelas.mataPelajaran || mataPelajaran || 'Matematika')}&kelas=${encodeURIComponent(kelas.nama)}&ujianId=${ujianId}`}>
     <div className='bg-white rounded-lg border border-gray-200 hover:shadow-md transition-shadow h-full overflow-hidden cursor-pointer'>
       {}
       <div className='bg-cyan-500 text-white px-5 py-3'>
