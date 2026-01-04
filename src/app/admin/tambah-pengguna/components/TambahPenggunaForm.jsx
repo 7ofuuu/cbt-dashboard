@@ -23,7 +23,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { useRouter } from 'next/navigation';
-import request from '@/utils/request';
+import axios from 'axios';
+import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 import { Eye, EyeOff, CheckCircle2, XCircle, AlertCircle, RotateCcw, Upload } from 'lucide-react';
 import BatchImportDialog from './BatchImportDialog';
@@ -89,7 +90,14 @@ export default function TambahPenggunaForm({ role = 'general' }) {
     try {
       console.log('🔍 Checking username availability for:', username);
       setCheckingUsername(true);
-      const response = await request.get(`/users?username=${username}`);
+      const token = Cookies.get('token');
+      
+      const response = await axios.get(`${process.env.NEXT_PUBLIC_LARAVEL_API}/users?username=${username}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
       console.log('✅ Response received:', response.data);
 
       // If users found with this username, it's taken
@@ -161,20 +169,28 @@ export default function TambahPenggunaForm({ role = 'general' }) {
         payload.jurusan = formData.jurusan;
       }
 
-      // Call backend API
-      const response = await request.post('/users', payload);
+      // Call Laravel backend API
+      const token = Cookies.get('token');
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_LARAVEL_API}/users`, payload, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
 
-      toast.success('Pengguna berhasil ditambahkan!');
-      console.log('User created:', response.data);
+      if (response.data.success) {
+        toast.success('Pengguna berhasil ditambahkan!');
+        console.log('User created:', response.data);
 
-      // Reset form after success
-      handleResetForm();
+        // Reset form after success
+        handleResetForm();
+      }
 
     } catch (error) {
       console.error('Error creating user:', error);
       console.error('Error response:', error?.response);
       console.error('Error data:', error?.response?.data);
-      const errorMessage = error?.response?.data?.error || error?.message || 'Gagal menambahkan pengguna';
+      const errorMessage = error?.response?.data?.error || error?.response?.data?.message || error?.message || 'Gagal menambahkan pengguna';
       toast.error(errorMessage);
     } finally {
       setIsLoading(false);

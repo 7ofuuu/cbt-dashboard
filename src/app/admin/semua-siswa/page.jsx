@@ -172,9 +172,9 @@ export default function SemuaPenggunaPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value='all'>Semua Tingkat</SelectItem>
-              <SelectItem value='X'>Kelas X</SelectItem>
-              <SelectItem value='XI'>Kelas XI</SelectItem>
-              <SelectItem value='XII'>Kelas XII</SelectItem>
+              <SelectItem value='X'>Kelas 10</SelectItem>
+              <SelectItem value='XI'>Kelas 11</SelectItem>
+              <SelectItem value='XII  '>Kelas 12</SelectItem>
             </SelectContent>
           </Select>
 
@@ -187,9 +187,9 @@ export default function SemuaPenggunaPage() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value='all'>Semua Jurusan</SelectItem>
-              <SelectItem value='ipa'>IPA</SelectItem>
-              <SelectItem value='ips'>IPS</SelectItem>
-              <SelectItem value='rpl'>RPL</SelectItem>
+              <SelectItem value='IPA'>IPA</SelectItem>
+              <SelectItem value='IPS'>IPS</SelectItem>
+              <SelectItem value='Bahasa'>Bahasa</SelectItem>
             </SelectContent>
           </Select>
 
