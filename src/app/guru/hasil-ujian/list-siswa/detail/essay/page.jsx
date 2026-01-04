@@ -55,21 +55,22 @@ export default function BeriNilaiEssayPage() {
   const fetchEssayData = async () => {
     setIsLoading(true);
     try {
-      const response = await request.get(`/hasil-ujian/peserta/${pesertaUjianId}`);
+      const response = await request.get(`/hasil-ujian/detail/${pesertaUjianId}`);
       console.log('Fetched essay data:', response.data);
       
-      if (response?.data?.hasil?.jawabans && Array.isArray(response.data.hasil.jawabans)) {
+      if (response?.data?.review && Array.isArray(response.data.review)) {
         // Filter only essay questions
-        const essayJawabans = response.data.hasil.jawabans.filter(
-          (jawaban) => jawaban.soal?.tipe_soal === 'ESSAY'
+        const essayQuestions = response.data.review.filter(
+          (item) => item.soal?.tipe_soal === 'ESSAY'
         );
         
-        setEssayQuestions(essayJawabans);
+        console.log('Essay questions:', essayQuestions);
+        setEssayQuestions(essayQuestions);
         
         // Initialize scores with existing nilai_manual
         const initialScores = {};
-        essayJawabans.forEach((jawaban) => {
-          initialScores[jawaban.jawaban_id] = jawaban.nilai_manual || '';
+        essayQuestions.forEach((item) => {
+          initialScores[item.jawaban?.jawaban_id] = item.jawaban?.nilai_manual || '';
         });
         setScores(initialScores);
       }
@@ -107,18 +108,22 @@ export default function BeriNilaiEssayPage() {
 
     try {
       // Loop through each question and submit score
-      for (const question of essayQuestions) {
-        const jawabanId = question.jawaban_id;
+      for (const item of essayQuestions) {
+        const jawabanId = item.jawaban?.jawaban_id;
         const nilaiManual = Number(scores[jawabanId]);
 
+        console.log('Submitting:', { jawaban_id: jawabanId, nilai_manual: nilaiManual });
+
         try {
-          await request.put('/hasil-ujian/nilai-manual', {
+          const response = await request.put('/hasil-ujian/nilai-manual', {
             jawaban_id: jawabanId,
             nilai_manual: nilaiManual,
           });
+          console.log('Success response:', response.data);
           successCount++;
         } catch (error) {
           console.error(`Error submitting score for jawaban ${jawabanId}:`, error);
+          console.error('Error response:', error.response?.data);
           failCount++;
         }
       }
@@ -184,14 +189,14 @@ export default function BeriNilaiEssayPage() {
         {/* Questions */}
         <div className='bg-white rounded-lg border border-gray-200 p-6'>
           {currentQuestions.length > 0 ? (
-            currentQuestions.map((question, index) => (
+            currentQuestions.map((item, index) => (
               <Question
-                key={question.jawaban_id}
-                jawabanId={question.jawaban_id}
+                key={item.jawaban?.jawaban_id}
+                jawabanId={item.jawaban?.jawaban_id}
                 number={startIndex + index + 1}
-                text={question.soal?.teks_soal || 'Soal tidak tersedia'}
-                answer={question.teks_jawaban}
-                score={scores[question.jawaban_id]}
+                text={item.soal?.teks_soal || 'Soal tidak tersedia'}
+                answer={item.jawaban?.teks_jawaban}
+                score={scores[item.jawaban?.jawaban_id]}
                 onScoreChange={handleScoreChange}
               />
             ))

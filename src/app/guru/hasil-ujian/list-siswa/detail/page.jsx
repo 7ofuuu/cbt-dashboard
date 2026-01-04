@@ -25,23 +25,29 @@ export default function DetailNilaiPage() {
   const fetchDetailData = async () => {
     setIsLoading(true);
     try {
-      const response = await request.get(`/hasil-ujian/peserta/${pesertaUjianId}`);
+      const response = await request.get(`/hasil-ujian/detail/${pesertaUjianId}`);
       console.log('Fetched detail data:', response.data);
       
-      if (response?.data?.hasil) {
-        const hasil = response.data.hasil;
+      if (response?.data?.hasil_ujian) {
+        const hasil = response.data.hasil_ujian;
+        const siswa = response.data.siswa;
+        const ujian = response.data.ujian;
+        
         setData({
-          nama: hasil.pesertaUjian?.siswa?.nama_lengkap || 'Unknown',
-          email: hasil.pesertaUjian?.siswa?.email || '-',
-          siswaId: hasil.pesertaUjian?.siswa?.siswa_id,
-          kelas: hasil.pesertaUjian?.siswa?.kelas || '-',
-          mataPelajaran: hasil.pesertaUjian?.ujian?.mata_pelajaran || 'Unknown',
-          tanggalMulai: hasil.pesertaUjian?.ujian?.tanggal_mulai ? new Date(hasil.pesertaUjian.ujian.tanggal_mulai).toLocaleString('id-ID') : '-',
-          tanggalSelesai: hasil.tanggal_submit ? new Date(hasil.tanggal_submit).toLocaleString('id-ID') : '-',
-          statusUjian: hasil.pesertaUjian?.status_ujian || '-',
-          nilaiPilihanGanda: hasil.nilai_akhir || 0,
-          nilaiEssay: hasil.nilai_essay || 'N/A',
-          hasilUjianId: hasil.hasil_ujian_id,
+          nama: siswa?.nama_lengkap || 'Unknown',
+          email: siswa?.email || '-',
+          siswaId: siswa?.siswa_id,
+          kelas: siswa?.kelas || '-',
+          tingkat: siswa?.tingkat || '-',
+          jurusan: siswa?.jurusan || '-',
+          mataPelajaran: ujian?.mata_pelajaran || 'Unknown',
+          namaUjian: ujian?.nama_ujian || '-',
+          tanggalMulai: ujian?.tanggal_mulai ? new Date(ujian.tanggal_mulai).toLocaleString('id-ID') : '-',
+          tanggalSelesai: hasil?.tanggal_submit ? new Date(hasil.tanggal_submit).toLocaleString('id-ID') : '-',
+          statusUjian: 'DINILAI',
+          nilaiAkhir: hasil?.nilai_akhir || 0,
+          hasilUjianId: hasil?.hasil_ujian_id,
+          review: response.data.review || [],
         });
       }
     } catch (error) {
@@ -119,10 +125,18 @@ export default function DetailNilaiPage() {
 
           {/* Form */}
           <div className='grid grid-cols-[220px_1fr] gap-y-4 p-6'>
-            <div className='text-gray-700 text-sm self-center'>Mulai di</div>
+            <div className='text-gray-700 text-sm self-center'>Nama Ujian</div>
             <input
               type='text'
-              defaultValue={data.tanggalMulai}
+              defaultValue={data.namaUjian}
+              readOnly
+              className='w-[720px] ml-auto px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50 text-gray-900'
+            />
+
+            <div className='text-gray-700 text-sm self-center'>Selesai di</div>
+            <input
+              type='text'
+              defaultValue={data.tanggalSelesai}
               readOnly
               className='w-[720px] ml-auto px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50 text-gray-900'
             />
@@ -135,26 +149,12 @@ export default function DetailNilaiPage() {
               className='w-[720px] ml-auto px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50 text-gray-900'
             />
 
-            <div className='text-gray-700 text-sm self-center'>Nilai Pilihan Ganda</div>
+            <div className='text-gray-700 text-sm self-center'>Nilai Akhir</div>
             <input
               type='text'
-              defaultValue={data.nilaiPilihanGanda}
-              className='w-[720px] ml-auto px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900'
-            />
-
-            <div className='text-gray-700 text-sm self-center'>Selesai di</div>
-            <input
-              type='text'
-              defaultValue={data.tanggalSelesai}
+              defaultValue={data.nilaiAkhir}
               readOnly
               className='w-[720px] ml-auto px-3 py-2 border border-gray-300 rounded-lg text-sm bg-gray-50 text-gray-900'
-            />
-
-            <div className='text-gray-700 text-sm self-center'>Nilai Essay</div>
-            <input
-              type='text'
-              defaultValue={data.nilaiEssay}
-              className='w-[720px] ml-auto px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-900'
             />
           </div>
         </div>
@@ -174,3 +174,4 @@ export default function DetailNilaiPage() {
       </div>
     </GuruLayout>
   );
+}

@@ -22,28 +22,46 @@ export default function ListSiswaPage() {
     if (ujianId) {
       fetchSiswaList();
     }
-  }, [ujianId]);
+  }, [ujianId, kelas]);
 
   const fetchSiswaList = async () => {
     setIsLoading(true);
     try {
-      const response = await request.get(`/hasil-ujian/ujian/${ujianId}`);
-      console.log('Fetched hasil ujian:', response.data);
+      // Fetch semua hasil ujian yang completed
+      const response = await request.get('/hasil-ujian/completed-ujian');
+      console.log('Fetched all ujian data:', response.data);
       
-      if (response?.data?.hasil && Array.isArray(response.data.hasil)) {
-        const transformedSiswa = response.data.hasil.map((item) => ({
+      // Filter untuk ujian yang dipilih
+      let selectedUjian = null;
+      if (response?.data?.ujians && Array.isArray(response.data.ujians)) {
+        selectedUjian = response.data.ujians.find(u => u.ujian_id === parseInt(ujianId));
+      }
+      
+      if (selectedUjian && selectedUjian.peserta_results) {
+        // Filter siswa berdasarkan kelas
+        const filteredSiswa = selectedUjian.peserta_results.filter(item => {
+          return item.siswa?.kelas === kelas.split(' - ')[1];
+        });
+        
+        const transformedSiswa = filteredSiswa.map((item) => ({
           id: item.peserta_ujian_id,
-          email: item.pesertaUjian?.siswa?.email || '-',
-          nama: item.pesertaUjian?.siswa?.nama_lengkap || 'Unknown',
+          email: item.siswa?.email || '-',
+          nama: item.siswa?.nama_lengkap || 'Unknown',
           nilai: item.nilai_akhir,
-          kelas: item.pesertaUjian?.siswa?.kelas || '-',
+          kelas: item.siswa?.kelas || '-',
           selesai: item.tanggal_submit ? new Date(item.tanggal_submit).toLocaleDateString('id-ID') : '-',
-          statusUjian: item.pesertaUjian?.status_ujian,
+          statusUjian: item.status_ujian,
         }));
+        
+        console.log('Transformed siswa data:', transformedSiswa);
         setSiswaData(transformedSiswa);
+      } else {
+        console.warn('No data found for ujian:', ujianId);
+        setSiswaData([]);
       }
     } catch (error) {
       console.error('Error fetching siswa list:', error);
+      setSiswaData([]);
     } finally {
       setIsLoading(false);
     }
@@ -87,7 +105,6 @@ export default function ListSiswaPage() {
             <thead className='bg-gray-100 text-gray-700'>
               <tr>
                 <th className='text-left px-4 py-3 w-24'>Foto</th>
-                <th className='text-left px-4 py-3'>Mapel</th>
                 <th className='text-left px-4 py-3'>Nama</th>
                 <th className='text-left px-4 py-3'>Nilai</th>
                 <th className='text-left px-4 py-3'>Kelas</th>
@@ -95,20 +112,33 @@ export default function ListSiswaPage() {
               </tr>
             </thead>
             <tbody>
-              {filtered.map((s) => (
-                <tr key={s.id} className='border-t hover:bg-gray-50 cursor-pointer' onClick={() => window.location.href = `/guru/hasil-ujian/list-siswa/detail?mata=${encodeURIComponent(mataPelajaran)}&kelas=${encodeURIComponent(kelas)}&pesertaUjianId=${s.id}`}>
-                  <td className='px-4 py-3'>
-                    <div className='w-10 h-10 rounded-full overflow-hidden bg-gray-200'>
-                      <Image src='/next.svg' alt={s.nama} width={40} height={40} className='w-full h-full object-cover' />
-                    </div>
+              {isLoading ? (
+                <tr>
+                  <td colSpan='5' className='px-4 py-8 text-center text-gray-500'>
+                    Memuat data siswa...
                   </td>
-                  <td className='px-4 py-3 text-gray-900'>{s.email}</td>
-                  <td className='px-4 py-3 text-gray-900'>{s.nama}</td>
-                  <td className='px-4 py-3 text-gray-900'>{s.nilai === null ? 'Not Reviewed' : s.nilai}</td>
-                  <td className='px-4 py-3 text-gray-900'>{s.kelas}</td>
-                  <td className='px-4 py-3 text-gray-900'>{s.selesai}</td>
                 </tr>
-              ))}
+              ) : filtered.length > 0 ? (
+                filtered.map((s) => (
+                  <tr key={s.id} className='border-t hover:bg-gray-50 cursor-pointer' onClick={() => window.location.href = `/guru/hasil-ujian/list-siswa/detail?mata=${encodeURIComponent(mataPelajaran)}&kelas=${encodeURIComponent(kelas)}&pesertaUjianId=${s.id}`}>
+                    <td className='px-4 py-3'>
+                      <div className='w-10 h-10 rounded-full overflow-hidden bg-gray-200'>
+                        <Image src='/next.svg' alt={s.nama} width={40} height={40} className='w-full h-full object-cover' />
+                      </div>
+                    </td>
+                    <td className='px-4 py-3 text-gray-900'>{s.nama}</td>
+                    <td className='px-4 py-3 text-gray-900'>{s.nilai === null ? 'Not Reviewed' : s.nilai}</td>
+                    <td className='px-4 py-3 text-gray-900'>{s.kelas}</td>
+                    <td className='px-4 py-3 text-gray-900'>{s.selesai}</td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan='5' className='px-4 py-8 text-center text-gray-500'>
+                    Tidak ada data siswa
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
