@@ -33,7 +33,7 @@ export default function BankSoalPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await request.get('/soal/bank');
+      const res = await request.get(`${process.env.NEXT_PUBLIC_LARAVEL_API}/soal/bank`);
       const data = res.data?.bankSoal || [];
       setBankSoal(data);
       setTotalSoal(res.data?.total_soal || 0);
@@ -65,7 +65,7 @@ export default function BankSoalPage() {
   const filteredAndSortedBanks = useMemo(() => {
     let result = [...bankSoal];
 
-    // Filter by search query
+    // Filter search query
     if (query.trim()) {
       const q = query.trim().toLowerCase();
       result = result.filter(
@@ -76,12 +76,12 @@ export default function BankSoalPage() {
       );
     }
 
-    // Filter by tingkat
+    // Filter tingkat
     if (filterTingkat !== 'all') {
       result = result.filter(b => b.tingkat === filterTingkat);
     }
 
-    // Filter by jurusan
+    // Filter jurusan
     if (filterJurusan !== 'all') {
       result = result.filter(b => b.jurusan === filterJurusan);
     }

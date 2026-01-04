@@ -18,8 +18,8 @@ function uid(prefix = "id") {
   return `${prefix}_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function sampleOption() {
-  return { id: uid("opt"), text: "Opsi 1", correct: false };
+function sampleOption(index = 1) {
+  return { id: uid("opt"), text: `Opsi ${index}`, correct: false };
 }
 
 export default function TambahSoalPage() {
@@ -27,7 +27,6 @@ export default function TambahSoalPage() {
   const router = useRouter();
 
   const [title, setTitle] = useState("");
-  const [description, setDescription] = useState("");
   const [tingkat, setTingkat] = useState("");
   const [jurusan, setJurusan] = useState("");
   const [mapel, setMapel] = useState("");
@@ -81,7 +80,6 @@ export default function TambahSoalPage() {
           tingkat: tingkat,
           jurusan: jurusan || null,
           soal_gambar: null,
-          soal_pembahasan: description || null,
         };
 
         if (q.type === 'mcq') {
@@ -111,7 +109,7 @@ export default function TambahSoalPage() {
       id: uid("q"),
       type: "mcq",
       text: "",
-      options: [sampleOption(), sampleOption(), sampleOption(), sampleOption()],
+      options: [sampleOption(1), sampleOption(2), sampleOption(3), sampleOption(4)],
       image: null,
     },
   ]);
@@ -119,7 +117,7 @@ export default function TambahSoalPage() {
   function addQuestion(type = "mcq") {
     setQuestions(qs => [
       ...qs,
-      { id: uid("q"), type, text: "", options: type === "mcq" ? [sampleOption(), sampleOption(), sampleOption(), sampleOption()] : [], image: null },
+      { id: uid("q"), type, text: "", options: type === "mcq" ? [sampleOption(1), sampleOption(2), sampleOption(3), sampleOption(4)] : [], image: null },
     ]);
   }
 
@@ -141,11 +139,19 @@ export default function TambahSoalPage() {
   }
 
   function addOption(qid) {
-    setQuestions(qs => qs.map(q => (q.id === qid ? { ...q, options: [...q.options, sampleOption()] } : q)));
+    setQuestions(qs => qs.map(q => {
+      if (q.id !== qid) return q;
+      const nextIndex = q.options.length + 1;
+      return { ...q, options: [...q.options, sampleOption(nextIndex)] };
+    }));
   }
 
   function removeOption(qid, optId) {
-    setQuestions(qs => qs.map(q => (q.id === qid ? { ...q, options: q.options.filter(o => o.id !== optId) } : q)));
+    setQuestions(qs => qs.map(q => {
+      if (q.id !== qid) return q;
+      const options = q.options.filter(o => o.id !== optId).map((o, i) => ({ ...o, text: `Opsi ${i + 1}` }));
+      return { ...q, options };
+    }));
   }
 
   function setCorrectOption(qid, optId) {
@@ -153,6 +159,61 @@ export default function TambahSoalPage() {
       if (q.id !== qid) return q;
       return { ...q, options: q.options.map(o => ({ ...o, correct: o.id === optId })) };
     }));
+  }
+
+  // Drag & drop for reordering questions
+  const [draggingId, setDraggingId] = useState(null);
+  const [dragOverId, setDragOverId] = useState(null);
+
+  function handleDragStart(e, id) {
+    e.dataTransfer.setData('text/plain', id);
+    e.dataTransfer.effectAllowed = 'move';
+    setDraggingId(id);
+  }
+
+  function handleDragOver(e, id) {
+    e.preventDefault();
+    if (dragOverId !== id) setDragOverId(id);
+  }
+
+  function handleDrop(e, id) {
+    e.preventDefault();
+    e.stopPropagation(); // mencegah drop handlers
+    const draggedId = e.dataTransfer.getData('text/plain');
+    if (!draggedId) return;
+    if (draggedId === id) {
+      setDraggingId(null);
+      setDragOverId(null);
+      return;
+    }
+    setQuestions(qs => {
+      const items = [...qs];
+      const from = items.findIndex(x => x.id === draggedId);
+      const to = items.findIndex(x => x.id === id);
+      if (from === -1 || to === -1) return qs;
+      const [item] = items.splice(from, 1);
+      items.splice(to, 0, item);
+      return items;
+    });
+    setDraggingId(null);
+    setDragOverId(null);
+  }
+
+  function handleDropToEnd(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const draggedId = e.dataTransfer.getData('text/plain');
+    if (!draggedId) return;
+    setQuestions(qs => {
+      const items = [...qs];
+      const from = items.findIndex(x => x.id === draggedId);
+      if (from === -1) return qs;
+      const [item] = items.splice(from, 1);
+      items.push(item);
+      return items;
+    });
+    setDraggingId(null);
+    setDragOverId(null);
   }
 
   return (
@@ -193,24 +254,11 @@ export default function TambahSoalPage() {
             <CardTitle>
               <Input value={title} onChange={e => setTitle(e.target.value)} placeholder="Judul Bank Soal (contoh: Matematika)" className="text-lg font-semibold" />
             </CardTitle>
-            <CardDescription>
-              {/* toolbar placeholder */}
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <span className="px-2 py-1 border rounded">B</span>
-                <span className="px-2 py-1 border rounded">I</span>
-                <span className="px-2 py-1 border rounded">U</span>
-                <span className="px-2 py-1 border rounded">S</span>
-              </div>
-            </CardDescription>
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" className="ml-auto text-sm text-red-600">Hapus Bank Soal</Button>
-            </div>
+
           </CardHeader>
 
           <CardContent>
-            <div className="mb-4">
-              <Textarea placeholder="Deskripsi Bank Soal" value={description} onChange={e => setDescription(e.target.value)} />
-            </div>
+
 
             <div className="flex items-center gap-4">
               <div className="flex gap-2">
@@ -251,13 +299,38 @@ export default function TambahSoalPage() {
           </CardContent>
         </Card>
 
-        <div className="space-y-4">
+        <div
+          className="space-y-4"
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => handleDropToEnd(e)}
+        >
           {questions.map((q, idx) => (
-            <Card key={q.id} className="border-l-4 border-[#0B4B6F]">
+            <div key={`wrap_${q.id}`}>
+              <div
+                className={`h-0 overflow-hidden transition-all duration-150 ${dragOverId === q.id ? 'h-3 bg-[#0B4B6F]/25 rounded my-2' : ''}`}
+                onDragOver={(e) => { e.preventDefault(); setDragOverId(q.id); }}
+                onDrop={(e) => handleDrop(e, q.id)}
+                onDragLeave={() => setDragOverId(null)}
+              />
+
+              <Card
+                key={q.id}
+                className={`border-l-4 border-[#0B4B6F] transition-transform duration-200 ease-in-out transform ${draggingId === q.id ? 'opacity-60 scale-95 shadow-lg' : ''} ${dragOverId === q.id ? 'ring-2 ring-dashed ring-[#0B4B6F]' : ''}`}
+                onDragOver={(e) => handleDragOver(e, q.id)}
+                onDrop={(e) => handleDrop(e, q.id)}
+                onDragLeave={() => setDragOverId(null)}
+              >
               <CardContent>
                 <div className="flex items-start gap-4">
                   <div className="flex flex-col items-center gap-2 pt-1">
-                    <Move className="opacity-40" />
+                    <div
+                      draggable
+                      onDragStart={(e) => handleDragStart(e, q.id)}
+                      onDragEnd={() => { setDraggingId(null); setDragOverId(null); }}
+                      className="cursor-grab"
+                    >
+                      <Move className="opacity-40" />
+                    </div>
                     <div className="text-sm text-muted-foreground">{idx + 1}</div>
                   </div>
 
@@ -265,10 +338,7 @@ export default function TambahSoalPage() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="bg-gray-100 rounded px-3 py-1 text-sm text-muted-foreground">Pertanyaan</div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Image className="w-4 h-4" />
-                          <div className="text-xs text-gray-500">Klik untuk tambahkan gambar</div>
-                        </div>
+                        
                       </div>
 
                       <div className="flex items-center gap-2">
@@ -316,7 +386,13 @@ export default function TambahSoalPage() {
                 </div>
               </CardContent>
             </Card>
+              </div>
           ))}
+          <div
+            className={`h-0 overflow-hidden transition-all duration-150 ${draggingId && !dragOverId ? 'h-3 bg-[#0B4B6F]/25 rounded my-2' : ''}`}
+            onDragOver={(e) => e.preventDefault()}
+            onDrop={(e) => handleDropToEnd(e)}
+          />
         </div>
 
         <div className="fixed bottom-8 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-white px-4 py-2 rounded shadow">
