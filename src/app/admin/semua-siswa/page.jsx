@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { PageHeader } from '@/components/ui/page-header';
+import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from '@/components/ui/pagination';
 import { Plus, Search, Home } from 'lucide-react';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
@@ -17,26 +18,65 @@ import { useRouter } from 'next/navigation';
 export default function SemuaPenggunaPage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [tingkatFilter, setTingkatFilter] = useState('all');
   const [jurusanFilter, setJurusanFilter] = useState('all');
   const [kelasFilter, setKelasFilter] = useState('all');
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pagination, setPagination] = useState({
+    current_page: 1,
+    last_page: 1,
+    per_page: 10,
+    total: 0,
+    from: 0,
+    to: 0,
+  });
+  const itemsPerPage = 10;
+
+  // Debounce search query
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   useEffect(() => {
     fetchUsers();
-  }, []);
+  }, [currentPage, debouncedSearch, tingkatFilter, jurusanFilter, kelasFilter]);
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
       const token = Cookies.get('token');
 
-      console.log('Token:', token);
-      console.log('API URL:', process.env.NEXT_PUBLIC_LARAVEL_API);
+      const params = {
+        page: currentPage,
+        per_page: itemsPerPage,
+      };
+
+      // Add search parameter if not empty
+      if (debouncedSearch) {
+        params.search = debouncedSearch;
+      }
+
+      // Add filter parameters if not 'all'
+      if (tingkatFilter !== 'all') {
+        params.tingkat = tingkatFilter;
+      }
+      if (jurusanFilter !== 'all') {
+        params.jurusan = jurusanFilter;
+      }
+      if (kelasFilter !== 'all') {
+        params.kelas = kelasFilter;
+      }
 
       const response = await axios.get(`${process.env.NEXT_PUBLIC_LARAVEL_API}/users/siswas`, {
+        params,
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -46,6 +86,7 @@ export default function SemuaPenggunaPage() {
 
       if (response.data.success) {
         setUsers(response.data.data);
+        setPagination(response.data.pagination);
       }
     } catch (err) {
       console.error('Error fetching users:', err);
@@ -56,25 +97,39 @@ export default function SemuaPenggunaPage() {
     }
   };
 
-  const filteredUsers = users.filter(user => {
-    const nama = user.profile?.nama_lengkap || '';
-    const matchesSearch = nama.toLowerCase().includes(searchQuery.toLowerCase()) || user.username.toLowerCase().includes(searchQuery.toLowerCase());
+  // Reset to first page when filters change
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+    }
+  }, [debouncedSearch, tingkatFilter, jurusanFilter, kelasFilter]);
 
-    // Filter by tingkat (only for siswa)
-    const matchesTingkat = tingkatFilter === 'all' || (user.profile?.tingkat && user.profile.tingkat === tingkatFilter);
+  // Generate page numbers for pagination
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisiblePages = 5;
+    const totalPages = pagination.last_page;
 
-    // Filter by jurusan (only for siswa)
-    const matchesJurusan = jurusanFilter === 'all' || (user.profile?.jurusan && user.profile.jurusan.toLowerCase() === jurusanFilter.toLowerCase());
+    if (totalPages <= maxVisiblePages) {
+      for (let i = 1; i <= totalPages; i++) {
+        pages.push(i);
+      }
+    } else {
+      if (currentPage <= 3) {
+        pages.push(1, 2, 3, 4, '...', totalPages);
+      } else if (currentPage >= totalPages - 2) {
+        pages.push(1, '...', totalPages - 3, totalPages - 2, totalPages - 1, totalPages);
+      } else {
+        pages.push(1, '...', currentPage - 1, currentPage, currentPage + 1, '...', totalPages);
+      }
+    }
 
-    // Filter by kelas (only for siswa)
-    const matchesKelas = kelasFilter === 'all' || (user.profile?.kelas && user.profile.kelas.includes(kelasFilter));
-
-    return matchesSearch && matchesTingkat && matchesJurusan && matchesKelas;
-  });
+    return pages;
+  };
 
   return (
     <AdminLayout>
-      <Breadcrumb className="mb-4">
+      <Breadcrumb className='mb-4'>
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink href='/admin/dashboard'>
@@ -89,8 +144,8 @@ export default function SemuaPenggunaPage() {
       </Breadcrumb>
       <div className='space-y-6'>
         <PageHeader
-          title="Daftar Siswa"
-          description="Kelola dan lihat semua pengguna dengan role siswa"
+          title='Daftar Siswa'
+          description='Kelola dan lihat semua pengguna dengan role siswa'
         />
 
         {/* Search and Filters */}
@@ -187,7 +242,7 @@ export default function SemuaPenggunaPage() {
                     {error}
                   </TableCell>
                 </TableRow>
-              ) : filteredUsers.length === 0 ? (
+              ) : users.length === 0 ? (
                 <TableRow>
                   <TableCell
                     colSpan={7}
@@ -197,7 +252,7 @@ export default function SemuaPenggunaPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredUsers.map(user => (
+                users.map(user => (
                   <TableRow
                     key={user.id}
                     className='hover:bg-gray-50 cursor-pointer'
@@ -226,6 +281,61 @@ export default function SemuaPenggunaPage() {
             </TableBody>
           </Table>
         </div>
+
+        {/* Pagination */}
+        {pagination.total > 0 && (
+          <div className='flex items-center justify-between'>
+            <p className='text-sm text-gray-700'>
+              Menampilkan <span className='font-medium'>{pagination.from}</span> sampai <span className='font-medium'>{pagination.to}</span> dari <span className='font-medium'>{pagination.total}</span> hasil
+            </p>
+
+            <Pagination>
+              <PaginationContent>
+                <PaginationItem>
+                  <PaginationPrevious
+                    href='#'
+                    onClick={e => {
+                      e.preventDefault();
+                      if (currentPage > 1) setCurrentPage(currentPage - 1);
+                    }}
+                    className={currentPage === 1 ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+
+                {getPageNumbers().map((page, index) => (
+                  <PaginationItem key={index}>
+                    {page === '...' ? (
+                      <PaginationEllipsis />
+                    ) : (
+                      <PaginationLink
+                        href='#'
+                        onClick={e => {
+                          e.preventDefault();
+                          setCurrentPage(page);
+                        }}
+                        isActive={currentPage === page}
+                        className='cursor-pointer'
+                      >
+                        {page}
+                      </PaginationLink>
+                    )}
+                  </PaginationItem>
+                ))}
+
+                <PaginationItem>
+                  <PaginationNext
+                    href='#'
+                    onClick={e => {
+                      e.preventDefault();
+                      if (currentPage < pagination.last_page) setCurrentPage(currentPage + 1);
+                    }}
+                    className={currentPage === pagination.last_page ? 'pointer-events-none opacity-50' : 'cursor-pointer'}
+                  />
+                </PaginationItem>
+              </PaginationContent>
+            </Pagination>
+          </div>
+        )}
       </div>
     </AdminLayout>
   );
