@@ -39,6 +39,7 @@ export default function BeriNilaiEssayPage() {
   const mataPelajaran = params.get('mata') || 'Matematika';
   const kelas = params.get('kelas') || 'XII - IPA 1';
   const pesertaUjianId = params.get('pesertaUjianId');
+  const ujianId = params.get('ujianId');
   const page = Number(params.get('page') || '1');
 
   const [essayQuestions, setEssayQuestions] = useState([]);
@@ -132,7 +133,7 @@ export default function BeriNilaiEssayPage() {
         toast.success('Semua nilai essay berhasil disimpan!');
         // Redirect back to detail page
         setTimeout(() => {
-          window.location.href = `/guru/hasil-ujian/list-siswa/detail?mata=${encodeURIComponent(mataPelajaran)}&kelas=${encodeURIComponent(kelas)}&pesertaUjianId=${pesertaUjianId}`;
+          window.location.href = `/guru/hasil-ujian/list-siswa/detail?mata=${encodeURIComponent(mataPelajaran)}&kelas=${encodeURIComponent(kelas)}&ujianId=${ujianId}&pesertaUjianId=${pesertaUjianId}`;
         }, 1500);
       } else {
         toast.error(`${successCount} nilai berhasil, ${failCount} gagal disimpan`);
@@ -170,15 +171,15 @@ export default function BeriNilaiEssayPage() {
           <h1 className='text-2xl font-bold text-gray-900 mb-4'>
             <Link href='/guru/hasil-ujian' className='text-gray-600 hover:text-gray-900'>Hasil Ujian</Link>
             {' › '}
-            <Link href={`/guru/hasil-ujian/list-kelas?mata=${encodeURIComponent(mataPelajaran)}`} className='text-gray-600 hover:text-gray-900'>
+            <Link href={`/guru/hasil-ujian/list-kelas?mata=${encodeURIComponent(mataPelajaran)}&ujianId=${ujianId}`} className='text-gray-600 hover:text-gray-900'>
               {mataPelajaran}
             </Link>
             {' › '}
-            <Link href={`/guru/hasil-ujian/list-siswa?mata=${encodeURIComponent(mataPelajaran)}&kelas=${encodeURIComponent(kelas)}`} className='text-gray-600 hover:text-gray-900'>
+            <Link href={`/guru/hasil-ujian/list-siswa?mata=${encodeURIComponent(mataPelajaran)}&kelas=${encodeURIComponent(kelas)}&ujianId=${ujianId}`} className='text-gray-600 hover:text-gray-900'>
               {kelas}
             </Link>
             {' › '}
-            <Link href={`/guru/hasil-ujian/list-siswa/detail?mata=${encodeURIComponent(mataPelajaran)}&kelas=${encodeURIComponent(kelas)}&pesertaUjianId=${encodeURIComponent(pesertaUjianId)}`} className='text-gray-600 hover:text-gray-900'>
+            <Link href={`/guru/hasil-ujian/list-siswa/detail?mata=${encodeURIComponent(mataPelajaran)}&kelas=${encodeURIComponent(kelas)}&ujianId=${ujianId}&pesertaUjianId=${encodeURIComponent(pesertaUjianId)}`} className='text-gray-600 hover:text-gray-900'>
               Beri Nilai
             </Link>
             {' › '}
@@ -223,7 +224,7 @@ export default function BeriNilaiEssayPage() {
               {Array.from({ length: totalPages }, (_, i) => i + 1).map((pageNum) => (
                 <Link
                   key={pageNum}
-                  href={`/guru/hasil-ujian/list-siswa/detail/essay?mata=${encodeURIComponent(mataPelajaran)}&kelas=${encodeURIComponent(kelas)}&pesertaUjianId=${encodeURIComponent(pesertaUjianId)}&page=${pageNum}`}
+                  href={`/guru/hasil-ujian/list-siswa/detail/essay?mata=${encodeURIComponent(mataPelajaran)}&kelas=${encodeURIComponent(kelas)}&ujianId=${ujianId}&pesertaUjianId=${encodeURIComponent(pesertaUjianId)}&page=${pageNum}`}
                   className={`px-3 py-1 rounded ${page === pageNum ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
                 >
                   {pageNum}

@@ -12,7 +12,7 @@ export default function ListSiswaPage() {
   const params = useSearchParams();
   const mataPelajaran = params.get('mata') || 'Matematika';
   const kelas = params.get('kelas') || 'XII - IPA 1';
-  const ujianId = params.get('ujianId');
+  const ujianId = params.get('ujianId') || params.get('ujianId');
 
   const [query, setQuery] = useState('');
   const [siswaData, setSiswaData] = useState([]);
@@ -39,8 +39,9 @@ export default function ListSiswaPage() {
       
       if (selectedUjian && selectedUjian.peserta_results) {
         // Filter siswa berdasarkan kelas
+        const kelasFilter = kelas.split(' - ').pop(); // Ambil bagian terakhir setelah ' - '
         const filteredSiswa = selectedUjian.peserta_results.filter(item => {
-          return item.siswa?.kelas === kelas.split(' - ')[1];
+          return item.siswa?.kelas === kelasFilter;
         });
         
         const transformedSiswa = filteredSiswa.map((item) => ({
@@ -81,7 +82,7 @@ export default function ListSiswaPage() {
             Hasil Ujian
           </Link>
           {' › '}
-          <Link href={`/guru/hasil-ujian/list-kelas?mata=${encodeURIComponent(mataPelajaran)}`} className='text-gray-600 hover:text-gray-900'>
+          <Link href={`/guru/hasil-ujian/list-kelas?mata=${encodeURIComponent(mataPelajaran)}&ujianId=${ujianId}`} className='text-gray-600 hover:text-gray-900'>
             {mataPelajaran}
           </Link>
           {' › '}<span>{kelas}</span>
@@ -120,7 +121,7 @@ export default function ListSiswaPage() {
                 </tr>
               ) : filtered.length > 0 ? (
                 filtered.map((s) => (
-                  <tr key={s.id} className='border-t hover:bg-gray-50 cursor-pointer' onClick={() => window.location.href = `/guru/hasil-ujian/list-siswa/detail?mata=${encodeURIComponent(mataPelajaran)}&kelas=${encodeURIComponent(kelas)}&pesertaUjianId=${s.id}`}>
+                  <tr key={s.id} className='border-t hover:bg-gray-50 cursor-pointer' onClick={() => window.location.href = `/guru/hasil-ujian/list-siswa/detail?mata=${encodeURIComponent(mataPelajaran)}&kelas=${encodeURIComponent(kelas)}&ujianId=${ujianId}&pesertaUjianId=${s.id}`}>
                     <td className='px-4 py-3'>
                       <div className='w-10 h-10 rounded-full overflow-hidden bg-gray-200'>
                         <Image src='/next.svg' alt={s.nama} width={40} height={40} className='w-full h-full object-cover' />
