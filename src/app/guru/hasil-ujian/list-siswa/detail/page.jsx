@@ -12,6 +12,7 @@ export default function DetailNilaiPage() {
   const mataPelajaran = params.get('mata') || 'Matematika';
   const kelas = params.get('kelas') || 'XII - IPA 1';
   const pesertaUjianId = params.get('pesertaUjianId');
+  const ujianId = params.get('ujianId');
   
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -83,9 +84,15 @@ export default function DetailNilaiPage() {
         {/* Breadcrumb */}
         <div className='mb-6 text-sm'>
           <h1 className='text-lg font-semibold text-gray-600 mb-4'>
-            <span className='text-gray-400'>...</span>
+            <Link href='/guru/hasil-ujian' className='text-gray-600 hover:text-gray-900'>
+              Hasil Ujian
+            </Link>
             {' › '}
-            <Link href={`/guru/hasil-ujian/list-siswa?mata=${encodeURIComponent(mataPelajaran)}&kelas=${encodeURIComponent(kelas)}`} className='text-gray-600 hover:text-gray-900'>
+            <Link href={`/guru/hasil-ujian/list-kelas?mata=${encodeURIComponent(mataPelajaran)}&ujianId=${ujianId}`} className='text-gray-600 hover:text-gray-900'>
+              {mataPelajaran}
+            </Link>
+            {' › '}
+            <Link href={`/guru/hasil-ujian/list-siswa?mata=${encodeURIComponent(mataPelajaran)}&kelas=${encodeURIComponent(kelas)}&ujianId=${ujianId}`} className='text-gray-600 hover:text-gray-900'>
               {kelas}
             </Link>
             {' › '}
@@ -164,7 +171,7 @@ export default function DetailNilaiPage() {
           <button
             className='bg-blue-900 hover:bg-blue-800 text-white px-6 py-2.5 rounded-lg font-semibold transition'
             onClick={() => {
-              const url = `/guru/hasil-ujian/list-siswa/detail/essay?mata=${encodeURIComponent(mataPelajaran)}&kelas=${encodeURIComponent(kelas)}&pesertaUjianId=${encodeURIComponent(pesertaUjianId)}&page=1`;
+              const url = `/guru/hasil-ujian/list-siswa/detail/essay?mata=${encodeURIComponent(mataPelajaran)}&kelas=${encodeURIComponent(kelas)}&ujianId=${ujianId}&pesertaUjianId=${encodeURIComponent(pesertaUjianId)}&page=1`;
               window.location.href = url;
             }}
           >
