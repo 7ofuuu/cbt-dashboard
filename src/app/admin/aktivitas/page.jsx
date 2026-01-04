@@ -39,35 +39,37 @@ export default function AktivitasPage() {
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uniqueMapel, setUniqueMapel] = useState([]);
+  const [uniqueJenisUjian, setUniqueJenisUjian] = useState([]);
+  const [uniqueTingkat, setUniqueTingkat] = useState([]);
+  const [uniqueJurusan, setUniqueJurusan] = useState([]);
 
   useEffect(() => {
     fetchActivities();
-  }, [filters]);
+  }, []); // Only fetch once on mount
 
   const fetchActivities = async () => {
     try {
       setLoading(true);
-      const params = new URLSearchParams();
-
-      if (filters.jurusan && filters.jurusan !== 'all') {
-        params.append('jurusan', filters.jurusan);
-      }
-      if (filters.tingkat && filters.tingkat !== 'all') {
-        params.append('tingkat', filters.tingkat);
-      }
-      if (filters.status && filters.status !== 'all') {
-        params.append('status', filters.status);
-      }
-
-      const response = await request.get(`/admin/activities?${params.toString()}`);
+      // Fetch all data without backend filters - all filtering done on frontend
+      const response = await request.get(`/admin/activities`);
 
       if (response.data.success) {
         const data = response.data.data;
         setActivities(data);
 
-        // Extract unique mata pelajaran
-        const mapelSet = new Set(data.map(a => a.mata_pelajaran));
+        // Extract unique values for all dynamic filters
+        // Use Set to accumulate values (keep existing + add new ones)
+        const mapelSet = new Set([...uniqueMapel, ...data.map(a => a.mata_pelajaran)]);
         setUniqueMapel(Array.from(mapelSet).sort());
+
+        const jenisUjianSet = new Set([...uniqueJenisUjian, ...data.map(a => a.jenis_ujian)]);
+        setUniqueJenisUjian(Array.from(jenisUjianSet).sort());
+
+        const tingkatSet = new Set([...uniqueTingkat, ...data.map(a => a.tingkat)]);
+        setUniqueTingkat(Array.from(tingkatSet).sort());
+
+        const jurusanSet = new Set([...uniqueJurusan, ...data.map(a => a.jurusan).filter(Boolean)]);
+        setUniqueJurusan(Array.from(jurusanSet).sort());
       }
     } catch (error) {
       console.error('Error fetching activities:', error);
@@ -136,6 +138,34 @@ export default function AktivitasPage() {
     // Mata Pelajaran filter
     if (filters.mataPelajaran !== 'all') {
       result = result.filter(a => a.mata_pelajaran === filters.mataPelajaran);
+    }
+
+    // Jurusan filter
+    if (filters.jurusan !== 'all') {
+      result = result.filter(a => a.jurusan === filters.jurusan);
+    }
+
+    // Tingkat filter
+    if (filters.tingkat !== 'all') {
+      result = result.filter(a => a.tingkat === filters.tingkat);
+    }
+
+    // Status filter - based on exam status
+    if (filters.status !== 'all') {
+      result = result.filter(a => {
+        const now = new Date();
+        const mulai = new Date(a.tanggal_mulai);
+        const selesai = new Date(a.tanggal_selesai);
+        
+        if (filters.status === 'BELUM_MULAI') {
+          return now < mulai;
+        } else if (filters.status === 'SEDANG_BERLANGSUNG') {
+          return now >= mulai && now <= selesai;
+        } else if (filters.status === 'SELESAI') {
+          return now > selesai;
+        }
+        return true;
+      });
     }
 
     // Tanggal filter
@@ -249,9 +279,10 @@ export default function AktivitasPage() {
                 <SelectValue placeholder="Jenis Ujian" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Semua Jenis</SelectItem>
-                <SelectItem value="Ujian Akhir Semester">Ujian Akhir Semester</SelectItem>
-                <SelectItem value="Ujian Tengah Semester">Ujian Tengah Semester</SelectItem>
+                <SelectItem value="all">Semua Jenis Ujian</SelectItem>
+                {uniqueJenisUjian.map(jenis => (
+                  <SelectItem key={jenis} value={jenis}>{jenis}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
@@ -260,7 +291,7 @@ export default function AktivitasPage() {
                 <SelectValue placeholder="Mata Pelajaran" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Semua Mapel</SelectItem>
+                <SelectItem value="all">Semua Mata Pelajaran</SelectItem>
                 {uniqueMapel.map(mapel => (
                   <SelectItem key={mapel} value={mapel}>{mapel}</SelectItem>
                 ))}
@@ -273,9 +304,9 @@ export default function AktivitasPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Tingkat</SelectItem>
-                <SelectItem value="X">Kelas X</SelectItem>
-                <SelectItem value="XI">Kelas XI</SelectItem>
-                <SelectItem value="XII">Kelas XII</SelectItem>
+                {uniqueTingkat.map(tingkat => (
+                  <SelectItem key={tingkat} value={tingkat}>Kelas {tingkat}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
 
@@ -285,9 +316,9 @@ export default function AktivitasPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Jurusan</SelectItem>
-                <SelectItem value="IPA">IPA</SelectItem>
-                <SelectItem value="IPS">IPS</SelectItem>
-                <SelectItem value="Bahasa">Bahasa</SelectItem>
+                {uniqueJurusan.map(jurusan => (
+                  <SelectItem key={jurusan} value={jurusan}>{jurusan}</SelectItem>
+                ))}
               </SelectContent>
             </Select>
           </div>
@@ -299,9 +330,9 @@ export default function AktivitasPage() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Status</SelectItem>
-                <SelectItem value="ON_PROGRESS">On Progress</SelectItem>
-                <SelectItem value="SUBMITTED">Submitted</SelectItem>
-                <SelectItem value="BLOCKED">Blocked</SelectItem>
+                <SelectItem value="BELUM_MULAI">Belum Mulai</SelectItem>
+                <SelectItem value="SEDANG_BERLANGSUNG">Sedang Berlangsung</SelectItem>
+                <SelectItem value="SELESAI">Selesai</SelectItem>
               </SelectContent>
             </Select>
 
