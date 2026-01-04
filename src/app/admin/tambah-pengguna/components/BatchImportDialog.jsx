@@ -104,8 +104,9 @@ export default function BatchImportDialog({ open, onOpenChange, role = 'siswa', 
 
     if (role === 'siswa') {
       csvContent = 'nama,username,password,kelas,tingkat,jurusan\n';
-      csvContent += 'Contoh Siswa 1,siswa001,password123,IPA 01,X,IPA\n';
-      csvContent += 'Contoh Siswa 2,siswa002,password123,IPS 02,XI,IPS\n';
+      csvContent += 'Contoh Siswa 1,siswa001,password123,X-IPA-1,X,IPA\n';
+      csvContent += 'Contoh Siswa 2,siswa002,password123,XI-IPS-2,XI,IPS\n';
+      csvContent += 'Contoh Siswa 3,siswa003,password123,XII-Bahasa-1,XII,Bahasa\n';
     } else if (role === 'guru') {
       csvContent = 'nama,username,password\n';
       csvContent += 'Contoh Guru 1,guru001,password123\n';

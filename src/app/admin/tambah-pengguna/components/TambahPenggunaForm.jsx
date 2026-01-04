@@ -52,6 +52,7 @@ export default function TambahPenggunaForm({ role = 'general' }) {
     jurusan: '',
     tingkat: '',
     kelas: '',
+    nomorKelas: '',
   });
 
   // Password strength calculation
@@ -125,10 +126,31 @@ export default function TambahPenggunaForm({ role = 'general' }) {
   };
 
   const handleSelectChange = (name, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [name]: value,
-    }));
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [name]: value,
+      };
+      
+      // Auto-generate kelas when tingkat, jurusan, or nomorKelas changes (for siswa)
+      if (newData.role === 'siswa' && ['tingkat', 'jurusan', 'nomorKelas'].includes(name)) {
+        if (newData.tingkat && newData.jurusan && newData.nomorKelas) {
+          newData.kelas = `${newData.tingkat}-${newData.jurusan}-${newData.nomorKelas}`;
+        } else {
+          newData.kelas = '';
+        }
+      }
+      
+      // Reset kelas-related fields when role changes
+      if (name === 'role' && value !== 'siswa') {
+        newData.tingkat = '';
+        newData.jurusan = '';
+        newData.kelas = '';
+        newData.nomorKelas = '';
+      }
+      
+      return newData;
+    });
   };
 
   const handleResetForm = () => {
@@ -140,6 +162,7 @@ export default function TambahPenggunaForm({ role = 'general' }) {
       jurusan: '',
       tingkat: '',
       kelas: '',
+      nomorKelas: '',
     });
     setUsernameAvailable(null);
   };
@@ -216,9 +239,6 @@ export default function TambahPenggunaForm({ role = 'general' }) {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <h2 className="text-2xl font-bold text-gray-900">{getPageTitle()}</h2>
-
       <form onSubmit={handleSubmitClick} className="w-full" autoComplete="off" noValidate>
         {/* Row 1: Nama and Username */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -349,23 +369,8 @@ export default function TambahPenggunaForm({ role = 'general' }) {
         {/* Additional fields for Siswa role */}
         {formData.role === 'siswa' && (
           <>
-            {/* Row 3: Jurusan and Tingkat */}
+            {/* Row 3: Tingkat and Jurusan */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-              <div className="space-y-2">
-                <Label htmlFor="jurusan">Jurusan</Label>
-                <Select
-                  value={formData.jurusan}
-                  onValueChange={(value) => handleSelectChange('jurusan', value)}
-                >
-                  <SelectTrigger id="jurusan">
-                    <SelectValue placeholder="Pilih Jurusan *" />
-                  </SelectTrigger>
-                  <SelectContent className="w-full">
-                    <SelectItem value="IPA">IPA</SelectItem>
-                    <SelectItem value="IPS">IPS</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
               <div className="space-y-2">
                 <Label htmlFor="tingkat">Tingkat</Label>
                 <Select
@@ -382,27 +387,61 @@ export default function TambahPenggunaForm({ role = 'general' }) {
                   </SelectContent>
                 </Select>
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="jurusan">Jurusan</Label>
+                <Select
+                  value={formData.jurusan}
+                  onValueChange={(value) => handleSelectChange('jurusan', value)}
+                >
+                  <SelectTrigger id="jurusan">
+                    <SelectValue placeholder="Pilih Jurusan *" />
+                  </SelectTrigger>
+                  <SelectContent className="w-full">
+                    <SelectItem value="IPA">IPA</SelectItem>
+                    <SelectItem value="IPS">IPS</SelectItem>
+                    <SelectItem value="Bahasa">Bahasa</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
-            {/* Row 4: Kelas */}
+            {/* Row 4: Nomor Kelas - generates kelas automatically */}
             <div className="mb-6">
               <div className="space-y-2">
-                <Label htmlFor="kelas">Kelas</Label>
-                <Input
-                  id="kelas"
-                  type="text"
-                  name="kelas"
-                  placeholder="contoh: IPA 01 atau IPS 02 *"
-                  value={formData.kelas}
-                  onChange={handleInputChange}
-                  required
-                  pattern="^(IPA|IPS)\s+(0[1-9]|[1-9][0-9])$"
-                  title="Format: IPA/IPS diikuti spasi dan nomor kelas (contoh: IPA 01, IPS 02)"
-                  className={formData.kelas && !/^(IPA|IPS)\s+(0[1-9]|[1-9][0-9])$/.test(formData.kelas) ? 'border-red-500' : ''}
-                />
-                {formData.kelas && !/^(IPA|IPS)\s+(0[1-9]|[1-9][0-9])$/.test(formData.kelas) && (
-                  <p className="text-xs text-red-500 mt-1">
-                    Format kelas tidak valid. Gunakan format: IPA/IPS diikuti spasi dan nomor (contoh: IPA 01)
+                <Label htmlFor="nomorKelas">Nomor Kelas</Label>
+                <div className="flex gap-4 items-center">
+                  <Select
+                    value={formData.nomorKelas || ''}
+                    onValueChange={(value) => {
+                      setFormData(prev => ({
+                        ...prev,
+                        nomorKelas: value,
+                        kelas: prev.tingkat && prev.jurusan ? `${prev.tingkat}-${prev.jurusan}-${value}` : ''
+                      }));
+                    }}
+                    disabled={!formData.tingkat || !formData.jurusan}
+                  >
+                    <SelectTrigger id="nomorKelas" className="w-32">
+                      <SelectValue placeholder="No. *" />
+                    </SelectTrigger>
+                    <SelectContent className="w-full">
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+                        <SelectItem key={num} value={String(num)}>{num}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <div className="flex-1">
+                    <div className="px-3 py-2 bg-gray-100 rounded-md text-gray-700 font-medium">
+                      {formData.tingkat && formData.jurusan && formData.nomorKelas 
+                        ? `Kelas: ${formData.tingkat}-${formData.jurusan}-${formData.nomorKelas}`
+                        : <span className="text-gray-400">Pilih tingkat, jurusan, dan nomor kelas</span>
+                      }
+                    </div>
+                  </div>
+                </div>
+                {(!formData.tingkat || !formData.jurusan) && (
+                  <p className="text-xs text-yellow-600 mt-1">
+                    Pilih tingkat dan jurusan terlebih dahulu
                   </p>
                 )}
               </div>
