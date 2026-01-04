@@ -38,6 +38,7 @@ export default function UserDetailPage() {
     jurusan: '',
     tingkat: '',
     kelas: '',
+    nomorKelas: '',
   });
 
   useEffect(() => {
@@ -60,14 +61,27 @@ export default function UserDetailPage() {
       if (response.data.success) {
         setUser(response.data.data);
         // Initialize form data
+        const profile = response.data.data.profile;
+        const kelas = profile?.kelas || '';
+        
+        // Parse kelas to extract nomorKelas (format: X-IPA-1)
+        let nomorKelas = '';
+        if (kelas) {
+          const kelasMatch = kelas.match(/^(X|XI|XII)-(IPA|IPS|Bahasa)-(\d+)$/);
+          if (kelasMatch) {
+            nomorKelas = kelasMatch[3];
+          }
+        }
+        
         setFormData({
-          nama_lengkap: response.data.data.profile?.nama_lengkap || '',
+          nama_lengkap: profile?.nama_lengkap || '',
           username: response.data.data.username || '',
           password: '',
           role: response.data.data.role || '',
-          jurusan: response.data.data.profile?.jurusan || '',
-          tingkat: response.data.data.profile?.tingkat || '',
-          kelas: response.data.data.profile?.kelas || '',
+          jurusan: profile?.jurusan || '',
+          tingkat: profile?.tingkat || '',
+          kelas: kelas,
+          nomorKelas: nomorKelas,
         });
       }
     } catch (err) {
@@ -79,10 +93,21 @@ export default function UserDetailPage() {
   };
 
   const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value,
-    }));
+    setFormData(prev => {
+      const newData = {
+        ...prev,
+        [field]: value,
+      };
+      
+      // Auto-generate kelas when tingkat, jurusan, or nomorKelas changes (for siswa)
+      if (newData.role === 'siswa' && ['tingkat', 'jurusan', 'nomorKelas'].includes(field)) {
+        if (newData.tingkat && newData.jurusan && newData.nomorKelas) {
+          newData.kelas = `${newData.tingkat}-${newData.jurusan}-${newData.nomorKelas}`;
+        }
+      }
+      
+      return newData;
+    });
   };
 
   const handleUpdate = async () => {
@@ -329,23 +354,6 @@ export default function UserDetailPage() {
               {/* Siswa specific fields */}
               {formData.role === 'siswa' && (
                 <>
-                  {/* Jurusan */}
-                  <div className='space-y-2'>
-                    <Label
-                      htmlFor='jurusan'
-                      className='text-gray-700'
-                    >
-                      Jurusan
-                    </Label>
-                    <Input
-                      id='jurusan'
-                      type='text'
-                      value={formData.jurusan}
-                      onChange={e => handleInputChange('jurusan', e.target.value)}
-                      className='bg-white border-gray-300'
-                    />
-                  </div>
-
                   {/* Tingkat */}
                   <div className='space-y-2'>
                     <Label
@@ -354,30 +362,74 @@ export default function UserDetailPage() {
                     >
                       Tingkat
                     </Label>
-                    <Input
-                      id='tingkat'
-                      type='text'
+                    <Select
                       value={formData.tingkat}
-                      onChange={e => handleInputChange('tingkat', e.target.value)}
-                      className='bg-white border-gray-300'
-                    />
+                      onValueChange={value => handleInputChange('tingkat', value)}
+                    >
+                      <SelectTrigger className='bg-white border-gray-300'>
+                        <SelectValue placeholder="Pilih Tingkat" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value='X'>X</SelectItem>
+                        <SelectItem value='XI'>XI</SelectItem>
+                        <SelectItem value='XII'>XII</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
 
-                  {/* Kelas */}
-                  <div className='space-y-2 md:col-span-2'>
+                  {/* Jurusan */}
+                  <div className='space-y-2'>
                     <Label
-                      htmlFor='kelas'
+                      htmlFor='jurusan'
                       className='text-gray-700'
                     >
-                      Kelas
+                      Jurusan
                     </Label>
-                    <Input
-                      id='kelas'
-                      type='text'
-                      value={formData.kelas}
-                      onChange={e => handleInputChange('kelas', e.target.value)}
-                      className='bg-white border-gray-300'
-                    />
+                    <Select
+                      value={formData.jurusan}
+                      onValueChange={value => handleInputChange('jurusan', value)}
+                    >
+                      <SelectTrigger className='bg-white border-gray-300'>
+                        <SelectValue placeholder="Pilih Jurusan" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value='IPA'>IPA</SelectItem>
+                        <SelectItem value='IPS'>IPS</SelectItem>
+                        <SelectItem value='Bahasa'>Bahasa</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Nomor Kelas */}
+                  <div className='space-y-2'>
+                    <Label
+                      htmlFor='nomorKelas'
+                      className='text-gray-700'
+                    >
+                      Nomor Kelas
+                    </Label>
+                    <Select
+                      value={formData.nomorKelas}
+                      onValueChange={value => handleInputChange('nomorKelas', value)}
+                      disabled={!formData.tingkat || !formData.jurusan}
+                    >
+                      <SelectTrigger className='bg-white border-gray-300'>
+                        <SelectValue placeholder="Pilih Nomor" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+                          <SelectItem key={num} value={String(num)}>{num}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Kelas (Display Only) */}
+                  <div className='space-y-2'>
+                    <Label className='text-gray-700'>Kelas</Label>
+                    <div className='px-3 py-2 bg-gray-100 border border-gray-300 rounded-md text-gray-700 font-medium'>
+                      {formData.kelas || <span className='text-gray-400'>Pilih tingkat, jurusan, dan nomor</span>}
+                    </div>
                   </div>
                 </>
               )}
