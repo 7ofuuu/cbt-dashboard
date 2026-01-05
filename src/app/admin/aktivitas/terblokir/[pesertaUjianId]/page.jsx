@@ -2,15 +2,17 @@
 
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import Image from 'next/image';
 import AdminLayout from '../../../adminLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
-import { Home, AlertTriangle, Shield, Key } from 'lucide-react';
+import { PageHeader } from '@/components/ui/page-header';
+import { Home, AlertTriangle, Shield, Key, User, BookOpen, GraduationCap, Clock, CheckCircle2, XCircle, Copy } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
@@ -18,10 +20,10 @@ import { use } from 'react';
 
 export default function TerblokirPage({ params }) {
   useAuth(['admin']);
-  
+
   const router = useRouter();
   const { pesertaUjianId } = use(params);
-  
+
   const [pesertaData, setPesertaData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [blockReason, setBlockReason] = useState('');
@@ -40,7 +42,7 @@ export default function TerblokirPage({ params }) {
     try {
       setLoading(true);
       const response = await request.get(`/admin/activities/participant/${pesertaUjianId}`);
-      
+
       if (response.data.success) {
         const data = response.data.data;
         setPesertaData(data);
@@ -121,11 +123,48 @@ export default function TerblokirPage({ params }) {
     }
   };
 
+  const copyToClipboard = (text) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Kode berhasil disalin');
+  };
+
+  // Helper function to convert tingkat from Roman to number
+  const convertTingkat = (tingkat) => {
+    const romanToNumber = {
+      'X': '10',
+      'XI': '11',
+      'XII': '12'
+    };
+    return romanToNumber[tingkat] || tingkat;
+  };
+
+  // Helper function to format kelas display
+  const formatKelas = (kelas, jurusan) => {
+    if (!kelas) return '-';
+
+    // Handle new format: "IPA 01" -> "IPA 1"
+    let match = kelas.match(/^(IPA|IPS)\s+0?(\d+)$/);
+    if (match) {
+      return `${match[1]} ${match[2]}`;
+    }
+
+    // Handle old format: "X-1" -> "IPA 1" (using jurusan from separate column)
+    match = kelas.match(/^[XVI]+- ?(\d+)$/);
+    if (match && jurusan) {
+      return `${jurusan} ${match[1]}`;
+    }
+
+    return kelas;
+  };
+
   if (loading) {
     return (
       <AdminLayout>
-        <div className="text-center py-12">
-          <p className="text-lg text-gray-500">Memuat data...</p>
+        <div className="flex items-center justify-center min-h-[400px]">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Memuat data...</p>
+          </div>
         </div>
       </AdminLayout>
     );
@@ -135,10 +174,11 @@ export default function TerblokirPage({ params }) {
     return (
       <AdminLayout>
         <div className="text-center py-12">
-          <p className="text-lg text-gray-500">Data tidak ditemukan</p>
-          <Button 
-            onClick={() => router.back()} 
-            className="mt-4"
+          <XCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
+          <p className="text-lg text-gray-500 mb-4">Data tidak ditemukan</p>
+          <Button
+            onClick={() => router.back()}
+            variant="outline"
           >
             Kembali
           </Button>
@@ -149,7 +189,7 @@ export default function TerblokirPage({ params }) {
 
   return (
     <AdminLayout>
-      <Breadcrumb className="mb-4">
+      <Breadcrumb className="mb-6">
         <BreadcrumbList>
           <BreadcrumbItem>
             <BreadcrumbLink href='/admin/dashboard'>
@@ -162,62 +202,73 @@ export default function TerblokirPage({ params }) {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink onClick={() => router.back()}>Detail</BreadcrumbLink>
+            <BreadcrumbLink onClick={() => router.back()} className="cursor-pointer">Detail</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>Terblokir</BreadcrumbPage>
+            <BreadcrumbPage>Manajemen Blokir</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-semibold text-gray-900">
-            Manajemen Peserta Terblokir
-          </h2>
-          <Badge variant={pesertaData.is_blocked ? "destructive" : "default"} className="text-sm">
-            {pesertaData.is_blocked ? (
-              <>
-                <Shield className="w-4 h-4 mr-1" />
-                Terblokir
-              </>
-            ) : (
-              'Aktif'
-            )}
-          </Badge>
-        </div>
+        <PageHeader
+          title="Manajemen Peserta Terblokir"
+          description="Kelola status blokir dan kode unlock untuk peserta ujian"
+        />
 
-        {/* Student Info Card */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-lg">Informasi Peserta</CardTitle>
+        {/* Student Info Card - Enhanced */}
+        <Card className="border-2">
+          <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
+            <CardTitle className="text-xl flex items-center">
+              <User className="w-5 h-5 mr-2 text-blue-600" />
+              Informasi Peserta
+            </CardTitle>
+            <CardDescription>Detail lengkap peserta ujian</CardDescription>
           </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-600">Nama</p>
-                <p className="font-semibold text-gray-900">{pesertaData.nama}</p>
+          <CardContent className="pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="space-y-1">
+                <div className="flex items-center text-sm text-gray-500 mb-1">
+                  <User className="w-4 h-4 mr-1" />
+                  Nama Lengkap
+                </div>
+                <p className="text-lg font-semibold text-gray-900">{pesertaData.nama}</p>
               </div>
-              <div>
-                <p className="text-sm text-gray-600">Kelas</p>
-                <p className="font-semibold text-gray-900">{pesertaData.tingkat} {pesertaData.kelas}</p>
+
+              <div className="space-y-1">
+                <div className="flex items-center text-sm text-gray-500 mb-1">
+                  <GraduationCap className="w-4 h-4 mr-1" />
+                  Kelas
+                </div>
+                <p className="text-lg font-semibold text-gray-900">
+                  Tingkat {convertTingkat(pesertaData.tingkat)} - {formatKelas(pesertaData.kelas, pesertaData.jurusan)}
+                </p>
               </div>
-              <div>
-                <p className="text-sm text-gray-600">Jurusan</p>
-                <p className="font-semibold text-gray-900">{pesertaData.jurusan}</p>
+
+              <div className="space-y-1">
+                <div className="flex items-center text-sm text-gray-500 mb-1">
+                  <BookOpen className="w-4 h-4 mr-1" />
+                  Mata Pelajaran
+                </div>
+                <p className="text-lg font-semibold text-gray-900">{pesertaData.mata_pelajaran}</p>
               </div>
-              <div>
-                <p className="text-sm text-gray-600">Ujian</p>
+            </div>
+
+            <Separator className="my-4" />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="space-y-1">
+                <div className="flex items-center text-sm text-gray-500 mb-1">
+                  <Clock className="w-4 h-4 mr-1" />
+                  Ujian
+                </div>
                 <p className="font-semibold text-gray-900">{pesertaData.nama_ujian}</p>
               </div>
-              <div>
-                <p className="text-sm text-gray-600">Mata Pelajaran</p>
-                <p className="font-semibold text-gray-900">{pesertaData.mata_pelajaran}</p>
-              </div>
-              <div>
-                <p className="text-sm text-gray-600">Status</p>
-                <Badge variant={pesertaData.is_blocked ? "destructive" : "default"}>
+
+              <div className="space-y-1">
+                <p className="text-sm text-gray-500 mb-1">Status Ujian</p>
+                <Badge variant={pesertaData.is_blocked ? "destructive" : "default"} className="text-sm">
                   {pesertaData.status}
                 </Badge>
               </div>
@@ -225,27 +276,40 @@ export default function TerblokirPage({ params }) {
           </CardContent>
         </Card>
 
-        {/* Block Form */}
+        {/* Block/Unblock Section */}
         {!pesertaData.is_blocked ? (
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg flex items-center">
-                <AlertTriangle className="w-5 h-5 mr-2 text-red-600" />
+          <Card className="border-2 border-orange-200">
+            <CardHeader className="bg-gradient-to-r from-orange-50 to-red-50">
+              <CardTitle className="text-xl flex items-center text-orange-900">
+                <AlertTriangle className="w-5 h-5 mr-2" />
                 Blokir Peserta
               </CardTitle>
+              <CardDescription>
+                Blokir peserta jika terdeteksi melakukan pelanggaran
+              </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="pt-6 space-y-4">
+              <Alert className="bg-yellow-50 border-yellow-200">
+                <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                <AlertDescription className="text-yellow-800">
+                  Peserta yang diblokir tidak dapat melanjutkan ujian sampai di-unblock oleh admin
+                </AlertDescription>
+              </Alert>
+
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Keterangan Pelanggaran *
+                  Keterangan Pelanggaran <span className="text-red-500">*</span>
                 </label>
                 <Textarea
-                  placeholder="Masukkan alasan pemblokiran (contoh: Keluar dari aplikasi tanpa izin)"
+                  placeholder="Contoh: Keluar dari aplikasi tanpa izin, membuka tab lain, dll."
                   value={blockReason}
                   onChange={(e) => setBlockReason(e.target.value)}
                   rows={4}
                   className="w-full"
                 />
+                <p className="text-xs text-gray-500 mt-1">
+                  Jelaskan alasan pemblokiran secara detail
+                </p>
               </div>
 
               <Button
@@ -254,6 +318,7 @@ export default function TerblokirPage({ params }) {
                 className="w-full bg-red-600 hover:bg-red-700"
                 size="lg"
               >
+                <Shield className="w-4 h-4 mr-2" />
                 {isBlocking ? 'Memblokir...' : 'Blokir Peserta'}
               </Button>
             </CardContent>
@@ -261,84 +326,101 @@ export default function TerblokirPage({ params }) {
         ) : (
           <>
             {/* Block Reason Card */}
-            <Card className="border-red-200 bg-red-50">
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center text-red-800">
+            <Card className="border-2 border-red-200">
+              <CardHeader className="bg-gradient-to-r from-red-50 to-orange-50">
+                <CardTitle className="text-xl flex items-center text-red-900">
                   <AlertTriangle className="w-5 h-5 mr-2" />
                   Alasan Pemblokiran
                 </CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className="text-gray-700">{pesertaData.block_reason || 'Tidak ada keterangan'}</p>
+              <CardContent className="pt-6">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <p className="text-gray-800 leading-relaxed">
+                    {pesertaData.block_reason || 'Tidak ada keterangan'}
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
             {/* Unlock Code Card */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg flex items-center">
-                  <Key className="w-5 h-5 mr-2 text-blue-600" />
+            <Card className="border-2 border-green-200">
+              <CardHeader className="bg-gradient-to-r from-green-50 to-emerald-50">
+                <CardTitle className="text-xl flex items-center text-green-900">
+                  <Key className="w-5 h-5 mr-2" />
                   Kode Unlock
                 </CardTitle>
+                <CardDescription>
+                  Generate dan kelola kode unlock untuk membuka blokir peserta
+                </CardDescription>
               </CardHeader>
-              <CardContent className="space-y-4">{pesertaData.unlock_code && (
-                  <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
-                    <p className="text-sm text-blue-800 mb-2">Kode saat ini:</p>
-                    <p className="text-3xl font-bold text-blue-900 tracking-widest text-center">
-                      {pesertaData.unlock_code}
+              <CardContent className="pt-6 space-y-6">
+                {pesertaData.unlock_code && (
+                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6">
+                    <p className="text-sm text-blue-800 font-medium mb-3 text-center">
+                      Kode Unlock Saat Ini
+                    </p>
+                    <div className="flex items-center justify-center gap-3">
+                      <p className="text-4xl font-bold text-blue-900 tracking-[0.5em] font-mono">
+                        {pesertaData.unlock_code}
+                      </p>
+                      <Button
+                        onClick={() => copyToClipboard(pesertaData.unlock_code)}
+                        variant="ghost"
+                        size="sm"
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-100"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                    </div>
+                    <p className="text-xs text-blue-700 mt-3 text-center">
+                      Berikan kode ini kepada siswa untuk membuka blokir
                     </p>
                   </div>
                 )}
-                
+
+                <Alert className="bg-blue-50 border-blue-200">
+                  <Key className="h-4 w-4 text-blue-600" />
+                  <AlertDescription className="text-blue-800">
+                    Kode unlock terdiri dari 5 karakter alfanumerik. Siswa akan memasukkan kode ini untuk melanjutkan ujian.
+                  </AlertDescription>
+                </Alert>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Kode Unlock (5 Karakter)
+                    Masukkan atau Generate Kode Baru
                   </label>
                   <div className="flex gap-2">
                     <Input
-                      placeholder="Contoh: AB12C"
+                      placeholder="AB12C"
                       value={unlockCode}
                       onChange={(e) => setUnlockCode(e.target.value.toUpperCase())}
                       maxLength={5}
-                      className="flex-1 text-center text-2xl font-bold tracking-widest"
+                      className="flex-1 text-center text-2xl font-bold tracking-widest font-mono"
                     />
                     <Button
                       onClick={handleGenerateCode}
                       disabled={isGenerating}
-                      className="bg-blue-600 hover:bg-blue-700 whitespace-nowrap"
+                      className="bg-blue-600 hover:bg-blue-700 whitespace-nowrap px-6"
                     >
-                      {isGenerating ? 'Generating...' : 'Generate Code'}
+                      <Key className="w-4 h-4 mr-2" />
+                      {isGenerating ? 'Generating...' : 'Generate'}
                     </Button>
                   </div>
-                  {unlockCode && (
-                    <p className="text-xs text-gray-500 mt-2">
-                      Kode ini akan digunakan siswa untuk membuka blokir
-                    </p>
-                  )}
                 </div>
 
                 <Button
                   onClick={handleUnblock}
-                  disabled={isUnblocking || !unlockCode.trim()}
+                  disabled={isUnblocking || !unlockCode.trim() || unlockCode.length !== 5}
                   className="w-full bg-green-600 hover:bg-green-700"
                   size="lg"
                 >
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
                   {isUnblocking ? 'Membuka blokir...' : 'Unblock Peserta'}
                 </Button>
               </CardContent>
             </Card>
           </>
         )}
-
-        {/* Back Button */}
-        <Button
-          onClick={() => router.back()}
-          variant="outline"
-          className="w-full"
-          size="lg"
-        >
-          Kembali
-        </Button>
       </div>
     </AdminLayout>
   );

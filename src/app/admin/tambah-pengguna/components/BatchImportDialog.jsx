@@ -11,7 +11,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { Upload, Download, AlertCircle, CheckCircle2, XCircle } from 'lucide-react';
-import request from '@/utils/request';
+import axios from 'axios';
+import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 
 export default function BatchImportDialog({ open, onOpenChange, role = 'siswa', onSuccess }) {
@@ -30,12 +31,12 @@ export default function BatchImportDialog({ open, onOpenChange, role = 'siswa', 
         'application/vnd.ms-excel',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
       ];
-      
+
       if (validTypes.includes(selectedFile.type) || selectedFile.name.endsWith('.csv')) {
         setFile(selectedFile);
         setResult(null);
         setUploadProgress(0);
-        
+
         // Start progress simulation
         const progressInterval = setInterval(() => {
           setUploadProgress(prev => {
@@ -46,21 +47,27 @@ export default function BatchImportDialog({ open, onOpenChange, role = 'siswa', 
             return prev + 10;
           });
         }, 100);
-        
+
         // Check for duplicates
         try {
           const text = await selectedFile.text();
           const users = parseCSV(text);
-          
-          // Get existing usernames from backend
-          const response = await request.get('/users');
+
+          // Get existing usernames from Laravel backend
+          const token = Cookies.get('token');
+          const response = await axios.get(`${process.env.NEXT_PUBLIC_LARAVEL_API}/users`, {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          });
           const existingUsernames = response.data.users?.map(u => u.username.toLowerCase()) || [];
-          
+
           // Check duplicates
-          const duplicates = users.filter(user => 
+          const duplicates = users.filter(user =>
             existingUsernames.includes(user.username?.toLowerCase())
           );
-          
+
           if (duplicates.length > 0) {
             setDuplicatePreview({
               total: users.length,
@@ -73,7 +80,7 @@ export default function BatchImportDialog({ open, onOpenChange, role = 'siswa', 
         } catch (error) {
           console.error('Error checking duplicates:', error);
         }
-        
+
         clearInterval(progressInterval);
         setUploadProgress(100);
       } else {
@@ -82,13 +89,24 @@ export default function BatchImportDialog({ open, onOpenChange, role = 'siswa', 
     }
   };
 
+  const handleRemoveFile = () => {
+    setFile(null);
+    setResult(null);
+    setDuplicatePreview(null);
+    setUploadProgress(0);
+    // Reset file input
+    const fileInput = document.querySelector('input[type="file"]');
+    if (fileInput) fileInput.value = '';
+  };
+
   const downloadTemplate = () => {
     let csvContent = '';
-    
+
     if (role === 'siswa') {
       csvContent = 'nama,username,password,kelas,tingkat,jurusan\n';
-      csvContent += 'Contoh Siswa 1,siswa001,password123,A,12,IPA\n';
-      csvContent += 'Contoh Siswa 2,siswa002,password123,B,12,IPS\n';
+      csvContent += 'Contoh Siswa 1,siswa001,password123,X-IPA-1,X,IPA\n';
+      csvContent += 'Contoh Siswa 2,siswa002,password123,XI-IPS-2,XI,IPS\n';
+      csvContent += 'Contoh Siswa 3,siswa003,password123,XII-Bahasa-1,XII,Bahasa\n';
     } else if (role === 'guru') {
       csvContent = 'nama,username,password\n';
       csvContent += 'Contoh Guru 1,guru001,password123\n';
@@ -148,11 +166,11 @@ export default function BatchImportDialog({ open, onOpenChange, role = 'siswa', 
       }
 
       // Validate required fields based on role
-      const requiredFields = role === 'siswa' 
+      const requiredFields = role === 'siswa'
         ? ['nama', 'username', 'password', 'kelas', 'tingkat', 'jurusan']
         : ['nama', 'username', 'password'];
 
-      const invalidUsers = users.filter(user => 
+      const invalidUsers = users.filter(user =>
         !requiredFields.every(field => user[field])
       );
 
@@ -162,18 +180,24 @@ export default function BatchImportDialog({ open, onOpenChange, role = 'siswa', 
         return;
       }
 
-      // Send batch request with progress simulation
+      // Send batch request to Laravel backend with progress simulation
       setUploadProgress(50);
-      const response = await request.post('/users/batch', {
+      const token = Cookies.get('token');
+      const response = await axios.post(`${process.env.NEXT_PUBLIC_LARAVEL_API}/users/batch`, {
         users: users.map(user => ({
           ...user,
           role
         }))
+      }, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
       });
       setUploadProgress(100);
 
       const { success, failed, total } = response.data;
-      
+
       setResult({
         success: success || 0,
         failed: failed || 0,
@@ -189,7 +213,7 @@ export default function BatchImportDialog({ open, onOpenChange, role = 'siswa', 
 
     } catch (error) {
       console.error('Import error:', error);
-      toast.error(error?.response?.data?.error || 'Gagal import pengguna');
+      toast.error(error?.response?.data?.error || error?.response?.data?.message || 'Gagal import pengguna');
       setResult(null);
     } finally {
       setImporting(false);
@@ -255,10 +279,22 @@ export default function BatchImportDialog({ open, onOpenChange, role = 'siswa', 
                   className="text-sm text-gray-600 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-medium file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
                 />
                 {file && (
-                  <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
-                    <CheckCircle2 className="h-3 w-3" />
-                    {file.name}
-                  </p>
+                  <div className="mt-2 flex items-center justify-between bg-gray-100 rounded px-3 py-2">
+                    <p className="text-xs text-gray-700 flex items-center gap-1">
+                      <CheckCircle2 className="h-3 w-3 text-green-600" />
+                      {file.name}
+                    </p>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={handleRemoveFile}
+                      className="h-6 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                    >
+                      <XCircle className="h-3 w-3 mr-1" />
+                      Hapus
+                    </Button>
+                  </div>
                 )}
               </div>
             </div>
@@ -272,7 +308,7 @@ export default function BatchImportDialog({ open, onOpenChange, role = 'siswa', 
                 <span>{uploadProgress}%</span>
               </div>
               <div className="w-full bg-gray-200 rounded-full h-2 overflow-hidden">
-                <div 
+                <div
                   className="bg-blue-600 h-2 transition-all duration-300 ease-out"
                   style={{ width: `${uploadProgress}%` }}
                 />
@@ -290,7 +326,7 @@ export default function BatchImportDialog({ open, onOpenChange, role = 'siswa', 
                   <p className="text-xs text-yellow-700 mt-1">
                     Ditemukan <span className="font-semibold">{duplicatePreview.duplicates}</span> username yang sudah terdaftar dari total <span className="font-semibold">{duplicatePreview.total}</span> pengguna
                   </p>
-                  
+
                   {/* Toggle detail button */}
                   <button
                     type="button"
@@ -299,7 +335,7 @@ export default function BatchImportDialog({ open, onOpenChange, role = 'siswa', 
                   >
                     {showPreview ? 'Sembunyikan detail' : 'Lihat detail'}
                   </button>
-                  
+
                   {/* Detail list */}
                   {showPreview && (
                     <div className="mt-3 bg-white rounded p-2 border border-yellow-200">
@@ -317,7 +353,7 @@ export default function BatchImportDialog({ open, onOpenChange, role = 'siswa', 
                       </ul>
                     </div>
                   )}
-                  
+
                   <p className="text-xs text-yellow-700 mt-3">
                     ⚠️ Username duplikat akan <span className="font-semibold">gagal ditambahkan</span> saat import.
                   </p>
@@ -328,9 +364,8 @@ export default function BatchImportDialog({ open, onOpenChange, role = 'siswa', 
 
           {/* Result */}
           {result && (
-            <div className={`border rounded-lg p-4 ${
-              result.failed === 0 ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'
-            }`}>
+            <div className={`border rounded-lg p-4 ${result.failed === 0 ? 'bg-green-50 border-green-200' : 'bg-yellow-50 border-yellow-200'
+              }`}>
               <div className="flex items-start gap-3">
                 {result.failed === 0 ? (
                   <CheckCircle2 className="h-5 w-5 text-green-600 mt-0.5" />
@@ -370,6 +405,7 @@ export default function BatchImportDialog({ open, onOpenChange, role = 'siswa', 
               <li>Password minimal 6 karakter</li>
               {role === 'siswa' && (
                 <>
+                  <li>Format kelas: IPA/IPS diikuti spasi dan nomor (contoh: IPA 01)</li>
                   <li>Jurusan: IPA atau IPS</li>
                   <li>Tingkat: X, XI, atau XII</li>
                 </>
@@ -382,8 +418,8 @@ export default function BatchImportDialog({ open, onOpenChange, role = 'siswa', 
           <Button variant="outline" onClick={handleClose} disabled={importing}>
             Tutup
           </Button>
-          <Button 
-            onClick={handleImport} 
+          <Button
+            onClick={handleImport}
             disabled={!file || importing}
             className="bg-blue-600 hover:bg-blue-700"
           >

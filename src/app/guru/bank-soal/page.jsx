@@ -7,7 +7,9 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Search, Plus, RefreshCw, Eye, BookOpen, FileText, ListChecks } from 'lucide-react';
+import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
+import { PageHeader } from '@/components/ui/page-header';
+import { Search, Plus, RefreshCw, Eye, BookOpen, FileText, ListChecks, Home } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import request from '@/utils/request';
@@ -31,7 +33,7 @@ export default function BankSoalPage() {
     setLoading(true);
     setError(null);
     try {
-      const res = await request.get('/soal/bank');
+      const res = await request.get(`${process.env.NEXT_PUBLIC_LARAVEL_API}/soal/bank`);
       const data = res.data?.bankSoal || [];
       setBankSoal(data);
       setTotalSoal(res.data?.total_soal || 0);
@@ -63,23 +65,23 @@ export default function BankSoalPage() {
   const filteredAndSortedBanks = useMemo(() => {
     let result = [...bankSoal];
 
-    // Filter by search query
+    // Filter search query
     if (query.trim()) {
       const q = query.trim().toLowerCase();
       result = result.filter(
-        b => 
-          b.mata_pelajaran.toLowerCase().includes(q) || 
+        b =>
+          b.mata_pelajaran.toLowerCase().includes(q) ||
           b.tingkat.toLowerCase().includes(q) ||
           (b.jurusan && b.jurusan.toLowerCase().includes(q))
       );
     }
 
-    // Filter by tingkat
+    // Filter tingkat
     if (filterTingkat !== 'all') {
       result = result.filter(b => b.tingkat === filterTingkat);
     }
 
-    // Filter by jurusan
+    // Filter jurusan
     if (filterJurusan !== 'all') {
       result = result.filter(b => b.jurusan === filterJurusan);
     }
@@ -122,17 +124,32 @@ export default function BankSoalPage() {
 
   return (
     <GuruLayout>
+      <Breadcrumb className="mb-6">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href='/guru/dashboard'>
+              <Home className='w-4 h-4' />
+            </BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbPage>Bank Soal</BreadcrumbPage>
+          </BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumb>
+
       <div className='space-y-6'>
-        {/* Header */}
-        <div className='flex items-center justify-between'>
-          <h2 className='text-2xl font-bold'>Bank Soal</h2>
+        <PageHeader
+          title="Bank Soal"
+          description="Kelola dan lihat semua bank soal yang tersedia"
+        >
           <div className='flex items-center gap-3'>
             <Link href='/guru/tambah-soal'>
               <Button className='bg-[#03356C] hover:bg-[#02509E] text-white flex items-center gap-2'>
                 <Plus className='w-4 h-4' /> Tambah Bank Soal
               </Button>
             </Link>
-            <Button 
+            <Button
               onClick={fetchBankSoal}
               variant="outline"
               className="flex items-center gap-2"
@@ -140,7 +157,7 @@ export default function BankSoalPage() {
               <RefreshCw className='w-4 h-4' /> Segarkan
             </Button>
           </div>
-        </div>
+        </PageHeader>
 
         {/* Statistik Cards */}
         <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4'>
@@ -197,11 +214,11 @@ export default function BankSoalPage() {
         <div className='flex flex-col sm:flex-row items-center gap-4'>
           <div className='flex-1 w-full'>
             <div className='relative'>
-              <Input 
-                value={query} 
-                onChange={(e) => setQuery(e.target.value)} 
-                placeholder='Cari Bank Soal (mata pelajaran, tingkat, atau jurusan)' 
-                className='pr-10' 
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder='Cari Bank Soal (mata pelajaran, tingkat, atau jurusan)'
+                className='pr-10'
               />
               <div className='absolute right-3 top-1/2 -translate-y-1/2 text-gray-400'>
                 <Search className='w-5 h-5' />
@@ -274,8 +291,8 @@ export default function BankSoalPage() {
                   <Search className='w-12 h-12 mx-auto mb-3' />
                 </div>
                 <p className='text-gray-500 mb-4'>
-                  {query || filterTingkat !== 'all' || filterJurusan !== 'all' 
-                    ? 'Tidak ada bank soal yang cocok dengan filter' 
+                  {query || filterTingkat !== 'all' || filterJurusan !== 'all'
+                    ? 'Tidak ada bank soal yang cocok dengan filter'
                     : 'Belum ada bank soal'}
                 </p>
                 {!query && filterTingkat === 'all' && filterJurusan === 'all' && (
