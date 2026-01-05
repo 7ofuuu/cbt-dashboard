@@ -14,6 +14,10 @@ export default function JadwalUjianPage() {
 
   const [ujians, setUjians] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [jurusanFilter, setJurusanFilter] = useState('');
+  const [tingkatFilter, setTingkatFilter] = useState('');
+  const [kelasFilter, setKelasFilter] = useState('');
 
 
   useEffect(() => {
@@ -67,21 +71,75 @@ export default function JadwalUjianPage() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           <div className="lg:col-span-3">
             <div className="flex gap-4 mb-4">
-              <input type="search" placeholder="Cari Bank Soal" className="flex-1 border rounded-md px-4 py-3 shadow-sm" />
-              <button className="px-4 py-3 border rounded-md">🔍</button>
+              <input
+                type="search"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Cari nama ujian atau mata pelajaran"
+                className="flex-1 border rounded-md px-4 py-3 shadow-sm"
+              />
+              <button
+                onClick={() => {}}
+                className="px-4 py-3 border rounded-md"
+                aria-label="search"
+              >
+                🔍
+              </button>
             </div>
 
             <div className="flex gap-3 mb-6">
-              <button className="px-4 py-2 border rounded-full">Semua Jurusan ▾</button>
-              <button className="px-4 py-2 border rounded-full">Semua Tingkat ▾</button>
-              <button className="px-4 py-2 border rounded-full">Semua Kelas ▾</button>
+              <select
+                value={jurusanFilter}
+                onChange={(e) => setJurusanFilter(e.target.value)}
+                className="px-4 py-2 border rounded-full bg-white"
+              >
+                <option value="">Semua Jurusan</option>
+                {[...new Set(ujians.map((x) => x.jurusan).filter(Boolean))].map((j) => (
+                  <option key={j} value={j}>{j}</option>
+                ))}
+              </select>
+
+              <select
+                value={tingkatFilter}
+                onChange={(e) => setTingkatFilter(e.target.value)}
+                className="px-4 py-2 border rounded-full bg-white"
+              >
+                <option value="">Semua Tingkat</option>
+                {[...new Set(ujians.map((x) => x.tingkat).filter(Boolean))].map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+
+              <select
+                value={kelasFilter}
+                onChange={(e) => setKelasFilter(e.target.value)}
+                className="px-4 py-2 border rounded-full bg-white"
+              >
+                <option value="">Semua Kelas</option>
+                {[...new Set(ujians.map((x) => x.kelas).filter(Boolean))].map((k) => (
+                  <option key={k} value={k}>{k}</option>
+                ))}
+              </select>
             </div>
 
             {loading ? (
               <div className="text-center py-10">Memuat data...</div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-                {ujians.map((u, i) => (
+                {ujians
+                  .filter((u) => {
+                    const q = search.trim().toLowerCase();
+                    if (q) {
+                      const inName = (u.nama_ujian || '').toLowerCase().includes(q);
+                      const inMapel = (u.mata_pelajaran || '').toLowerCase().includes(q);
+                      if (!inName && !inMapel) return false;
+                    }
+                    if (jurusanFilter && u.jurusan !== jurusanFilter) return false;
+                    if (tingkatFilter && String(u.tingkat) !== String(tingkatFilter)) return false;
+                    if (kelasFilter && String(u.kelas) !== String(kelasFilter)) return false;
+                    return true;
+                  })
+                  .map((u, i) => (
                   <div key={u.ujian_id} className="bg-white rounded-lg shadow-sm overflow-hidden border">
 
                     <div className={`${getColor(i)} text-white p-4`}>
@@ -107,6 +165,24 @@ export default function JadwalUjianPage() {
                       <div className="flex flex-col mt-1">
                         <span className="font-medium text-xs text-gray-400 uppercase">Selesai:</span>
                         <span>{new Date(u.tanggal_selesai).toLocaleString('id-ID')}</span>
+                      </div>
+                      <div className="flex items-center gap-2 mt-3">
+                        <Link href={`/guru/jadwal-ujian/${u.ujian_id}`} className="text-sm text-sky-700">Kelola</Link>
+                        <button
+                          onClick={async () => {
+                            if (!confirm('Hapus ujian ini? Tindakan tidak dapat dibatalkan.')) return;
+                            try {
+                              await request.delete(`/ujian/${u.ujian_id}`);
+                              setUjians((prev) => prev.filter((p) => p.ujian_id !== u.ujian_id));
+                            } catch (err) {
+                              console.error('Gagal menghapus ujian', err);
+                              alert('Gagal menghapus ujian');
+                            }
+                          }}
+                          className="text-sm text-red-600"
+                        >
+                          Hapus
+                        </button>
                       </div>
                     </div>
                   </div>
