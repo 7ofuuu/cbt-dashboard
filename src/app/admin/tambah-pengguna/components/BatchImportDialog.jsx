@@ -405,8 +405,8 @@ export default function BatchImportDialog({ open, onOpenChange, role = 'siswa', 
               <li>Password minimal 6 karakter</li>
               {role === 'siswa' && (
                 <>
-                  <li>Format kelas: IPA/IPS diikuti spasi dan nomor (contoh: IPA 01)</li>
-                  <li>Jurusan: IPA atau IPS</li>
+                  <li>Format kelas: TINGKAT-JURUSAN-NOMOR (contoh: X-IPA-1, XI-IPS-2)</li>
+                  <li>Jurusan: IPA, IPS, atau Bahasa</li>
                   <li>Tingkat: X, XI, atau XII</li>
                 </>
               )}
