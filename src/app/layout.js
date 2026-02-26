@@ -1,9 +1,6 @@
-'use client';
-
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
-import { AuthProvider } from '@/contexts/AuthContext';
-import { Toaster } from 'react-hot-toast';
+import Providers from './providers';
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -15,35 +12,16 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
+export const metadata = {
+  title: 'CBT Dashboard',
+  description: 'Computer Based Test Dashboard',
+};
+
 export default function RootLayout({ children }) {
   return (
-    <html lang='en'>
+    <html lang='id'>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>
-        <AuthProvider>{children}</AuthProvider>
-        <Toaster 
-          position="top-right"
-          toastOptions={{
-            duration: 3000,
-            style: {
-              background: '#363636',
-              color: '#fff',
-            },
-            success: {
-              duration: 3000,
-              iconTheme: {
-                primary: '#10b981',
-                secondary: '#fff',
-              },
-            },
-            error: {
-              duration: 4000,
-              iconTheme: {
-                primary: '#ef4444',
-                secondary: '#fff',
-              },
-            },
-          }}
-        />
+        <Providers>{children}</Providers>
       </body>
     </html>
   );

@@ -1,6 +1,5 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
-// import toast from 'node_modules/react-hot-toast/dist';
 import toast from 'react-hot-toast';
 
 const request = axios.create({
@@ -8,12 +7,8 @@ const request = axios.create({
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
-    // "Content-Type": "application/json, multipart/form-data",
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': '*',
-    'Access-Control-Allow-Methods': '*',
-    'Access-Control-Allow-Credentials': 'true',
   },
+  withCredentials: true,
 });
 const requestHandler = request => {
   let token = Cookies.get('token');
@@ -30,27 +25,23 @@ const responseHandler = response => {
 };
 
 const expiredTokenHandler = () => {
-  // store.dispatch(getLoginData({}))
-  localStorage.clear();
   Cookies.remove('token');
+  Cookies.remove('user');
+  Cookies.remove('username');
+  localStorage.removeItem('theme');
   setTimeout(() => {
     window.location.href = '/login';
   }, 2000);
-
-  // return error;
 };
 
 const errorHandler = error => {
-  console.log(error);
   if (error.response && error.response.status === 401) {
     expiredTokenHandler();
-    toast.error(error?.response?.data?.message);
+    toast.error(error?.response?.data?.message || 'Sesi telah berakhir');
   } else if (error.code === 'ERR_NETWORK') {
-    window.history.pushState({}, 'Redirect Network Error', '/login');
-    console.log(error);
-    if (error.response?.status === 401) {
-      expiredTokenHandler();
-    }
+    toast.error('Koneksi jaringan bermasalah');
+  } else if (error.response) {
+    toast.error(error.response.data?.message || `Terjadi kesalahan (${error.response.status})`);
   }
 
   // Tambahkan ini agar error bisa tertangkap di .catch()

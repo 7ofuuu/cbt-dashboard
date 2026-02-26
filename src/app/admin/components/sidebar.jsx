@@ -1,14 +1,26 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
 import { House, Users, History, UserPlus } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export default function Sidebar() {
   const pathname = usePathname();
   const { logout } = useAuthContext();
+  const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
   const menuItems = [
     {
@@ -18,27 +30,27 @@ export default function Sidebar() {
     },
     {
       name: 'Tambah Pengguna',
-      href: '/admin/tambah-pengguna',
+      href: '/admin/add-user',
       icon: <UserPlus className='w-5 h-5' />,
     },
     {
       name: 'Semua Siswa',
-      href: '/admin/semua-siswa',
+      href: '/admin/all-students',
       icon: <Users className='w-5 h-5' />,
     },
     {
       name: 'Semua Guru',
-      href: '/admin/semua-guru',
+      href: '/admin/all-teachers',
       icon: <Users className='w-5 h-5' />,
     },
     {
       name: 'Semua Admin',
-      href: '/admin/semua-admin',
+      href: '/admin/all-admins',
       icon: <Users className='w-5 h-5' />,
     },
     {
       name: 'Aktivitas',
-      href: '/admin/aktivitas',
+      href: '/admin/activity',
       icon: <History className='w-5 h-5' />,
     },
   ];
@@ -71,7 +83,7 @@ export default function Sidebar() {
         {/* Logout Button */}
         <div className='p-3 mb-4'>
           <button
-            onClick={logout}
+            onClick={() => setShowLogoutDialog(true)}
             className='flex items-center gap-3 w-full px-4 py-3 rounded-lg bg-red-100 text-red-600 hover:bg-red-200 transition-colors'
           >
             <svg
@@ -91,6 +103,27 @@ export default function Sidebar() {
           </button>
         </div>
       </nav>
+
+      {/* Logout Confirmation Dialog */}
+      <AlertDialog open={showLogoutDialog} onOpenChange={setShowLogoutDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Konfirmasi Logout</AlertDialogTitle>
+            <AlertDialogDescription>
+              Apakah Anda yakin ingin keluar dari sistem? Anda perlu login kembali untuk mengakses dashboard.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={logout}
+              className='bg-red-600 hover:bg-red-700'
+            >
+              Logout
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </aside>
   );
 }

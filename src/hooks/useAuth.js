@@ -1,11 +1,14 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 
 export function useAuth(allowedRoles = []) {
   const router = useRouter();
+  // Stabilize allowedRoles reference to prevent effect re-running on every render
+  const rolesKey = JSON.stringify(allowedRoles);
+  const stableRoles = useMemo(() => allowedRoles, [rolesKey]);
 
   useEffect(() => {
     const token = Cookies.get('token');
@@ -18,27 +21,26 @@ export function useAuth(allowedRoles = []) {
     }
 
     // Check role if specified
-    if (allowedRoles.length > 0 && userStr) {
+    if (stableRoles.length > 0 && userStr) {
       try {
         const user = JSON.parse(userStr);
         const userRole = user.role?.toLowerCase();
         
-        if (!allowedRoles.includes(userRole)) {
+        if (!userRole || !stableRoles.includes(userRole)) {
           // Redirect to appropriate dashboard based on their role
           if (userRole === 'admin') {
             router.push('/admin/dashboard');
-          } else if (userRole === 'guru') {
-            router.push('/guru/dashboard');
-          } else if (userRole === 'siswa') {
-            router.push('/siswa/dashboard');
+          } else if (userRole === 'teacher') {
+            router.push('/teacher/dashboard');
+          } else if (userRole === 'student') {
+            router.push('/login');
           } else {
             router.push('/login');
           }
         }
       } catch (error) {
-        console.error('Error parsing user data:', error);
         router.push('/login');
       }
     }
-  }, [router, allowedRoles]);
+  }, [router, stableRoles]);
 }
