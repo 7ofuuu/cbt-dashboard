@@ -571,10 +571,11 @@ function SidebarMenuSkeleton({
   showIcon = false,
   ...props
 }) {
-  // Random width between 50 to 90%.
+  // Width between 50 to 90% based on index hash.
   const width = React.useMemo(() => {
-    return `${Math.floor(Math.random() * 40) + 50}%`;
-  }, [])
+    const hash = typeof props['data-index'] === 'number' ? props['data-index'] : 0;
+    return `${(hash * 17 + 7) % 40 + 50}%`;
+  }, [props])
 
   return (
     <div

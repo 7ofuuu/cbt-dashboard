@@ -1,45 +1,93 @@
 'use client';
 
-import Image from 'next/image';
 import AdminLayout from '../adminLayout';
 import { useAuth } from '@/hooks/useAuth';
-import { Users, Laptop, CheckCircle, GraduationCap } from 'lucide-react';
+import { useAuthContext } from '@/contexts/AuthContext';
+import { Users, Activity, GraduationCap, LogIn, Clock, Monitor } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import axios from 'axios';
-import Cookies from 'js-cookie';
+import request from '@/utils/request';
 
 export default function DashboardAdmin() {
   // Protect this page - only admin can access
   useAuth(['admin']);
+  const { user: authUser } = useAuthContext();
 
   const [userCounts, setUserCounts] = useState({
     total: 0,
     admin: 0,
-    guru: 0,
-    siswa: 0,
+    teacher: 0,
+    student: 0,
   });
+  const [activityLogs, setActivityLogs] = useState([]);
+  const [activeUsers, setActiveUsers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [logsLoading, setLogsLoading] = useState(true);
 
   useEffect(() => {
-    fetchUserCounts();
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        setLogsLoading(true);
+
+        // Fetch all data in parallel
+        const [countRes, logsRes, activeRes] = await Promise.allSettled([
+          request.get('/users/count'),
+          request.get('/activity-logs?limit=15'),
+          request.get('/activity-logs/active-users?hours=24'),
+        ]);
+
+        if (countRes.status === 'fulfilled') {
+          setUserCounts(countRes.value.data);
+        }
+
+        if (logsRes.status === 'fulfilled' && logsRes.value.data.success) {
+          setActivityLogs(logsRes.value.data.logs || []);
+        }
+
+        if (activeRes.status === 'fulfilled' && activeRes.value.data.success) {
+          setActiveUsers(activeRes.value.data.users || []);
+        }
+      } catch (err) {
+      } finally {
+        setLoading(false);
+        setLogsLoading(false);
+      }
+    };
+
+    fetchDashboardData();
   }, []);
 
-  const fetchUserCounts = async () => {
-    try {
-      const token = Cookies.get('token');
-      const response = await axios.get(`${process.env.NEXT_PUBLIC_LARAVEL_API}/users/count`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+  const formatTimeAgo = (dateStr) => {
+    const date = new Date(dateStr);
+    const now = new Date();
+    const diffMs = now - date;
+    const diffMin = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
 
-      if (response.data.success) {
-        setUserCounts(response.data.data);
-      }
-    } catch (err) {
-      console.error('Error fetching user counts:', err);
-    } finally {
-      setLoading(false);
+    if (diffMin < 1) return 'Baru saja';
+    if (diffMin < 60) return `${diffMin} menit lalu`;
+    if (diffHours < 24) return `${diffHours} jam lalu`;
+    return `${diffDays} hari lalu`;
+  };
+
+  const getActivityIcon = (type) => {
+    switch (type) {
+      case 'LOGIN': return <LogIn className='w-4 h-4 text-green-500' />;
+      case 'LOGOUT': return <LogIn className='w-4 h-4 text-red-500 rotate-180' />;
+      default: return <Activity className='w-4 h-4 text-blue-500' />;
+    }
+  };
+
+  const getActivityBadgeColor = (type) => {
+    switch (type) {
+      case 'LOGIN': return 'bg-green-100 text-green-700';
+      case 'LOGOUT': return 'bg-red-100 text-red-700';
+      case 'START_EXAM': return 'bg-blue-100 text-blue-700';
+      case 'FINISH_EXAM': return 'bg-purple-100 text-purple-700';
+      case 'AUTO_FINISH': return 'bg-orange-100 text-orange-700';
+      case 'BLOCK_STUDENT': return 'bg-red-100 text-red-700';
+      default: return 'bg-gray-100 text-gray-700';
     }
   };
 
@@ -48,7 +96,7 @@ export default function DashboardAdmin() {
     {
       id: 1,
       title: 'Total Siswa',
-      value: loading ? '...' : userCounts.siswa.toString(),
+      value: loading ? '...' : userCounts.student.toString(),
       icon: Users,
       bgColor: 'bg-blue-50',
       iconColor: 'text-blue-500',
@@ -56,54 +104,18 @@ export default function DashboardAdmin() {
     {
       id: 2,
       title: 'Total Guru',
-      value: loading ? '...' : userCounts.guru.toString(),
+      value: loading ? '...' : userCounts.teacher.toString(),
       icon: GraduationCap,
       bgColor: 'bg-red-50',
       iconColor: 'text-red-500',
     },
     {
       id: 3,
-      title: 'Ujian Aktif',
-      value: '24',
-      icon: Laptop,
+      title: 'User Aktif (24 Jam)',
+      value: loading ? '...' : activeUsers.length.toString(),
+      icon: Monitor,
       bgColor: 'bg-green-50',
       iconColor: 'text-green-500',
-    },
-  ];
-
-  // Sample exam data - replace with actual data from your backend
-  const exams = [
-    {
-      id: 1,
-      subject: 'Matematika Wajib',
-      class: 'XII IPA 1',
-      participants: '32 / 35',
-      status: 'Sedang Berjalan',
-      statusColor: 'bg-green-100 text-green-700',
-    },
-    {
-      id: 2,
-      subject: 'Bahasa Indonesia',
-      class: 'X IPS 2',
-      participants: '0 / 30',
-      status: 'Menunggu',
-      statusColor: 'bg-yellow-100 text-yellow-700',
-    },
-    {
-      id: 3,
-      subject: 'Biologi',
-      class: 'XI IPA 3',
-      participants: '34 / 34',
-      status: 'Selesai',
-      statusColor: 'bg-gray-100 text-gray-700',
-    },
-    {
-      id: 4,
-      subject: 'Sejarah Indonesia',
-      class: 'XII IPS 1',
-      participants: '28 / 30',
-      status: 'Sedang Berjalan',
-      statusColor: 'bg-green-100 text-green-700',
     },
   ];
 
@@ -127,14 +139,14 @@ export default function DashboardAdmin() {
               </svg>
             </div>
             <div>
-              <h2 className='text-3xl font-bold mb-2'>Selamat Datang Admin</h2>
+              <h2 className='text-3xl font-bold mb-2'>Selamat Datang{authUser?.full_name ? `, ${authUser.full_name}` : ''}</h2>
               <p className='text-blue-100'>Selamat datang di dashboard admin. Di sini Anda dapat mengelola seluruh sistem dan memantau aktivitas terbaru.</p>
             </div>
           </div>
         </div>
 
         {/* Stats Grid */}
-        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6'>
+        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
           {stats.map(stat => {
             const IconComponent = stat.icon;
             return (
@@ -158,39 +170,80 @@ export default function DashboardAdmin() {
 
         {/* Main Content Grid */}
         <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
-          {/* Ujian Berlangsung Section */}
-          <div className='lg:col-span-3'>
+          {/* Activity Logs Section */}
+          <div className='lg:col-span-2'>
             <div className='bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden'>
               <div className='p-6 border-b border-gray-200 flex items-center justify-between'>
-                <h3 className='text-xl font-semibold text-gray-900'>Ujian Berlangsung</h3>
-                <button className='px-4 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded-lg text-sm font-medium transition-colors'>Lihat Semua</button>
+                <h3 className='text-xl font-semibold text-gray-900'>Log Aktivitas Terbaru</h3>
               </div>
-              <div className='overflow-x-auto'>
-                <table className='w-full'>
-                  <thead className='bg-gray-50'>
-                    <tr>
-                      <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>Mata Pelajaran</th>
-                      <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>Kelas</th>
-                      <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>Peserta Login</th>
-                      <th className='px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider'>Status</th>
-                    </tr>
-                  </thead>
-                  <tbody className='bg-white divide-y divide-gray-200'>
-                    {exams.map(exam => (
-                      <tr
-                        key={exam.id}
-                        className='hover:bg-gray-50'
-                      >
-                        <td className='px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900'>{exam.subject}</td>
-                        <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-600'>{exam.class}</td>
-                        <td className='px-6 py-4 whitespace-nowrap text-sm text-gray-600'>{exam.participants}</td>
-                        <td className='px-6 py-4 whitespace-nowrap'>
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${exam.statusColor}`}>{exam.status}</span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
+              <div className='divide-y divide-gray-100 max-h-[400px] overflow-y-auto'>
+                {logsLoading ? (
+                  <div className='p-6 text-center text-gray-500'>Memuat log aktivitas...</div>
+                ) : activityLogs.length === 0 ? (
+                  <div className='p-6 text-center text-gray-500'>Belum ada log aktivitas</div>
+                ) : (
+                  activityLogs.map((log, idx) => (
+                    <div key={log.log_id || idx} className='flex items-center gap-3 px-6 py-3 hover:bg-gray-50'>
+                      <div className='flex-shrink-0'>
+                        {getActivityIcon(log.activity_type)}
+                      </div>
+                      <div className='flex-1 min-w-0'>
+                        <p className='text-sm text-gray-900 truncate'>{log.description}</p>
+                        <div className='flex items-center gap-2 mt-0.5'>
+                          <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-medium ${getActivityBadgeColor(log.activity_type)}`}>
+                            {log.activity_type}
+                          </span>
+                          {log.ip_address && (
+                            <span className='text-[10px] text-gray-400'>{log.ip_address}</span>
+                          )}
+                        </div>
+                      </div>
+                      <div className='flex-shrink-0 text-xs text-gray-400 whitespace-nowrap'>
+                        {formatTimeAgo(log.created_at)}
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Active Users Section */}
+          <div className='lg:col-span-1'>
+            <div className='bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden'>
+              <div className='p-6 border-b border-gray-200'>
+                <h3 className='text-xl font-semibold text-gray-900'>User Aktif</h3>
+                <p className='text-sm text-gray-500 mt-1'>Login dalam 24 jam terakhir</p>
+              </div>
+              <div className='divide-y divide-gray-100 max-h-[400px] overflow-y-auto'>
+                {logsLoading ? (
+                  <div className='p-6 text-center text-gray-500'>Memuat...</div>
+                ) : activeUsers.length === 0 ? (
+                  <div className='p-6 text-center text-gray-500'>Tidak ada user aktif</div>
+                ) : (
+                  activeUsers.map((user, idx) => (
+                    <div key={user.user_id || idx} className='flex items-center gap-3 px-6 py-3 hover:bg-gray-50'>
+                      <div className='flex-shrink-0'>
+                        <div className='w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center'>
+                          <span className='text-xs font-bold text-gray-600'>
+                            {(user.full_name || user.username || '?')[0].toUpperCase()}
+                          </span>
+                        </div>
+                      </div>
+                      <div className='flex-1 min-w-0'>
+                        <p className='text-sm font-medium text-gray-900 truncate'>{user.full_name || user.username}</p>
+                        <div className='flex items-center gap-1.5'>
+                          <span className='text-[10px] text-gray-400 capitalize'>{user.role}</span>
+                          <span className='text-[10px] text-gray-300'>•</span>
+                          <span className='text-[10px] text-gray-400'>{formatTimeAgo(user.last_login)}</span>
+                        </div>
+                      </div>
+                      <div className='flex-shrink-0'>
+                        <span className='inline-block w-2 h-2 rounded-full bg-green-400'></span>
+                      </div>
+                    </div>
+                  ))
+                )}
               </div>
             </div>
           </div>
@@ -199,4 +252,3 @@ export default function DashboardAdmin() {
     </AdminLayout>
   );
 }
-    
