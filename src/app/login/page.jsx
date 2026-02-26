@@ -6,8 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 
 import { Eye, EyeOff } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import Cookies from 'js-cookie';
 import request from '@/utils/request';
 import { useAuthContext } from '@/contexts/AuthContext';
 
@@ -20,6 +21,25 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
+  // Redirect to dashboard if already authenticated
+  useEffect(() => {
+    const token = Cookies.get('token');
+    const userStr = Cookies.get('user');
+    if (token && userStr) {
+      try {
+        const user = JSON.parse(userStr);
+        const role = user.role?.toLowerCase();
+        if (role === 'admin') {
+          router.replace('/admin/dashboard');
+        } else if (role === 'teacher') {
+          router.replace('/teacher/dashboard');
+        }
+      } catch {
+        // Invalid cookie data, stay on login
+      }
+    }
+  }, [router]);
+
   const onSubmit = async e => {
     e.preventDefault();
     setIsLoading(true);
@@ -27,23 +47,23 @@ export default function LoginPage() {
 
     try {
       const response = await request.post('/auth/login', {
-        username: data.username,
+        username: data.username.trim(),
         password: data.password,
       });
-
-      console.log('API Response:', response.data);
 
       if (response?.data) {
         const { token, user, message: apiMessage } = response.data;
 
         if (token && user) {
+          // Ensure username is included (fallback to form input)
+          if (!user.username) {
+            user.username = data.username.trim();
+          }
           // Use AuthContext login method
           authLogin(token, user);
 
-          // Store user profile if available
-          if (user.profile) {
-            localStorage.setItem('userProfile', JSON.stringify(user.profile));
-          }
+          // Profile stored in auth context only - no localStorage for security
+          
 
           setMessage({
             type: 'success',
@@ -53,23 +73,26 @@ export default function LoginPage() {
           // Role-based routing
           const role = user.role?.toLowerCase();
           setTimeout(() => {
-            if (role === 'siswa') {
-              router.push('/siswa/dashboard');
-            } else if (role === 'guru') {
-              router.push('/guru/dashboard');
+            if (role === 'student') {
+              // Students use the mobile app, not the web dashboard
+              setMessage({ type: 'error', text: 'Siswa harus menggunakan aplikasi mobile untuk mengerjakan ujian.' });
+              return;
+            } else if (role === 'teacher') {
+              router.push('/teacher/dashboard');
             } else if (role === 'admin') {
               router.push('/admin/dashboard');
             } else {
-              router.push('/admin/dashboard'); // Default fallback
+              // Unknown role - redirect to login instead of admin dashboard
+              setMessage({ type: 'error', text: 'Role tidak dikenali. Silakan hubungi administrator.' });
+              return;
             }
           }, 1000);
         }
       }
     } catch (error) {
-      console.error('Login error:', error);
       setMessage({
         type: 'error',
-        text: error?.response?.data?.message || 'Login gagal. Periksa username/password kamu.',
+        text: error?.response?.data?.message || error?.response?.data?.error || 'Login gagal. Periksa username/password kamu.',
       });
     } finally {
       setIsLoading(false);
@@ -95,6 +118,8 @@ export default function LoginPage() {
                   type='text'
                   placeholder='Masukan Username'
                   required
+                  maxLength={50}
+                  autoComplete='username'
                   value={data.username}
                   onChange={e => setData({ ...data, username: e.target.value })}
                   disabled={isLoading}
@@ -116,6 +141,8 @@ export default function LoginPage() {
                     type={showPassword ? 'text' : 'password'}
                     placeholder='Masukan Password'
                     required
+                    maxLength={128}
+                    autoComplete='current-password'
                     value={data.password}
                     onChange={e => setData({ ...data, password: e.target.value })}
                     disabled={isLoading}

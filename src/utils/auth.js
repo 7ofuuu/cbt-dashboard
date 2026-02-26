@@ -18,7 +18,6 @@ export const getUser = () => {
     const userStr = Cookies.get('user');
     return userStr ? JSON.parse(userStr) : null;
   } catch (error) {
-    console.error('Error parsing user data:', error);
     return null;
   }
 };
