@@ -13,7 +13,6 @@ import { Search, Plus, RefreshCw, Eye, BookOpen, FileText, ListChecks, Home } fr
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import request from '@/utils/request';
-import { getUser } from '@/utils/auth';
 import toast from 'react-hot-toast';
 import { GRADE_LEVELS, MAJOR_OPTIONS } from '@/lib/constants';
 
@@ -114,8 +113,6 @@ export default function BankSoalPage() {
     if (subject.includes('bahasa')) return 'bg-violet-400 text-white';
     return 'bg-gray-200 text-gray-800';
   };
-
-  const user = getUser();
 
   const handleViewDetail = (bank) => {
     router.push(`/teacher/question-bank/${bank.question_bank_id}`);
