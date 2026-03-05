@@ -18,7 +18,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
-import { ArrowLeft, FileText, Edit, Trash2, RefreshCw, AlertTriangle, Home, Settings } from 'lucide-react';
+import { ArrowLeft, FileText, Edit, Trash2, RefreshCw, AlertTriangle, Home, Settings, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
@@ -296,6 +296,25 @@ export default function DetailBankSoalPage() {
                           <p className='text-gray-800 leading-relaxed'>
                             {soal.question_text}
                           </p>
+
+                          {/* Question Image */}
+                          {soal.question_image && (
+                            <div className='mt-3'>
+                              <img
+                                src={soal.question_image}
+                                alt={`Gambar soal ${index + 1}`}
+                                className='max-h-60 rounded-lg border object-contain bg-gray-50'
+                                onError={(e) => {
+                                  e.target.style.display = 'none';
+                                  e.target.nextSibling && (e.target.nextSibling.style.display = 'flex');
+                                }}
+                              />
+                              <div className='hidden items-center gap-2 text-sm text-gray-400 mt-2'>
+                                <ImageIcon className='w-4 h-4' />
+                                <span>Gambar tidak dapat dimuat</span>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
 

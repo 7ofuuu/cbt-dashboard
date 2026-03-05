@@ -38,6 +38,30 @@ export function middleware(request) {
     if (!token) {
       return NextResponse.redirect(new URL('/login', request.url));
     }
+
+    // Role-based access enforcement: admin routes for admin, teacher routes for teacher
+    if (userCookie) {
+      try {
+        const user = JSON.parse(decodeURIComponent(userCookie));
+        const role = user.role?.toLowerCase();
+        
+        if (pathname.startsWith('/admin') && role !== 'admin') {
+          // Non-admin trying to access admin routes → redirect to their dashboard
+          const redirectUrl = role === 'teacher' ? '/teacher/dashboard' : '/login';
+          return NextResponse.redirect(new URL(redirectUrl, request.url));
+        }
+        
+        if (pathname.startsWith('/teacher') && role !== 'teacher') {
+          // Non-teacher trying to access teacher routes → redirect to their dashboard
+          const redirectUrl = role === 'admin' ? '/admin/dashboard' : '/login';
+          return NextResponse.redirect(new URL(redirectUrl, request.url));
+        }
+      } catch {
+        // Invalid cookie — redirect to login
+        return NextResponse.redirect(new URL('/login', request.url));
+      }
+    }
+
     return NextResponse.next();
   }
 

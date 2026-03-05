@@ -49,6 +49,7 @@ export default function TambahSoalPage() {
       ],
       imageFile: null,
       imagePreview: null,
+      imageUrl: "",
     },
   ]);
 
@@ -125,6 +126,9 @@ export default function TambahSoalPage() {
             // Continue without image if upload fails
             console.warn('Image upload failed, continuing without image');
           }
+        } else if (q.imageUrl && q.imageUrl.trim()) {
+          // Use URL directly (e.g., Google Drive link)
+          payload.question_image = q.imageUrl.trim();
         }
 
         await request.post('/questions', payload);
@@ -143,7 +147,7 @@ export default function TambahSoalPage() {
   // --- Question management ---
   function addQuestion(type = "SINGLE_CHOICE") {
     const opts = type === "ESSAY" ? [] : [createOption(), createOption(), createOption(), createOption()];
-    setQuestions(qs => [...qs, { id: uid("q"), type, text: "", options: opts, imageFile: null, imagePreview: null }]);
+    setQuestions(qs => [...qs, { id: uid("q"), type, text: "", options: opts, imageFile: null, imagePreview: null, imageUrl: "" }]);
   }
 
   function removeQuestion(id) {
@@ -161,6 +165,7 @@ export default function TambahSoalPage() {
         options: q.options.map(o => ({ ...o, id: uid("opt") })),
         imageFile: null,
         imagePreview: null,
+        imageUrl: q.imageUrl || "",
       }];
     });
   }
@@ -213,7 +218,7 @@ export default function TambahSoalPage() {
   }
 
   function removeImage(qid) {
-    updateQuestion(qid, { imageFile: null, imagePreview: null });
+    updateQuestion(qid, { imageFile: null, imagePreview: null, imageUrl: "" });
   }
 
   const getTypeLabel = (type) => {
@@ -457,8 +462,8 @@ function QuestionCard({
               rows={2}
             />
 
-            {/* Image upload */}
-            <div>
+            {/* Image upload or URL */}
+            <div className="space-y-2">
               <input
                 ref={fileInputRef}
                 type="file"
@@ -485,15 +490,35 @@ function QuestionCard({
                   </Button>
                 </div>
               ) : (
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  className="text-muted-foreground gap-2"
-                  onClick={() => fileInputRef.current?.click()}
-                >
-                  <ImageIcon className="w-4 h-4" />
-                  Tambahkan Gambar
-                </Button>
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground gap-2"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <ImageIcon className="w-4 h-4" />
+                    Upload Gambar
+                  </Button>
+                  <span className="text-xs text-muted-foreground">atau</span>
+                  <Input
+                    value={q.imageUrl || ''}
+                    placeholder="URL gambar (Google Drive, dsb.)"
+                    onChange={e => onUpdate({ imageUrl: e.target.value })}
+                    className="flex-1 h-8 text-sm"
+                  />
+                    {q.imageUrl && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => onUpdate({ imageUrl: '', imagePreview: q.imageUrl })}
+                        title="Preview URL"
+                      >
+                        <ImageIcon className="w-4 h-4 text-blue-600" />
+                      </Button>
+                    )}
+                </div>
               )}
             </div>
 

@@ -30,7 +30,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { ArrowLeft, FileText, Edit, Trash2, RefreshCw, AlertTriangle, Home, Save, Plus, Settings2 } from 'lucide-react';
+import { ArrowLeft, FileText, Edit, Trash2, RefreshCw, AlertTriangle, Home, Save, Plus, Settings2, ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
@@ -189,6 +189,7 @@ export default function KelolaBankSoalPage() {
     setNewSoal({
       question_text: '',
       question_type: 'SINGLE_CHOICE',
+      question_image: '',
       answer_options: [
         { label: 'A', option_text: '', is_correct: false },
         { label: 'B', option_text: '', is_correct: false }
@@ -253,6 +254,7 @@ export default function KelolaBankSoalPage() {
         question_bank_id: bankInfo.question_bank_id,
         question_type: newSoal.question_type,
         question_text: newSoal.question_text,
+        question_image: newSoal.question_image?.trim() || null,
         subject: bankInfo.subject,
         grade_level: bankInfo.grade_level,
         major: bankInfo.major || null,
@@ -714,6 +716,28 @@ export default function KelolaBankSoalPage() {
                   placeholder='Masukkan pertanyaan...'
                   rows={3}
                 />
+              </div>
+
+              {/* Gambar Soal */}
+              <div className='space-y-2'>
+                <label className='text-sm font-medium flex items-center gap-1.5'>
+                  <ImageIcon className='w-4 h-4' /> Gambar Soal (opsional)
+                </label>
+                <Input
+                  value={newSoal.question_image || ''}
+                  onChange={(e) => setNewSoal({...newSoal, question_image: e.target.value})}
+                  placeholder='Masukkan URL gambar (Google Drive, Imgur, dll)'
+                />
+                {newSoal.question_image?.trim() && (
+                  <div className='mt-2 border rounded-lg p-2'>
+                    <img
+                      src={newSoal.question_image}
+                      alt='Preview'
+                      className='max-h-40 object-contain rounded'
+                      onError={(e) => { e.target.style.display = 'none'; }}
+                    />
+                  </div>
+                )}
               </div>
 
               {/* Opsi Jawaban (PG only) */}
