@@ -64,7 +64,7 @@ export default function BankSoalPage() {
   const filteredAndSortedBanks = useMemo(() => {
     let result = [...bankSoal];
 
-    // Filter by search query
+    // Filter search query
     if (query.trim()) {
       const q = query.trim().toLowerCase();
       result = result.filter(
