@@ -2,7 +2,7 @@
 
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { useEffect, useState, useCallback } from 'react';
+import { Suspense, useEffect, useState, useCallback } from 'react';
 import { Home, CheckCircle, AlertCircle } from 'lucide-react';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { PageHeader } from '@/components/ui/page-header';
@@ -129,7 +129,7 @@ function Question({ jawabanId, number, text, answer, initialScore }) {
   );
 }
 
-export default function BeriNilaiEssayPage() {
+function BeriNilaiEssayPageContent() {
   useAuth(['teacher']);
   const router = useRouter();
   const params = useSearchParams();
@@ -262,5 +262,21 @@ export default function BeriNilaiEssayPage() {
         </div>
       </div>
     </TeacherLayout>
+  );
+}
+
+export default function BeriNilaiEssayPage() {
+  return (
+    <Suspense
+      fallback={
+        <TeacherLayout>
+          <div className='flex justify-center items-center h-64'>
+            <p className='text-gray-600'>Loading...</p>
+          </div>
+        </TeacherLayout>
+      }
+    >
+      <BeriNilaiEssayPageContent />
+    </Suspense>
   );
 }

@@ -3,7 +3,7 @@
 import AdminLayout from '../adminLayout';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { Users, Activity, GraduationCap, LogIn, Clock, Monitor } from 'lucide-react';
+import { Users, Activity, GraduationCap, LogIn, Monitor } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import request from '@/utils/request';
 
@@ -171,12 +171,12 @@ export default function DashboardAdmin() {
         {/* Main Content Grid */}
         <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
           {/* Activity Logs Section */}
-          <div className='lg:col-span-2'>
-            <div className='bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden'>
+          <div className='lg:col-span-2 min-h-0'>
+            <div className='bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-[520px] flex flex-col'>
               <div className='p-6 border-b border-gray-200 flex items-center justify-between'>
                 <h3 className='text-xl font-semibold text-gray-900'>Log Aktivitas Terbaru</h3>
               </div>
-              <div className='divide-y divide-gray-100 max-h-[400px] overflow-y-auto'>
+              <div className='divide-y divide-gray-100 flex-1 overflow-y-auto'>
                 {logsLoading ? (
                   <div className='p-6 text-center text-gray-500'>Memuat log aktivitas...</div>
                 ) : activityLogs.length === 0 ? (
@@ -209,13 +209,13 @@ export default function DashboardAdmin() {
           </div>
 
           {/* Active Users Section */}
-          <div className='lg:col-span-1'>
-            <div className='bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden'>
+          <div className='lg:col-span-1 min-h-0'>
+            <div className='bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden h-[520px] flex flex-col'>
               <div className='p-6 border-b border-gray-200'>
                 <h3 className='text-xl font-semibold text-gray-900'>User Aktif</h3>
                 <p className='text-sm text-gray-500 mt-1'>Login dalam 24 jam terakhir</p>
               </div>
-              <div className='divide-y divide-gray-100 max-h-[400px] overflow-y-auto'>
+              <div className='divide-y divide-gray-100 flex-1 overflow-y-auto'>
                 {logsLoading ? (
                   <div className='p-6 text-center text-gray-500'>Memuat...</div>
                 ) : activeUsers.length === 0 ? (

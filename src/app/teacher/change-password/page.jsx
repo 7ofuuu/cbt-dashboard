@@ -10,6 +10,8 @@ import { Eye, EyeOff, KeyRound, Loader2 } from 'lucide-react';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
 
+const isStrongPassword = (password) => /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password);
+
 export default function ChangePasswordPage() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -27,8 +29,13 @@ export default function ChangePasswordPage() {
       return;
     }
 
-    if (newPassword.length < 6) {
-      toast.error('Password baru minimal 6 karakter');
+    if (newPassword.length < 8) {
+      toast.error('Password baru minimal 8 karakter');
+      return;
+    }
+
+    if (!isStrongPassword(newPassword)) {
+      toast.error('Password harus mengandung huruf besar, huruf kecil, dan angka');
       return;
     }
 
@@ -44,7 +51,7 @@ export default function ChangePasswordPage() {
 
     setIsLoading(true);
     try {
-      await request.patch('/api/auth/change-password', {
+      await request.patch('/auth/change-password', {
         current_password: currentPassword,
         new_password: newPassword,
       });
@@ -108,7 +115,7 @@ export default function ChangePasswordPage() {
                     type={showNew ? 'text' : 'password'}
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder='Masukkan password baru (min. 6 karakter)'
+                    placeholder='Minimal 8 karakter + kombinasi huruf/angka'
                     autoComplete='new-password'
                   />
                   <button

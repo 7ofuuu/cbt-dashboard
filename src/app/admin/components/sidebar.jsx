@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import { House, Users, History, UserPlus, School } from 'lucide-react';
+import { House, Users, History, UserPlus, School, UserCog, KeyRound } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import {
   AlertDialog,
@@ -52,6 +52,16 @@ export default function Sidebar() {
       name: 'Aktivitas',
       href: '/admin/activity',
       icon: <History className='w-5 h-5' />,
+    },
+    {
+      name: 'Profil Saya',
+      href: '/admin/profile',
+      icon: <UserCog className='w-5 h-5' />,
+    },
+    {
+      name: 'Ubah Password',
+      href: '/admin/change-password',
+      icon: <KeyRound className='w-5 h-5' />,
     },
     {
       name: 'Profil Sekolah',
