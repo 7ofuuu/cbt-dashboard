@@ -74,24 +74,27 @@ export default function AdminChangePasswordPage() {
 
   return (
     <AdminLayout>
-      <Breadcrumb className='mb-6'>
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href='/admin/dashboard'>
-              <Home className='h-4 w-4' />
-            </BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>Ubah Password</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
+      <div className='overflow-hidden'>
+        <Breadcrumb className='mb-4'>
+          <BreadcrumbList>
+            <BreadcrumbItem>
+              <BreadcrumbLink href='/admin/dashboard'>
+                <Home className='h-4 w-4' />
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+            <BreadcrumbItem>
+              <BreadcrumbPage>Ubah Password</BreadcrumbPage>
+            </BreadcrumbItem>
+          </BreadcrumbList>
+        </Breadcrumb>
 
-      <div className='space-y-6'>
-        <PageHeader title='Ubah Password' description='Perbarui password akun admin Anda dengan aman.' />
+        <PageHeader
+          title='Ubah Password'
+          description='Perbarui password akun admin Anda dengan aman.'
+        />
 
-        <div className='max-w-xl'>
+        <div className='max-w-md'>
           <Card>
             <CardHeader>
               <div className='flex items-center gap-3'>
@@ -116,6 +119,7 @@ export default function AdminChangePasswordPage() {
                       onChange={(event) => setCurrentPassword(event.target.value)}
                       placeholder='Masukkan password saat ini'
                       autoComplete='current-password'
+                      className='pr-10'
                     />
                     <button
                       type='button'
@@ -137,6 +141,7 @@ export default function AdminChangePasswordPage() {
                       onChange={(event) => setNewPassword(event.target.value)}
                       placeholder='Minimal 8 karakter + kombinasi huruf/angka'
                       autoComplete='new-password'
+                      className='pr-10'
                     />
                     <button
                       type='button'
@@ -158,6 +163,7 @@ export default function AdminChangePasswordPage() {
                       onChange={(event) => setConfirmPassword(event.target.value)}
                       placeholder='Ulangi password baru'
                       autoComplete='new-password'
+                      className='pr-10'
                     />
                     <button
                       type='button'

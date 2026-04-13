@@ -7,17 +7,48 @@ import { useAuth } from '@/hooks/useAuth';
 import { useAuthContext } from '@/contexts/AuthContext';
 import request from '@/utils/request';
 import { getShortcutCardTheme, getSubjectTheme } from '@/lib/constants';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  GraduationCap,
+  ClipboardList,
+  Library,
+  Layers,
+  AlertTriangle,
+  CheckCircle2,
+  FileText,
+  Users,
+  ArrowRight,
+} from 'lucide-react';
 import TeacherPerformancePanel from './components/TeacherPerformancePanel';
 import CoordinatorAuditPanel from './components/CoordinatorAuditPanel';
+import { StaggerList, StaggerItem } from '@/components/motion/stagger-list';
+import { AnimatedCard } from '@/components/motion/animated-card';
+import { CountUp } from '@/components/motion/count-up';
 
-function ShortcutMetricCard({ label, value, tone = 'sky' }) {
+function ShortcutMetricCard({ label, value, tone = 'sky', icon: Icon }) {
   const theme = getShortcutCardTheme(tone);
+  const isNumeric = typeof value === 'number';
 
   return (
-    <div className={`rounded-lg border p-3 ${theme.container}`}>
-      <p className={`text-xs font-semibold uppercase tracking-wide ${theme.label}`}>{label}</p>
-      <p className={`mt-1 text-2xl font-bold ${theme.value}`}>{value}</p>
-    </div>
+    <AnimatedCard className={`rounded-xl border p-4 ${theme.container} flex items-center gap-3`}>
+      {Icon && (
+        <div className={`w-10 h-10 rounded-lg bg-white/70 flex items-center justify-center ${theme.value} flex-shrink-0`}>
+          <Icon className="w-5 h-5" />
+        </div>
+      )}
+      <div className="min-w-0">
+        <p className={`text-xs font-semibold uppercase tracking-wide ${theme.label} truncate`}>{label}</p>
+        <p className={`mt-0.5 text-2xl font-bold ${theme.value}`}>
+          {isNumeric ? <CountUp value={value} /> : value}
+        </p>
+      </div>
+    </AnimatedCard>
   );
 }
 
@@ -32,16 +63,16 @@ function SubjectFeatureCard({
   const theme = getSubjectTheme(subject);
 
   return (
-    <div className={`rounded-lg border ${theme.border} bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow`}>
+    <div className={`rounded-xl border ${theme.border} bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col`}>
       <div className={`${theme.header} text-white p-4`}>
-        <h3 className="font-semibold">{title}</h3>
-        <div className="text-xs opacity-90">{subtitle}</div>
+        <h3 className="font-semibold truncate">{title}</h3>
+        <div className="text-xs opacity-90 truncate">{subtitle}</div>
       </div>
 
-      <div className="p-4 text-sm text-gray-700 space-y-1">
+      <div className="p-4 text-sm text-gray-700 space-y-1 flex-1">
         {details.map((detail) => (
           <div key={detail.label} className="flex justify-between gap-3">
-            <span>{detail.label}:</span>
+            <span className="text-gray-500">{detail.label}:</span>
             <span className={detail.emphasize ? 'font-bold text-lg' : 'font-medium'}>{detail.value}</span>
           </div>
         ))}
@@ -50,9 +81,10 @@ function SubjectFeatureCard({
       <div className="px-4 pb-4">
         <Link
           href={href}
-          className={`block text-center ${theme.button} px-4 py-2 rounded-md text-sm font-medium transition-colors`}
+          className={`flex items-center justify-center gap-1.5 ${theme.button} px-4 py-2 rounded-md text-sm font-medium transition-colors`}
         >
           {actionLabel}
+          <ArrowRight className="w-3.5 h-3.5" />
         </Link>
       </div>
     </div>
@@ -192,16 +224,19 @@ export default function DashboardPage() {
       label: 'Single Choice',
       value: dashboardSummary?.questions?.by_type?.SINGLE_CHOICE || 0,
       tone: 'sky',
+      icon: ClipboardList,
     },
     {
       label: 'Multiple Choice',
       value: dashboardSummary?.questions?.by_type?.MULTIPLE_CHOICE || 0,
       tone: 'indigo',
+      icon: Layers,
     },
     {
       label: 'Essay',
       value: dashboardSummary?.questions?.by_type?.ESSAY || 0,
       tone: 'amber',
+      icon: FileText,
     },
   ];
 
@@ -210,21 +245,25 @@ export default function DashboardPage() {
       label: 'Total Ujian',
       value: dashboardSummary?.exams?.total ?? allUjians.length,
       tone: 'sky',
+      icon: ClipboardList,
     },
     {
       label: 'Total Bank Soal',
       value: dashboardSummary?.question_banks?.total ?? bankSoal.length,
       tone: 'emerald',
+      icon: Library,
     },
     {
       label: 'Total Soal',
       value: dashboardSummary?.questions?.total ?? 0,
       tone: 'orange',
+      icon: FileText,
     },
     {
       label: 'Soal Sulit Terdeteksi',
       value: insightLoading ? '...' : alertCount,
       tone: 'rose',
+      icon: AlertTriangle,
     },
   ];
 
@@ -233,65 +272,79 @@ export default function DashboardPage() {
       label: 'Belum Dinilai',
       value: reviewSummary.pending,
       tone: 'amber',
+      icon: AlertTriangle,
     },
     {
       label: 'Sudah Dinilai',
       value: reviewSummary.graded,
       tone: 'emerald',
+      icon: CheckCircle2,
     },
     {
       label: 'Peserta Selesai',
       value: reviewSummary.completed,
       tone: 'sky',
+      icon: Users,
     },
     {
       label: 'Ujian Selesai',
       value: reviewExams.length,
       tone: 'violet',
+      icon: ClipboardList,
     },
   ];
 
   return (
     <TeacherLayout>
-      <div className="space-y-8">
-        <header className="bg-gradient-to-r from-sky-800 to-sky-700 text-white rounded-lg p-6 flex items-center gap-6">
-          <div className="w-20 h-20 rounded-full bg-white/20 flex items-center justify-center">
-            <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l9-5-9-5-9 5 9 5z" />
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 14l6.16-3.422A12.083 12.083 0 0118 18.75V21l-6-3-6 3v-2.25c0-2.487-.56-4.59-1.84-7.172L12 14z" />
-            </svg>
+      <div className="space-y-6">
+        <div className="bg-gradient-to-r from-sky-800 to-sky-600 rounded-xl p-8 text-white">
+          <div className="flex items-center gap-6">
+            <div className="w-24 h-24 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0">
+              <GraduationCap className="w-14 h-14 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold mb-2">Selamat Datang{authUser?.full_name ? `, ${authUser.full_name}` : ''}</h1>
+              <p className="text-sky-100">Akses bank soal, jadwalkan ujian, dan hasilkan laporan nilai secara otomatis dalam beberapa klik.</p>
+            </div>
           </div>
+        </div>
+
+        <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm space-y-6">
           <div>
-            <h1 className="text-3xl font-extrabold">Selamat Datang{authUser?.full_name ? `, ${authUser.full_name}` : ''}</h1>
-            <p className="text-sm opacity-90">Akses bank soal, jadwalkan ujian, dan hasilkan laporan nilai secara otomatis dalam beberapa klik.</p>
-          </div>
-        </header>
-
-        <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm space-y-5">
-          <div className="flex items-center justify-between gap-3">
             <h2 className="text-xl font-bold text-gray-900">Ringkasan Aktivitas</h2>
+            <p className="text-sm text-gray-500 mt-1">Statistik bank soal dan ujian yang Anda kelola</p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-            {questionTypeShortcutCards.map((card) => (
-              <ShortcutMetricCard
-                key={card.label}
-                label={card.label}
-                value={card.value}
-                tone={card.tone}
-              />
-            ))}
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Distribusi Tipe Soal</p>
+            <StaggerList className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {questionTypeShortcutCards.map((card) => (
+                <StaggerItem key={card.label}>
+                  <ShortcutMetricCard
+                    label={card.label}
+                    value={card.value}
+                    tone={card.tone}
+                    icon={card.icon}
+                  />
+                </StaggerItem>
+              ))}
+            </StaggerList>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {activityShortcutCards.map((card) => (
-              <ShortcutMetricCard
-                key={card.label}
-                label={card.label}
-                value={card.value}
-                tone={card.tone}
-              />
-            ))}
+          <div className="space-y-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Aktivitas Keseluruhan</p>
+            <StaggerList className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {activityShortcutCards.map((card) => (
+                <StaggerItem key={card.label}>
+                  <ShortcutMetricCard
+                    label={card.label}
+                    value={card.value}
+                    tone={card.tone}
+                    icon={card.icon}
+                  />
+                </StaggerItem>
+              ))}
+            </StaggerList>
           </div>
 
           <div className="space-y-4">
@@ -376,24 +429,29 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
+        <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl font-bold text-gray-900">Review Hasil Ujian</h2>
+            <div>
+              <h2 className="text-xl font-bold text-gray-900">Review Hasil Ujian</h2>
+              <p className="text-sm text-gray-500 mt-1">Ringkasan backlog penilaian dan hasil yang sudah dinilai</p>
+            </div>
             <Link href="/teacher/exam-results" className="text-sky-700 text-sm font-semibold hover:underline">
               Lihat Semua
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          <StaggerList className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             {reviewShortcutCards.map((card) => (
-              <ShortcutMetricCard
-                key={card.label}
-                label={card.label}
-                value={card.value}
-                tone={card.tone}
-              />
+              <StaggerItem key={card.label}>
+                <ShortcutMetricCard
+                  label={card.label}
+                  value={card.value}
+                  tone={card.tone}
+                  icon={card.icon}
+                />
+              </StaggerItem>
             ))}
-          </div>
+          </StaggerList>
 
           <div className="mt-4 space-y-2 max-h-[420px] overflow-y-auto pr-1">
             {baseLoading ? (
@@ -409,7 +467,7 @@ export default function DashboardPage() {
                 const gradedCount = participantResults.filter((item) => item.exam_status === 'GRADED').length;
 
                 return (
-                  <div key={exam.exam_id} className="rounded-lg border border-gray-200 bg-gray-50/70 p-4">
+                  <div key={exam.exam_id} className="rounded-xl border border-gray-200 bg-gray-50/70 p-4 hover:bg-gray-50 transition-colors">
                     <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                       <div>
                         <p className="font-semibold text-gray-900">{exam.exam_name}</p>
@@ -455,25 +513,27 @@ export default function DashboardPage() {
           </div>
         </section>
 
-        <section className="rounded-lg border bg-white p-4 shadow-sm">
+        <section className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <div className="space-y-2">
             <label htmlFor="examInsightFilter" className="text-sm font-semibold text-gray-800">
               Insight Berdasarkan Ujian
             </label>
-            <select
-              id="examInsightFilter"
+            <Select
               value={selectedExamId}
-              onChange={(event) => setSelectedExamId(event.target.value)}
-              className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm text-gray-700 focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-100"
+              onValueChange={setSelectedExamId}
               disabled={allUjians.length === 0}
             >
-              {allUjians.length === 0 && <option value="">Belum ada ujian</option>}
-              {allUjians.map((exam) => (
-                <option key={exam.exam_id} value={String(exam.exam_id)}>
-                  {exam.exam_name} • {exam.subject} • {exam.grade_level}{exam.major ? `-${exam.major}` : ''}
-                </option>
-              ))}
-            </select>
+              <SelectTrigger id="examInsightFilter" className="w-full">
+                <SelectValue placeholder={allUjians.length === 0 ? 'Belum ada ujian' : 'Pilih ujian'} />
+              </SelectTrigger>
+              <SelectContent>
+                {allUjians.map((exam) => (
+                  <SelectItem key={exam.exam_id} value={String(exam.exam_id)}>
+                    {exam.exam_name} • {exam.subject} • {exam.grade_level}{exam.major ? `-${exam.major}` : ''}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
             <p className="text-xs text-gray-500">
               Pilih ujian untuk mengubah ringkasan penilaian, distribusi nilai, dan daftar aksi review hasil ujian.
             </p>

@@ -9,6 +9,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { PageHeader } from '@/components/ui/page-header';
 import { Search, Home, ShieldCheck, Trash2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
@@ -198,10 +199,13 @@ export default function SemuaAdminPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredUsers.map(user => (
-                  <TableRow
+                filteredUsers.map((user, idx) => (
+                  <motion.tr
                     key={user.id}
-                    className={`hover:bg-gray-50 cursor-pointer ${selectedIds.has(user.id) ? 'bg-blue-50' : ''}`}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: Math.min(idx * 0.025, 0.3), duration: 0.25 }}
+                    className={`border-b transition-colors hover:bg-gray-50 cursor-pointer ${selectedIds.has(user.id) ? 'bg-blue-50' : ''}`}
                     onClick={() => router.push(`/admin/user-detail/${user.id}`)}
                   >
                     <TableCell onClick={e => e.stopPropagation()}>
@@ -230,7 +234,7 @@ export default function SemuaAdminPage() {
                         )}
                       </div>
                     </TableCell>
-                  </TableRow>
+                  </motion.tr>
                 ))
               )}
             </TableBody>

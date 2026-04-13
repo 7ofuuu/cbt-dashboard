@@ -6,6 +6,10 @@ import { useAuthContext } from '@/contexts/AuthContext';
 import { Users, Activity, GraduationCap, LogIn, Monitor } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import request from '@/utils/request';
+import { StaggerList, StaggerItem } from '@/components/motion/stagger-list';
+import { AnimatedCard } from '@/components/motion/animated-card';
+import { CountUp } from '@/components/motion/count-up';
+import { motion } from 'framer-motion';
 
 export default function DashboardAdmin() {
   // Protect this page - only admin can access
@@ -96,7 +100,7 @@ export default function DashboardAdmin() {
     {
       id: 1,
       title: 'Total Siswa',
-      value: loading ? '...' : userCounts.student.toString(),
+      value: loading ? null : userCounts.student,
       icon: Users,
       bgColor: 'bg-blue-50',
       iconColor: 'text-blue-500',
@@ -104,7 +108,7 @@ export default function DashboardAdmin() {
     {
       id: 2,
       title: 'Total Guru',
-      value: loading ? '...' : userCounts.teacher.toString(),
+      value: loading ? null : userCounts.teacher,
       icon: GraduationCap,
       bgColor: 'bg-red-50',
       iconColor: 'text-red-500',
@@ -112,7 +116,7 @@ export default function DashboardAdmin() {
     {
       id: 3,
       title: 'User Aktif (24 Jam)',
-      value: loading ? '...' : activeUsers.length.toString(),
+      value: loading ? null : activeUsers.length,
       icon: Monitor,
       bgColor: 'bg-green-50',
       iconColor: 'text-green-500',
@@ -146,27 +150,28 @@ export default function DashboardAdmin() {
         </div>
 
         {/* Stats Grid */}
-        <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
+        <StaggerList className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6'>
           {stats.map(stat => {
             const IconComponent = stat.icon;
             return (
-              <div
-                key={stat.id}
-                className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'
-              >
-                <div className='flex items-center justify-between'>
-                  <div>
-                    <h3 className='text-3xl font-bold text-gray-900 mb-1'>{stat.value}</h3>
-                    <p className='text-sm text-gray-500'>{stat.title}</p>
+              <StaggerItem key={stat.id}>
+                <AnimatedCard className='bg-white rounded-xl shadow-sm border border-gray-200 p-6'>
+                  <div className='flex items-center justify-between'>
+                    <div>
+                      <h3 className='text-3xl font-bold text-gray-900 mb-1'>
+                        {stat.value === null ? '...' : <CountUp value={stat.value} />}
+                      </h3>
+                      <p className='text-sm text-gray-500'>{stat.title}</p>
+                    </div>
+                    <div className={`w-16 h-16 ${stat.bgColor} rounded-full flex items-center justify-center`}>
+                      <IconComponent className={`w-8 h-8 ${stat.iconColor}`} />
+                    </div>
                   </div>
-                  <div className={`w-16 h-16 ${stat.bgColor} rounded-full flex items-center justify-center`}>
-                    <IconComponent className={`w-8 h-8 ${stat.iconColor}`} />
-                  </div>
-                </div>
-              </div>
+                </AnimatedCard>
+              </StaggerItem>
             );
           })}
-        </div>
+        </StaggerList>
 
         {/* Main Content Grid */}
         <div className='grid grid-cols-1 lg:grid-cols-3 gap-6'>
@@ -183,7 +188,13 @@ export default function DashboardAdmin() {
                   <div className='p-6 text-center text-gray-500'>Belum ada log aktivitas</div>
                 ) : (
                   activityLogs.map((log, idx) => (
-                    <div key={log.log_id || idx} className='flex items-center gap-3 px-6 py-3 hover:bg-gray-50'>
+                    <motion.div
+                      key={log.log_id || idx}
+                      initial={{ opacity: 0, x: -8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: idx * 0.03, duration: 0.3 }}
+                      className='flex items-center gap-3 px-6 py-3 hover:bg-gray-50'
+                    >
                       <div className='flex-shrink-0'>
                         {getActivityIcon(log.activity_type)}
                       </div>
@@ -201,7 +212,7 @@ export default function DashboardAdmin() {
                       <div className='flex-shrink-0 text-xs text-gray-400 whitespace-nowrap'>
                         {formatTimeAgo(log.created_at)}
                       </div>
-                    </div>
+                    </motion.div>
                   ))
                 )}
               </div>
@@ -222,7 +233,13 @@ export default function DashboardAdmin() {
                   <div className='p-6 text-center text-gray-500'>Tidak ada user aktif</div>
                 ) : (
                   activeUsers.map((user, idx) => (
-                    <div key={user.user_id || idx} className='flex items-center gap-3 px-6 py-3 hover:bg-gray-50'>
+                    <motion.div
+                      key={user.user_id || idx}
+                      initial={{ opacity: 0, x: 8 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: idx * 0.03, duration: 0.3 }}
+                      className='flex items-center gap-3 px-6 py-3 hover:bg-gray-50'
+                    >
                       <div className='flex-shrink-0'>
                         <div className='w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center'>
                           <span className='text-xs font-bold text-gray-600'>
@@ -239,9 +256,13 @@ export default function DashboardAdmin() {
                         </div>
                       </div>
                       <div className='flex-shrink-0'>
-                        <span className='inline-block w-2 h-2 rounded-full bg-green-400'></span>
+                        <motion.span
+                          className='inline-block w-2 h-2 rounded-full bg-green-400'
+                          animate={{ opacity: [1, 0.4, 1] }}
+                          transition={{ duration: 2, repeat: Infinity }}
+                        />
                       </div>
-                    </div>
+                    </motion.div>
                   ))
                 )}
               </div>

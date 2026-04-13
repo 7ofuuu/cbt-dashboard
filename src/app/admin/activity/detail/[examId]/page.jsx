@@ -13,6 +13,7 @@ import {
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { PageHeader } from '@/components/ui/page-header';
 import { Home } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
@@ -218,9 +219,12 @@ export default function DetailAktivitasPage({ params }) {
                       </td>
                     </tr>
                   ) : (
-                    filteredPesertaData.map((peserta) => (
-                      <tr
+                    filteredPesertaData.map((peserta, idx) => (
+                      <motion.tr
                         key={peserta.exam_participant_id}
+                        initial={{ opacity: 0, y: 6 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: Math.min(idx * 0.025, 0.3), duration: 0.25 }}
                         onClick={() => handleRowClick(peserta.exam_participant_id, peserta.status)}
                         className={`${peserta.is_blocked ? 'cursor-pointer hover:bg-gray-50' : ''}`}
                       >
@@ -237,11 +241,18 @@ export default function DetailAktivitasPage({ params }) {
                           {convertKelas(peserta.classroom, peserta.major)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <span className={`px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusStyle(peserta.status)}`}>
+                          <span className={`px-3 py-1 inline-flex items-center gap-1.5 text-xs leading-5 font-semibold rounded-full ${getStatusStyle(peserta.status)}`}>
+                            {(peserta.status === 'IN_PROGRESS' || peserta.is_blocked) && (
+                              <motion.span
+                                className={`inline-block w-1.5 h-1.5 rounded-full ${peserta.is_blocked ? 'bg-red-500' : 'bg-blue-500'}`}
+                                animate={{ opacity: [1, 0.35, 1] }}
+                                transition={{ duration: 1.4, repeat: Infinity }}
+                              />
+                            )}
                             {peserta.status}
                           </span>
                         </td>
-                      </tr>
+                      </motion.tr>
                     ))
                   )}
                 </tbody>
