@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { Search, Home } from 'lucide-react';
-import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { PageHeader } from '@/components/ui/page-header';
@@ -12,7 +11,7 @@ import request from '@/utils/request';
 import { useAuth } from '@/hooks/useAuth';
 import toast from 'react-hot-toast';
 
-export default function ListKelasPage() {
+function ListKelasPageContent() {
   useAuth(['teacher']);
   const params = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
@@ -21,6 +20,16 @@ export default function ListKelasPage() {
   
   const mataPelajaran = params?.get('mata') || 'Matematika';
   const ujianId = params?.get('ujianId');
+  const reviewModeParam = params?.get('review') || 'all';
+  const reviewMode = ['all', 'pending', 'graded'].includes(reviewModeParam)
+    ? reviewModeParam
+    : 'all';
+
+  const reviewLabel = reviewMode === 'pending'
+    ? 'Belum Dinilai'
+    : reviewMode === 'graded'
+    ? 'Sudah Dinilai'
+    : 'Semua Hasil';
   
   useEffect(() => {
     const fetchKelasData = async () => {
@@ -37,6 +46,14 @@ export default function ListKelasPage() {
           const kelasMap = new Map();
           
           selectedUjian.participant_results.forEach(item => {
+            const shouldInclude = reviewMode === 'all'
+              || (reviewMode === 'pending' && item.exam_status === 'COMPLETED')
+              || (reviewMode === 'graded' && item.exam_status === 'GRADED');
+
+            if (!shouldInclude) {
+              return;
+            }
+
             const kelasKey = item.student?.classroom;
             if (kelasKey) {
               if (!kelasMap.has(kelasKey)) {
@@ -74,7 +91,7 @@ export default function ListKelasPage() {
     if (ujianId) {
       fetchKelasData();
     }
-  }, [ujianId, mataPelajaran]);
+  }, [ujianId, mataPelajaran, reviewMode]);
   
   const filteredData = kelasData.filter(classroom =>
     classroom.full_name.toLowerCase().includes(searchQuery.toLowerCase())
@@ -103,7 +120,7 @@ export default function ListKelasPage() {
       <div className='space-y-6'>
         <PageHeader
           title={mataPelajaran}
-          description="Pilih kelas untuk melihat hasil ujian siswa"
+          description={`Pilih kelas untuk melihat hasil ujian siswa (${reviewLabel})`}
         />
 
         {/* Search Bar */}
@@ -126,7 +143,14 @@ export default function ListKelasPage() {
             </div>
           ) : filteredData.length > 0 ? (
             filteredData.map((classroom, i) => (
-              <KelasCard key={classroom.id} classroom={classroom} mataPelajaran={mataPelajaran} ujianId={ujianId} index={i} />
+              <KelasCard
+                key={classroom.id}
+                classroom={classroom}
+                mataPelajaran={mataPelajaran}
+                ujianId={ujianId}
+                review={reviewMode}
+                index={i}
+              />
             ))
           ) : (
             <div className='col-span-full text-center py-12'>
@@ -136,5 +160,21 @@ export default function ListKelasPage() {
         </div>
       </div>
     </TeacherLayout>
+  );
+}
+
+export default function ListKelasPage() {
+  return (
+    <Suspense
+      fallback={
+        <TeacherLayout>
+          <div className='flex justify-center items-center h-64'>
+            <p className='text-gray-600'>Loading...</p>
+          </div>
+        </TeacherLayout>
+      }
+    >
+      <ListKelasPageContent />
+    </Suspense>
   );
 }

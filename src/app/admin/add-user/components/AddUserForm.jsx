@@ -25,6 +25,8 @@ import {
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import request from '@/utils/request';
+import { Checkbox } from '@/components/ui/checkbox';
+import { SUBJECT_OPTIONS } from '@/lib/constants';
 import { Eye, EyeOff, CheckCircle2, XCircle, AlertCircle, RotateCcw, Upload } from 'lucide-react';
 import BatchImportDialog from './BatchImportDialog';
 
@@ -38,9 +40,6 @@ export default function AddUserForm({ role = 'general' }) {
   const [checkingUsername, setCheckingUsername] = useState(false);
   const [checkError, setCheckError] = useState(null);
 
-  // Debug: Log role to verify it's being passed correctly
-  useEffect(() => {
-  }, [role]);
   const [formData, setFormData] = useState({
     full_name: '',
     username: '',
@@ -52,6 +51,8 @@ export default function AddUserForm({ role = 'general' }) {
     nomorKelas: '',
     nisn: '',
     nip: '',
+    subject: '',
+    is_coordinator: false,
   });
 
   // Password strength calculation
@@ -105,10 +106,10 @@ export default function AddUserForm({ role = 'general' }) {
   };
 
   const handleInputChange = (e) => {
-    const { name, value } = e.target;
+    const { name, value, type, checked } = e.target;
     setFormData(prev => ({
       ...prev,
-      [name]: value,
+      [name]: type === 'checkbox' ? checked : value,
     }));
   };
 
@@ -136,6 +137,12 @@ export default function AddUserForm({ role = 'general' }) {
         newData.nomorKelas = '';
       }
 
+      if (name === 'role' && value !== 'teacher') {
+        newData.nip = '';
+        newData.subject = '';
+        newData.is_coordinator = false;
+      }
+
       return newData;
     });
   };
@@ -152,6 +159,8 @@ export default function AddUserForm({ role = 'general' }) {
       nomorKelas: '',
       nisn: '',
       nip: '',
+      subject: '',
+      is_coordinator: false,
     });
     setUsernameAvailable(null);
   };
@@ -184,6 +193,14 @@ export default function AddUserForm({ role = 'general' }) {
 
       // Add guru-specific fields
       if (formData.role === 'teacher') {
+        if (!formData.subject) {
+          toast.error('Mata pelajaran wajib diisi untuk guru');
+          setIsLoading(false);
+          return;
+        }
+
+        payload.subject = formData.subject;
+        payload.is_coordinator = formData.is_coordinator;
         if (formData.nip) payload.nip = formData.nip;
       }
 
@@ -453,6 +470,23 @@ export default function AddUserForm({ role = 'general' }) {
         {formData.role === 'teacher' && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             <div className="space-y-2">
+              <Label htmlFor="subject">Mata Pelajaran</Label>
+              <Select
+                value={formData.subject}
+                onValueChange={(value) => handleSelectChange('subject', value)}
+              >
+                <SelectTrigger id="subject">
+                  <SelectValue placeholder="Pilih Mata Pelajaran *" />
+                </SelectTrigger>
+                <SelectContent className="w-full">
+                  {SUBJECT_OPTIONS.map(subject => (
+                    <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-2">
               <Label htmlFor="nip">NIP</Label>
               <Input
                 id="nip"
@@ -462,6 +496,18 @@ export default function AddUserForm({ role = 'general' }) {
                 value={formData.nip}
                 onChange={handleInputChange}
               />
+            </div>
+
+            <div className="md:col-span-2 flex items-center gap-3 rounded-md border border-gray-200 bg-gray-50 p-3">
+              <Checkbox
+                id="is_coordinator"
+                checked={formData.is_coordinator}
+                onCheckedChange={(checked) => handleSelectChange('is_coordinator', checked === true)}
+              />
+              <div className="space-y-0.5">
+                <Label htmlFor="is_coordinator">Koordinator Mata Pelajaran</Label>
+                <p className="text-xs text-gray-500">Koordinator dapat mengakses semua mata pelajaran.</p>
+              </div>
             </div>
           </div>
         )}
@@ -560,11 +606,23 @@ export default function AddUserForm({ role = 'general' }) {
                       </div>
                     </>
                   )}
-                  {formData.role === 'teacher' && formData.nip && (
-                    <div className="flex justify-between">
-                      <span className="font-medium">NIP:</span>
-                      <span>{formData.nip}</span>
-                    </div>
+                  {formData.role === 'teacher' && (
+                    <>
+                      <div className="flex justify-between">
+                        <span className="font-medium">Mata Pelajaran:</span>
+                        <span>{formData.subject || '-'}</span>
+                      </div>
+                      {formData.nip && (
+                        <div className="flex justify-between">
+                          <span className="font-medium">NIP:</span>
+                          <span>{formData.nip}</span>
+                        </div>
+                      )}
+                      <div className="flex justify-between">
+                        <span className="font-medium">Koordinator:</span>
+                        <span>{formData.is_coordinator ? 'Ya' : 'Tidak'}</span>
+                      </div>
+                    </>
                   )}
                 </div>
               </div>

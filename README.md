@@ -58,11 +58,21 @@ npm install
 
 ### Environment Variables
 
-Create `.env.local` in the project root:
+Use `.env` in the project root (standardized onboarding, no `.env.local`).
+
+```bash
+# PowerShell
+Copy-Item .env.example .env
+```
+
+or create `.env` manually:
 
 ```env
-NEXT_PUBLIC_HOST=http://localhost:3000/api
+NEXT_PUBLIC_HOST=http://localhost:3000/api/
 ```
+
+- `NEXT_PUBLIC_HOST` must point to backend API base URL.
+- If backend runs on another host/port, update this value accordingly.
 
 ### Running the Application
 

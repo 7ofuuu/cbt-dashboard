@@ -1,4 +1,16 @@
 /** @type {import('next').NextConfig} */
+const apiBaseUrl = process.env.NEXT_PUBLIC_HOST || 'http://localhost:3000/api';
+
+const getApiOrigin = (url) => {
+  try {
+    return new URL(url).origin;
+  } catch {
+    return 'http://localhost:3000';
+  }
+};
+
+const apiOrigin = getApiOrigin(apiBaseUrl);
+
 const nextConfig = {
   async headers() {
     return [
@@ -18,7 +30,7 @@ const nextConfig = {
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
               "img-src 'self' data: blob:",
-              "connect-src 'self' " + (process.env.NEXT_PUBLIC_HOST || 'http://localhost:3000'),
+              "connect-src 'self' " + apiOrigin,
             ].join('; '),
           },
         ],

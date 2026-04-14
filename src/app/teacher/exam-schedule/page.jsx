@@ -13,6 +13,9 @@ import Link from 'next/link';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
 import { SUBJECT_OPTIONS, GRADE_LEVELS, MAJOR_OPTIONS } from '@/lib/constants';
+import { StaggerList, StaggerItem } from '@/components/motion/stagger-list';
+import { AnimatedCard } from '@/components/motion/animated-card';
+import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -221,13 +224,20 @@ export default function JadwalUjianPage() {
             {loading ? (
               <div className="text-center py-10">Memuat data...</div>
             ) : filteredUjians.length === 0 ? (
-                <div className="text-center py-10 text-gray-500">
+                <motion.div
+                  initial={{ opacity: 0, y: 8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="text-center py-10 text-gray-500"
+                >
                   {ujians.length === 0 ? 'Belum ada jadwal ujian' : 'Tidak ada ujian yang cocok dengan filter'}
-                </div>
+                </motion.div>
               ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+              <StaggerList className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                <AnimatePresence mode="popLayout">
                 {filteredUjians.map((u, i) => (
-                  <div key={u.exam_id} className="bg-white rounded-lg shadow-sm overflow-hidden border flex flex-col">
+                  <StaggerItem key={u.exam_id}>
+                  <AnimatedCard className="bg-white rounded-lg shadow-sm overflow-hidden border flex flex-col h-full">
 
                     <div className={`${getColor(i)} text-white p-4`}>
                       <div className="flex items-start justify-between gap-2">
@@ -311,9 +321,11 @@ export default function JadwalUjianPage() {
                         </AlertDialogContent>
                       </AlertDialog>
                     </div>
-                  </div>
+                  </AnimatedCard>
+                  </StaggerItem>
                 ))}
-              </div>
+                </AnimatePresence>
+              </StaggerList>
               )}
           </div>
         </div>

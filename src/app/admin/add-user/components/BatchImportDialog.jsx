@@ -50,7 +50,7 @@ export default function BatchImportDialog({ open, onOpenChange, role = 'student'
 
           // Get existing usernames from backend
           const response = await request.get('/users');
-          const existingUsernames = response.data.users?.map(u => u.username.toLowerCase()) || [];
+          const existingUsernames = response.data.data?.map(u => u.username.toLowerCase()) || [];
 
           // Check duplicates
           const duplicates = users.filter(user =>
@@ -97,9 +97,9 @@ export default function BatchImportDialog({ open, onOpenChange, role = 'student'
       csvContent += 'Contoh Siswa 2,siswa002,password123,XI-IPS-2,XI,IPS\n';
       csvContent += 'Contoh Siswa 3,siswa003,password123,XII-Bahasa-1,XII,Bahasa\n';
     } else if (role === 'teacher') {
-      csvContent = 'full_name,username,password\n';
-      csvContent += 'Contoh Guru 1,guru001,password123\n';
-      csvContent += 'Contoh Guru 2,guru002,password123\n';
+      csvContent = 'full_name,username,password,subject,is_coordinator,nip\n';
+      csvContent += 'Contoh Guru 1,guru001,password123,Matematika,false,198501012010011001\n';
+      csvContent += 'Contoh Guru 2,guru002,password123,Fisika,true,198602022011012002\n';
     } else if (role === 'admin') {
       csvContent = 'full_name,username,password\n';
       csvContent += 'Contoh Admin 1,admin001,password123\n';
@@ -189,7 +189,9 @@ export default function BatchImportDialog({ open, onOpenChange, role = 'student'
       // Validate required fields based on role
       const requiredFields = role === 'student'
         ? ['full_name', 'username', 'password', 'classroom', 'grade_level', 'major']
-        : ['full_name', 'username', 'password'];
+        : role === 'teacher'
+          ? ['full_name', 'username', 'password', 'subject']
+          : ['full_name', 'username', 'password'];
 
       const invalidUsers = users.filter(user =>
         !requiredFields.every(field => user[field])
@@ -439,6 +441,13 @@ export default function BatchImportDialog({ open, onOpenChange, role = 'student'
                   <li>Format classroom: TINGKAT-JURUSAN-NOMOR (contoh: X-IPA-1, XI-IPS-2)</li>
                   <li>Jurusan: IPA, IPS, atau Bahasa</li>
                   <li>Tingkat: X, XI, atau XII</li>
+                </>
+              )}
+              {role === 'teacher' && (
+                <>
+                  <li>Kolom subject wajib diisi (contoh: Matematika, Fisika)</li>
+                  <li>Kolom is_coordinator opsional (true/false)</li>
+                  <li>Kolom nip opsional</li>
                 </>
               )}
             </ul>

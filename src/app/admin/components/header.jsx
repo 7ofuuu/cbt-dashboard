@@ -46,8 +46,8 @@ export default function Header() {
             </div>
             <p className='text-xs text-gray-500 capitalize'>{isSuperAdmin ? 'Super Admin' : userRole}</p>
           </div>
-          <div className='w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center'>
-            <span className='text-sm font-semibold text-purple-600'>
+          <div className='w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center'>
+            <span className='text-sm font-semibold text-blue-700'>
               {userName.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
             </span>
           </div>

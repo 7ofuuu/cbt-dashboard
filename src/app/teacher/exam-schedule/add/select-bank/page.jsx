@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { Suspense, useState, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import TeacherLayout from '../../../teacherLayout';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,7 +14,7 @@ import request from '@/utils/request';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/hooks/useAuth';
 
-export default function PilihBankSoalPage() {
+function PilihBankSoalPageContent() {
   useAuth(['teacher']);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -214,5 +214,22 @@ export default function PilihBankSoalPage() {
         )}
       </div>
     </TeacherLayout>
+  );
+}
+
+export default function PilihBankSoalPage() {
+  return (
+    <Suspense
+      fallback={
+        <TeacherLayout>
+          <div className='flex items-center justify-center py-20'>
+            <Loader2 className='w-6 h-6 animate-spin text-muted-foreground mr-2' />
+            <span className='text-muted-foreground'>Loading...</span>
+          </div>
+        </TeacherLayout>
+      }
+    >
+      <PilihBankSoalPageContent />
+    </Suspense>
   );
 }

@@ -12,11 +12,13 @@ import { Separator } from '@/components/ui/separator';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { PageHeader } from '@/components/ui/page-header';
-import { Home, AlertTriangle, Shield, Key, User, BookOpen, GraduationCap, Clock, CheckCircle2, XCircle, Copy } from 'lucide-react';
+import { Home, AlertTriangle, Shield, Key, User, BookOpen, GraduationCap, Clock, CheckCircle2, XCircle, Copy, ArrowLeft, Check } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
 import { use } from 'react';
+import { AnimatePresence, motion } from 'framer-motion';
+import { StaggerList, StaggerItem } from '@/components/motion/stagger-list';
 
 export default function TerblokirPage({ params }) {
   useAuth(['admin']);
@@ -31,6 +33,9 @@ export default function TerblokirPage({ params }) {
   const [isBlocking, setIsBlocking] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isUnblocking, setIsUnblocking] = useState(false);
+  const [codeJustGenerated, setCodeJustGenerated] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
     if (examParticipantId) {
@@ -88,6 +93,8 @@ export default function TerblokirPage({ params }) {
       if (response.data.success) {
         toast.success('Kode unlock berhasil di-generate');
         setUnlockCode(response.data.data.unlock_code);
+        setCodeJustGenerated(true);
+        setTimeout(() => setCodeJustGenerated(false), 1800);
         fetchParticipantDetail();
       }
     } catch (error) {
@@ -111,7 +118,10 @@ export default function TerblokirPage({ params }) {
 
       if (response.data.success) {
         toast.success('Peserta berhasil di-unblock');
-        router.back();
+        setShowConfetti(true);
+        setTimeout(() => {
+          router.back();
+        }, 1200);
       }
     } catch (error) {
       toast.error(error.response?.data?.message || 'Gagal unblock peserta');
@@ -123,6 +133,8 @@ export default function TerblokirPage({ params }) {
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
     toast.success('Kode berhasil disalin');
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
   };
 
   // Helper function to convert grade_level from Roman to number
@@ -208,13 +220,24 @@ export default function TerblokirPage({ params }) {
         </BreadcrumbList>
       </Breadcrumb>
 
-      <div className="space-y-6">
+      <StaggerList className="space-y-6">
+        <StaggerItem>
         <PageHeader
           title="Manajemen Peserta Terblokir"
           description="Kelola status blokir dan kode unlock untuk peserta ujian"
-        />
+        >
+          <Button
+            onClick={() => router.back()}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <ArrowLeft className="w-4 h-4" /> Kembali
+          </Button>
+        </PageHeader>
+        </StaggerItem>
 
         {/* Student Info Card - Enhanced */}
+        <StaggerItem>
         <Card className="border-2">
           <CardHeader className="bg-gradient-to-r from-blue-50 to-indigo-50">
             <CardTitle className="text-xl flex items-center">
@@ -272,9 +295,18 @@ export default function TerblokirPage({ params }) {
             </div>
           </CardContent>
         </Card>
+        </StaggerItem>
 
         {/* Block/Unblock Section */}
+        <AnimatePresence mode="wait">
         {!pesertaData.is_blocked ? (
+          <motion.div
+            key="block-state"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.3 }}
+          >
           <Card className="border-2 border-orange-200">
             <CardHeader className="bg-gradient-to-r from-orange-50 to-red-50">
               <CardTitle className="text-xl flex items-center text-orange-900">
@@ -320,8 +352,16 @@ export default function TerblokirPage({ params }) {
               </Button>
             </CardContent>
           </Card>
+          </motion.div>
         ) : (
-          <>
+          <motion.div
+            key="unblock-state"
+            initial={{ opacity: 0, y: 12 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -12 }}
+            transition={{ duration: 0.3 }}
+            className="space-y-6"
+          >
             {/* Block Reason Card */}
             <Card className="border-2 border-red-200">
               <CardHeader className="bg-gradient-to-r from-red-50 to-orange-50">
@@ -352,39 +392,88 @@ export default function TerblokirPage({ params }) {
               </CardHeader>
               <CardContent className="pt-6 space-y-6">
                 {pesertaData.unlock_code && (
-                  <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6">
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.92 }}
+                    animate={{
+                      opacity: 1,
+                      scale: 1,
+                      boxShadow: codeJustGenerated
+                        ? ['0 0 0 0 rgba(59,130,246,0)', '0 0 0 14px rgba(59,130,246,0.25)', '0 0 0 0 rgba(59,130,246,0)']
+                        : '0 0 0 0 rgba(0,0,0,0)',
+                    }}
+                    transition={{
+                      type: 'spring',
+                      stiffness: 280,
+                      damping: 22,
+                      boxShadow: { duration: 1.4, repeat: codeJustGenerated ? 1 : 0 },
+                    }}
+                    className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-6"
+                  >
                     <p className="text-sm text-blue-800 font-medium mb-3 text-center">
                       Kode Unlock Saat Ini
                     </p>
                     <div className="flex items-center justify-center gap-3">
-                      <p className="text-4xl font-bold text-blue-900 tracking-[0.5em] font-mono">
+                      <motion.p
+                        key={pesertaData.unlock_code}
+                        initial={{ scale: 0.7, opacity: 0, rotate: -4 }}
+                        animate={{ scale: 1, opacity: 1, rotate: 0 }}
+                        transition={{ type: 'spring', stiffness: 260, damping: 18 }}
+                        className="text-4xl font-bold text-blue-900 tracking-[0.5em] font-mono"
+                      >
                         {pesertaData.unlock_code}
-                      </p>
+                      </motion.p>
                       <Button
                         onClick={() => copyToClipboard(pesertaData.unlock_code)}
                         variant="ghost"
                         size="sm"
-                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-100"
+                        className="text-blue-600 hover:text-blue-700 hover:bg-blue-100 relative"
                       >
-                        <Copy className="w-4 h-4" />
+                        <AnimatePresence mode="wait" initial={false}>
+                          {copied ? (
+                            <motion.span
+                              key="check"
+                              initial={{ scale: 0, rotate: -20 }}
+                              animate={{ scale: 1, rotate: 0 }}
+                              exit={{ scale: 0, opacity: 0 }}
+                              transition={{ type: 'spring', stiffness: 400, damping: 18 }}
+                              className="flex items-center"
+                            >
+                              <Check className="w-4 h-4 text-green-600" />
+                            </motion.span>
+                          ) : (
+                            <motion.span
+                              key="copy"
+                              initial={{ scale: 0.8, opacity: 0 }}
+                              animate={{ scale: 1, opacity: 1 }}
+                              exit={{ scale: 0.8, opacity: 0 }}
+                              transition={{ duration: 0.15 }}
+                              className="flex items-center"
+                            >
+                              <Copy className="w-4 h-4" />
+                            </motion.span>
+                          )}
+                        </AnimatePresence>
                       </Button>
                     </div>
                     <p className="text-xs text-blue-700 mt-3 text-center">
                       Berikan kode ini kepada siswa untuk membuka blokir
                     </p>
-                  </div>
+                  </motion.div>
                 )}
 
-                <Alert className="bg-blue-50 border-blue-200">
-                  <Key className="h-4 w-4 text-blue-600" />
-                  <AlertDescription className="text-blue-800">
-                    Kode unlock terdiri dari 6 karakter alfanumerik. Siswa akan memasukkan kode ini untuk melanjutkan ujian.
-                  </AlertDescription>
-                </Alert>
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  <p className="text-sm font-semibold text-gray-800 mb-2">Langkah Buka Blokir</p>
+                  <ol className="text-sm text-gray-700 space-y-1 list-decimal list-inside">
+                    <li>Klik <span className="font-semibold text-blue-700">Generate</span> untuk membuat kode unlock 6 karakter.</li>
+                    <li>Salin kode, lalu serahkan kepada siswa yang bersangkutan.</li>
+                    <li>Klik <span className="font-semibold text-green-700">Unblock Peserta</span> untuk menyelesaikan proses.</li>
+                  </ol>
+                </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Masukkan atau Generate Kode Baru
+                    Kode Unlock
+                    <span className="text-xs text-gray-500 font-normal ml-1">(6 karakter alfanumerik)</span>
                   </label>
                   <div className="flex gap-2">
                     <Input
@@ -416,9 +505,47 @@ export default function TerblokirPage({ params }) {
                 </Button>
               </CardContent>
             </Card>
-          </>
+          </motion.div>
         )}
-      </div>
+        </AnimatePresence>
+      </StaggerList>
+
+      {/* Success confetti overlay */}
+      <AnimatePresence>
+        {showConfetti && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="pointer-events-none fixed inset-0 z-50 flex items-center justify-center"
+          >
+            <motion.div
+              initial={{ scale: 0, rotate: -20 }}
+              animate={{ scale: 1, rotate: 0 }}
+              transition={{ type: 'spring', stiffness: 260, damping: 14 }}
+              className="rounded-full bg-green-500 p-6 shadow-2xl"
+            >
+              <CheckCircle2 className="h-16 w-16 text-white" strokeWidth={2.5} />
+            </motion.div>
+            {[...Array(14)].map((_, i) => {
+              const angle = (i / 14) * Math.PI * 2;
+              const distance = 140;
+              const x = Math.cos(angle) * distance;
+              const y = Math.sin(angle) * distance;
+              const colors = ['bg-green-400', 'bg-emerald-500', 'bg-blue-400', 'bg-yellow-400', 'bg-pink-400'];
+              return (
+                <motion.span
+                  key={i}
+                  initial={{ x: 0, y: 0, opacity: 1, scale: 0 }}
+                  animate={{ x, y, opacity: 0, scale: 1.4, rotate: 360 }}
+                  transition={{ duration: 0.9, ease: 'easeOut' }}
+                  className={`absolute h-3 w-3 rounded-sm ${colors[i % colors.length]}`}
+                />
+              );
+            })}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </AdminLayout>
   );
 }
