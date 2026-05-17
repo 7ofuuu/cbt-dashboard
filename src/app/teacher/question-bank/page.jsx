@@ -13,9 +13,8 @@ import { Search, Plus, RefreshCw, Eye, BookOpen, FileText, ListChecks, Home } fr
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import request from '@/utils/request';
-import { getUser } from '@/utils/auth';
 import toast from 'react-hot-toast';
-import { GRADE_LEVELS, MAJOR_OPTIONS } from '@/lib/constants';
+import { GRADE_LEVELS, MAJOR_OPTIONS, getSubjectTheme } from '@/lib/constants';
 
 export default function BankSoalPage() {
   useAuth(['teacher']);
@@ -48,6 +47,14 @@ export default function BankSoalPage() {
 
   useEffect(() => {
     fetchBankSoal();
+  }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const initialQuery = params.get('q');
+    if (initialQuery) {
+      setQuery(initialQuery);
+    }
   }, []);
 
   // Statistik
@@ -104,18 +111,6 @@ export default function BankSoalPage() {
 
     return result;
   }, [bankSoal, query, filterTingkat, filterJurusan, sortBy]);
-
-  const getBankColor = (mataPelajaran) => {
-    const subject = (mataPelajaran || '').toLowerCase();
-    if (subject.includes('matematika')) return 'bg-teal-700 text-white';
-    if (subject.includes('fisika')) return 'bg-sky-700 text-white';
-    if (subject.includes('biologi')) return 'bg-emerald-600 text-white';
-    if (subject.includes('kimia')) return 'bg-fuchsia-600 text-white';
-    if (subject.includes('bahasa')) return 'bg-violet-400 text-white';
-    return 'bg-gray-200 text-gray-800';
-  };
-
-  const user = getUser();
 
   const handleViewDetail = (bank) => {
     router.push(`/teacher/question-bank/${bank.question_bank_id}`);
@@ -307,12 +302,12 @@ export default function BankSoalPage() {
 
             {filteredAndSortedBanks.map(bank => {
               const classroom = `${bank.grade_level}${bank.major ? ` - ${bank.major}` : ''}`;
-              const color = getBankColor(bank.subject);
+              const theme = getSubjectTheme(bank.subject);
 
               return (
-                <Card key={bank.question_bank_id} className='rounded-xl hover:shadow-xl transition-all duration-300 overflow-hidden border-0 shadow-md'>
+                <Card key={bank.question_bank_id} className={`rounded-xl hover:shadow-xl transition-all duration-300 overflow-hidden shadow-md border ${theme.border}`}>
                   {/* Header dengan Gradient */}
-                  <div className={`${color} px-5 py-4`}>
+                  <div className={`${theme.header} px-5 py-4 text-white`}>
                     <h4 className='font-bold text-lg mb-1'>{bank.subject}</h4>
                     <p className='text-sm opacity-90 lowercase'>{classroom}</p>
                   </div>
@@ -323,14 +318,14 @@ export default function BankSoalPage() {
                     {bank.teacher && (
                       <div className='flex justify-between items-center text-sm'>
                         <span className='text-gray-600'>Pembuat:</span>
-                        <span className='font-medium text-blue-600'>{bank.teacher.full_name}</span>
+                        <span className='font-medium text-gray-700'>{bank.teacher.full_name}</span>
                       </div>
                     )}
 
                     {/* Total Soal - Featured */}
                     <div className='flex justify-between items-center'>
                       <span className='text-gray-600 font-medium'>Total Soal:</span>
-                      <span className='font-bold text-3xl text-blue-600'>{bank.total_questions}</span>
+                      <span className='font-bold text-3xl text-gray-900'>{bank.total_questions}</span>
                     </div>
 
                     {/* Detail Soal */}
@@ -350,8 +345,8 @@ export default function BankSoalPage() {
                       <Button
                         onClick={() => handleViewDetail(bank)}
                         size='sm'
-                        variant='outline'
-                        className='w-full flex items-center justify-center gap-2 hover:bg-blue-600 hover:text-white hover:border-blue-600 transition-colors'
+                        variant='ghost'
+                        className={`w-full flex items-center justify-center gap-2 border transition-colors hover:opacity-90 ${theme.border} ${theme.button}`}
                       >
                         <Eye className='w-4 h-4' />
                         Lihat Detail

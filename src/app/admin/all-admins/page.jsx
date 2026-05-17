@@ -2,10 +2,14 @@
 
 import AdminLayout from '../adminLayout';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { PageHeader } from '@/components/ui/page-header';
-import { Search, Home, ShieldCheck } from 'lucide-react';
+import { Search, Home, ShieldCheck, Trash2 } from 'lucide-react';
+import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
@@ -18,31 +22,76 @@ export default function SemuaAdminPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [selectedIds, setSelectedIds] = useState(new Set());
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [deleteResult, setDeleteResult] = useState(null);
+
+  const fetchUsers = async () => {
+    try {
+      setLoading(true);
+      const response = await request.get('/users/admins');
+      setUsers(response.data.data || []);
+    } catch (err) {
+      setError('Gagal memuat data admin');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        setLoading(true);
-
-        const response = await request.get('/users/admins');
-
-
-        setUsers(response.data.data);
-      } catch (err) {
-        setError('Gagal memuat data admin');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchUsers();
   }, []);
+
+  useEffect(() => {
+    setSelectedIds(new Set());
+  }, [searchQuery, users]);
 
   const filteredUsers = users.filter(user => {
     const nama = user.full_name || '';
     const matchesSearch = nama.toLowerCase().includes(searchQuery.toLowerCase()) || user.username.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesSearch;
   });
+
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (filteredUsers.length === 0) return;
+    if (selectedIds.size === filteredUsers.length) {
+      setSelectedIds(new Set());
+      return;
+    }
+    setSelectedIds(new Set(filteredUsers.map((user) => user.id)));
+  };
+
+  const handleBatchDelete = async () => {
+    if (selectedIds.size === 0) return;
+
+    setDeleting(true);
+    setDeleteResult(null);
+    try {
+      const response = await request.post('/users/batch-delete', {
+        user_ids: Array.from(selectedIds),
+      });
+
+      setDeleteResult(response.data);
+      setSelectedIds(new Set());
+      await fetchUsers();
+    } catch (err) {
+      setDeleteResult({
+        error: err.response?.data?.error || 'Gagal menghapus data admin terpilih',
+      });
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   return (
     <AdminLayout>
@@ -80,11 +129,41 @@ export default function SemuaAdminPage() {
           </div>
         </div>
 
+        {selectedIds.size > 0 && (
+          <div className='flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg'>
+            <Button
+              variant='destructive'
+              size='sm'
+              onClick={() => setShowDeleteDialog(true)}
+            >
+              <Trash2 className='w-4 h-4 mr-2' />
+              Hapus {selectedIds.size} Terpilih
+            </Button>
+            <span className='text-sm text-gray-600 ml-auto'>{selectedIds.size} admin dipilih</span>
+          </div>
+        )}
+
+        {deleteResult && (
+          <div className={`p-3 rounded-lg border text-sm ${deleteResult.error ? 'bg-red-50 border-red-200 text-red-700' : 'bg-green-50 border-green-200 text-green-700'}`}>
+            {deleteResult.error
+              ? deleteResult.error
+              : `${deleteResult.deleted_count} user berhasil dihapus.${deleteResult.skipped_count > 0 ? ` ${deleteResult.skipped_count} dilewati (super admin/akun sendiri).` : ''}`}
+            <button className='ml-4 underline' onClick={() => setDeleteResult(null)}>Tutup</button>
+          </div>
+        )}
+
         {/* Table */}
         <div className='bg-white rounded-lg border border-gray-200 overflow-hidden'>
           <Table>
             <TableHeader>
               <TableRow className='bg-[#003366] hover:bg-[#003366]'>
+                <TableHead className='w-10'>
+                  <Checkbox
+                    checked={filteredUsers.length > 0 && selectedIds.size === filteredUsers.length}
+                    onCheckedChange={toggleSelectAll}
+                    className='border-white data-[state=checked]:bg-white data-[state=checked]:text-[#003366]'
+                  />
+                </TableHead>
                 <TableHead className='text-white font-semibold'>Foto</TableHead>
                 <TableHead className='text-white font-semibold'>Username</TableHead>
                 <TableHead className='text-white font-semibold'>Nama</TableHead>
@@ -95,7 +174,7 @@ export default function SemuaAdminPage() {
               {loading ? (
                 <TableRow>
                   <TableCell
-                    colSpan={4}
+                    colSpan={5}
                     className='text-center py-12 text-gray-500'
                   >
                     Loading...
@@ -104,7 +183,7 @@ export default function SemuaAdminPage() {
               ) : error ? (
                 <TableRow>
                   <TableCell
-                    colSpan={4}
+                    colSpan={5}
                     className='text-center py-12 text-red-500'
                   >
                     {error}
@@ -113,19 +192,28 @@ export default function SemuaAdminPage() {
               ) : filteredUsers.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={4}
+                    colSpan={5}
                     className='text-center py-12 text-gray-500'
                   >
                     Tidak ada data admin ditemukan
                   </TableCell>
                 </TableRow>
               ) : (
-                filteredUsers.map(user => (
-                  <TableRow
+                filteredUsers.map((user, idx) => (
+                  <motion.tr
                     key={user.id}
-                    className='hover:bg-gray-50 cursor-pointer'
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: Math.min(idx * 0.025, 0.3), duration: 0.25 }}
+                    className={`border-b transition-colors hover:bg-gray-50 cursor-pointer ${selectedIds.has(user.id) ? 'bg-blue-50' : ''}`}
                     onClick={() => router.push(`/admin/user-detail/${user.id}`)}
                   >
+                    <TableCell onClick={e => e.stopPropagation()}>
+                      <Checkbox
+                        checked={selectedIds.has(user.id)}
+                        onCheckedChange={() => toggleSelect(user.id)}
+                      />
+                    </TableCell>
                     <TableCell>
                       <div className='w-10 h-10 rounded-full bg-purple-100 flex items-center justify-center'>
                         <span className='text-sm font-bold text-purple-600'>
@@ -146,13 +234,38 @@ export default function SemuaAdminPage() {
                         )}
                       </div>
                     </TableCell>
-                  </TableRow>
+                  </motion.tr>
                 ))
               )}
             </TableBody>
           </Table>
         </div>
       </div>
+
+      <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className='text-red-600'>Konfirmasi Hapus Data Admin</AlertDialogTitle>
+            <AlertDialogDescription className='text-gray-700'>
+              Anda akan menghapus {selectedIds.size} admin terpilih. Super admin dan akun Anda sendiri akan otomatis dilewati oleh sistem.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleting}>Batal</AlertDialogCancel>
+            <AlertDialogAction
+              className='bg-red-600 hover:bg-red-700'
+              disabled={deleting}
+              onClick={async (e) => {
+                e.preventDefault();
+                await handleBatchDelete();
+                setShowDeleteDialog(false);
+              }}
+            >
+              {deleting ? 'Menghapus...' : 'Ya, Hapus'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AdminLayout>
   );
 }

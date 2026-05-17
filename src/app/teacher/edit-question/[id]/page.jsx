@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import TeacherLayout from '../../teacherLayout';
 import { useAuth } from '@/hooks/useAuth';
@@ -8,17 +8,19 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
-import { ArrowLeft, Save, RefreshCw, Home, Trash2 } from 'lucide-react';
-import Link from 'next/link';
+import { ArrowLeft, Save, RefreshCw, Home, Trash2, Plus, Image as ImageIcon, X, CircleDot, SquareCheck, FileText, CheckCircle2, Loader2 } from 'lucide-react';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
+import { SUBJECT_OPTIONS, GRADE_LEVELS, MAJOR_OPTIONS } from '@/lib/constants';
 
 export default function EditSoalPage() {
   useAuth(['teacher']);
   const params = useParams();
   const router = useRouter();
+  const fileInputRef = useRef(null);
   
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -31,6 +33,12 @@ export default function EditSoalPage() {
   const [grade_level, setTingkat] = useState('');
   const [major, setJurusan] = useState('');
   const [opsiJawaban, setOpsiJawaban] = useState([]);
+  
+  // Image state
+  const [imageFile, setImageFile] = useState(null);
+  const [imagePreview, setImagePreview] = useState(null);
+  const [imageUrl, setImageUrl] = useState('');
+  const [existingImage, setExistingImage] = useState(null); // From DB
 
   useEffect(() => {
     const fetchSoal = async () => {
@@ -51,6 +59,12 @@ export default function EditSoalPage() {
         setMataPelajaran(data.subject || '');
         setTingkat(data.grade_level || '');
         setJurusan(data.major || '');
+        
+        // Load existing image
+        if (data.question_image) {
+          setExistingImage(data.question_image);
+          setImageUrl(data.question_image);
+        }
         
         if (data.answer_options && data.answer_options.length > 0) {
           setOpsiJawaban(data.answer_options.map(o => ({
@@ -83,6 +97,10 @@ export default function EditSoalPage() {
   };
 
   const handleRemoveOpsi = (index) => {
+    if (opsiJawaban.length <= 2) {
+      toast.error('Minimal 2 opsi jawaban');
+      return;
+    }
     const newOpsi = opsiJawaban.filter((_, i) => i !== index);
     setOpsiJawaban(newOpsi.map((o, i) => ({
       ...o,
@@ -104,6 +122,45 @@ export default function EditSoalPage() {
     setOpsiJawaban(newOpsi);
   };
 
+  const handleChangeType = (newType) => {
+    setTipeSoal(newType);
+    if (newType === 'ESSAY') {
+      setOpsiJawaban([]);
+    } else if (opsiJawaban.length === 0) {
+      // Switching from essay to MC: create default options
+      setOpsiJawaban([
+        { label: 'A', option_text: '', is_correct: false },
+        { label: 'B', option_text: '', is_correct: false },
+        { label: 'C', option_text: '', is_correct: false },
+        { label: 'D', option_text: '', is_correct: false },
+      ]);
+    } else {
+      // Switching between single/multi: reset correct flags
+      setOpsiJawaban(opsiJawaban.map(o => ({ ...o, is_correct: false })));
+    }
+  };
+
+  // Image handling
+  const handleImageSelect = (file) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      setImageFile(file);
+      setImagePreview(e.target.result);
+      setExistingImage(null);
+      setImageUrl('');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const removeImage = () => {
+    setImageFile(null);
+    setImagePreview(null);
+    setImageUrl('');
+    setExistingImage(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const handleSave = async () => {
     if (!teksSoal.trim()) {
       toast.error('Teks soal tidak boleh kosong');
@@ -111,7 +168,7 @@ export default function EditSoalPage() {
     }
 
     if (!mataPelajaran || !grade_level) {
-      toast.error('Mata pelajaran dan grade_level harus diisi');
+      toast.error('Mata pelajaran dan tingkat harus diisi');
       return;
     }
 
@@ -124,6 +181,10 @@ export default function EditSoalPage() {
         toast.error('Minimal 1 opsi harus ditandai sebagai jawaban benar');
         return;
       }
+      if (tipeSoal === 'SINGLE_CHOICE' && opsiJawaban.filter(o => o.is_correct).length > 1) {
+        toast.error('Pilihan tunggal hanya boleh punya 1 jawaban benar');
+        return;
+      }
       if (opsiJawaban.some(o => !o.option_text.trim())) {
         toast.error('Semua opsi harus diisi');
         return;
@@ -132,12 +193,36 @@ export default function EditSoalPage() {
 
     setSaving(true);
     try {
+      // Handle image upload
+      let questionImage = existingImage; // Keep existing by default
+      
+      if (imageFile) {
+        // Upload new file
+        const formData = new FormData();
+        formData.append('image', imageFile);
+        try {
+          const uploadRes = await request.post('/upload', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+          questionImage = uploadRes.data.url || uploadRes.data.path;
+        } catch {
+          console.warn('Image upload failed, continuing without image change');
+        }
+      } else if (imageUrl && imageUrl.trim() && imageUrl !== existingImage) {
+        // New URL provided
+        questionImage = imageUrl.trim();
+      } else if (!imageUrl && !imageFile && !existingImage) {
+        // Image was removed
+        questionImage = null;
+      }
+
       const payload = {
         question_type: tipeSoal,
         question_text: teksSoal,
         subject: mataPelajaran,
         grade_level,
         major: major || null,
+        question_image: questionImage,
       };
 
       if (tipeSoal !== 'ESSAY') {
@@ -159,6 +244,24 @@ export default function EditSoalPage() {
     }
   };
 
+  const getTypeIcon = (type) => {
+    switch (type) {
+      case 'SINGLE_CHOICE': return <CircleDot className="w-4 h-4" />;
+      case 'MULTIPLE_CHOICE': return <SquareCheck className="w-4 h-4" />;
+      case 'ESSAY': return <FileText className="w-4 h-4" />;
+      default: return null;
+    }
+  };
+
+  const getTypeLabel = (type) => {
+    switch (type) {
+      case 'SINGLE_CHOICE': return 'Pilihan Ganda';
+      case 'MULTIPLE_CHOICE': return 'Pilihan Ganda (Multi)';
+      case 'ESSAY': return 'Essay';
+      default: return type;
+    }
+  };
+
   if (loading) {
     return (
       <TeacherLayout>
@@ -171,6 +274,11 @@ export default function EditSoalPage() {
       </TeacherLayout>
     );
   }
+
+  // Current image to display
+  const displayImage = imagePreview || existingImage;
+  const isChoice = tipeSoal === 'SINGLE_CHOICE' || tipeSoal === 'MULTIPLE_CHOICE';
+  const inputType = tipeSoal === 'SINGLE_CHOICE' ? 'radio' : 'checkbox';
 
   return (
     <TeacherLayout>
@@ -189,7 +297,7 @@ export default function EditSoalPage() {
             </BreadcrumbItem>
             <BreadcrumbSeparator />
             <BreadcrumbItem>
-              <BreadcrumbPage>Edit Soal</BreadcrumbPage>
+              <BreadcrumbPage>Edit Soal #{params.id}</BreadcrumbPage>
             </BreadcrumbItem>
           </BreadcrumbList>
         </Breadcrumb>
@@ -206,37 +314,42 @@ export default function EditSoalPage() {
             </Button>
             <div>
               <h2 className='text-2xl font-bold'>Edit Soal</h2>
-              <p className='text-sm text-gray-600'>ID: {params.id}</p>
+              <p className='text-sm text-gray-600'>
+                {mataPelajaran && `${mataPelajaran} • `}ID: {params.id}
+              </p>
             </div>
           </div>
-          <div className='flex items-center gap-2'>
-            <Button 
-              onClick={handleSave}
-              disabled={saving}
-              className='bg-[#03356C] hover:bg-[#02509E]'
-            >
-              <Save className='w-4 h-4 mr-2' />
-              {saving ? 'Menyimpan...' : 'Simpan Perubahan'}
-            </Button>
-          </div>
+          <Button 
+            onClick={handleSave}
+            disabled={saving}
+            className='bg-[#03356C] hover:bg-[#02509E]'
+          >
+            {saving ? (
+              <><Loader2 className='w-4 h-4 mr-2 animate-spin' /> Menyimpan...</>
+            ) : (
+              <><Save className='w-4 h-4 mr-2' /> Simpan Perubahan</>
+            )}
+          </Button>
         </div>
 
-        {/* Form */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Detail Soal</CardTitle>
-          </CardHeader>
-          <CardContent className='space-y-6'>
-            {/* Tipe Soal */}
-            <div className='space-y-2'>
-              <label className='text-sm font-medium'>Tipe Soal</label>
-              <Select value={tipeSoal} onValueChange={setTipeSoal}>
-                <SelectTrigger>
+        {/* Form Card */}
+        <Card className="border-l-4 border-l-[#03356C]">
+          <CardContent className='pt-6 space-y-6'>
+            {/* Type selector */}
+            <div className='flex flex-col sm:flex-row sm:items-center justify-between gap-3'>
+              <div className='flex items-center gap-2'>
+                <Badge variant="outline" className="gap-1.5 text-sm py-1">
+                  {getTypeIcon(tipeSoal)}
+                  {getTypeLabel(tipeSoal)}
+                </Badge>
+              </div>
+              <Select value={tipeSoal} onValueChange={handleChangeType}>
+                <SelectTrigger className="w-64 h-9 text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="SINGLE_CHOICE">Pilihan Ganda (Single)</SelectItem>
-                  <SelectItem value="MULTIPLE_CHOICE">Pilihan Ganda (Multiple)</SelectItem>
+                  <SelectItem value="SINGLE_CHOICE">Pilihan Ganda (1 Jawaban)</SelectItem>
+                  <SelectItem value="MULTIPLE_CHOICE">Pilihan Ganda (Multi Jawaban)</SelectItem>
                   <SelectItem value="ESSAY">Essay</SelectItem>
                 </SelectContent>
               </Select>
@@ -244,115 +357,187 @@ export default function EditSoalPage() {
 
             {/* Teks Soal */}
             <div className='space-y-2'>
-              <label className='text-sm font-medium'>Teks Soal *</label>
+              <label className='text-sm font-medium'>Teks Soal <span className="text-red-500">*</span></label>
               <Textarea
                 value={teksSoal}
                 onChange={(e) => setTeksSoal(e.target.value)}
-                placeholder='Masukkan pertanyaan soal...'
+                placeholder='Tulis pertanyaan di sini...'
                 rows={4}
               />
             </div>
 
-            {/* Mata Pelajaran, Tingkat, Jurusan */}
+            {/* Image Upload / URL */}
+            <div className='space-y-2'>
+              <label className='text-sm font-medium'>Gambar Soal</label>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  if (e.target.files?.[0]) handleImageSelect(e.target.files[0]);
+                }}
+              />
+              {displayImage ? (
+                <div className="relative inline-block">
+                  <img
+                    src={displayImage}
+                    alt="Preview gambar soal"
+                    className="max-h-48 rounded-lg border object-contain bg-gray-50"
+                    onError={(e) => {
+                      e.target.style.display = 'none';
+                    }}
+                  />
+                  <Button
+                    variant="destructive"
+                    size="icon"
+                    className="absolute -top-2 -right-2 h-7 w-7 rounded-full"
+                    onClick={removeImage}
+                  >
+                    <X className="w-3 h-3" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="text-muted-foreground gap-2"
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <ImageIcon className="w-4 h-4" />
+                    Upload Gambar
+                  </Button>
+                  <span className="text-xs text-muted-foreground">atau</span>
+                  <Input
+                    value={imageUrl}
+                    placeholder="URL gambar (Google Drive, dsb.)"
+                    onChange={e => setImageUrl(e.target.value)}
+                    className="flex-1 h-8 text-sm"
+                  />
+                  {imageUrl && (
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => {
+                        setImagePreview(null);
+                        setExistingImage(imageUrl);
+                      }}
+                      title="Preview URL"
+                    >
+                      <ImageIcon className="w-4 h-4 text-blue-600" />
+                    </Button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Metadata: Subject, Grade, Major */}
             <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
               <div className='space-y-2'>
-                <label className='text-sm font-medium'>Mata Pelajaran *</label>
+                <label className='text-sm font-medium'>Mata Pelajaran <span className="text-red-500">*</span></label>
                 <Select value={mataPelajaran} onValueChange={setMataPelajaran}>
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="Matematika">Matematika</SelectItem>
-                    <SelectItem value="Fisika">Fisika</SelectItem>
-                    <SelectItem value="Kimia">Kimia</SelectItem>
-                    <SelectItem value="Biologi">Biologi</SelectItem>
-                    <SelectItem value="Bahasa Indonesia">Bahasa Indonesia</SelectItem>
-                    <SelectItem value="Bahasa Inggris">Bahasa Inggris</SelectItem>
+                    {SUBJECT_OPTIONS.map(s => (
+                      <SelectItem key={s} value={s}>{s}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
 
               <div className='space-y-2'>
-                <label className='text-sm font-medium'>Tingkat *</label>
+                <label className='text-sm font-medium'>Tingkat <span className="text-red-500">*</span></label>
                 <Select value={grade_level} onValueChange={setTingkat}>
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih..." />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="X">X</SelectItem>
-                    <SelectItem value="XI">XI</SelectItem>
-                    <SelectItem value="XII">XII</SelectItem>
+                    {GRADE_LEVELS.map(g => (
+                      <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
 
               <div className='space-y-2'>
-                <label className='text-sm font-medium'>Jurusan (Opsional)</label>
+                <label className='text-sm font-medium'>Jurusan</label>
                 <Select value={major || 'UMUM'} onValueChange={(v) => setJurusan(v === 'UMUM' ? '' : v)}>
                   <SelectTrigger>
                     <SelectValue placeholder="Pilih..." />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="UMUM">Semua Jurusan</SelectItem>
-                    <SelectItem value="IPA">IPA</SelectItem>
-                    <SelectItem value="IPS">IPS</SelectItem>
+                    {MAJOR_OPTIONS.map(m => (
+                      <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
             </div>
 
             {/* Opsi Jawaban (untuk PG) */}
-            {tipeSoal !== 'ESSAY' && (
-              <div className='space-y-4'>
+            {isChoice && (
+              <div className='space-y-3'>
                 <div className='flex items-center justify-between'>
-                  <label className='text-sm font-medium'>Opsi Jawaban</label>
+                  <label className='text-sm font-medium'>
+                    Opsi Jawaban
+                    <span className='text-xs text-muted-foreground ml-2'>
+                      {tipeSoal === 'SINGLE_CHOICE'
+                        ? '— Pilih 1 jawaban yang benar'
+                        : '— Centang semua jawaban yang benar'}
+                    </span>
+                  </label>
                   <Button
-                    type='button'
                     variant='outline'
                     size='sm'
                     onClick={handleAddOpsi}
                   >
-                    Tambah Opsi
+                    <Plus className='w-4 h-4 mr-1' /> Tambah Opsi
                   </Button>
                 </div>
 
-                <div className='space-y-3'>
+                <div className='space-y-2'>
                   {opsiJawaban.map((opsi, index) => (
-                    <div key={index} className='flex items-start gap-3 p-3 border rounded-lg'>
-                      <div className='flex items-center gap-2 min-w-[120px]'>
-                        <input
-                          type={tipeSoal === 'SINGLE_CHOICE' ? 'radio' : 'checkbox'}
-                          checked={opsi.is_correct}
-                          onChange={(e) => handleOpsiChange(index, 'is_correct', e.target.checked)}
-                          className='w-4 h-4'
-                        />
-                        <span className='font-medium'>{opsi.label}.</span>
-                      </div>
+                    <div key={index} className='flex items-center gap-3 group'>
+                      <input
+                        type={inputType}
+                        name={`answer_edit_${params.id}`}
+                        checked={opsi.is_correct}
+                        onChange={(e) => handleOpsiChange(index, 'is_correct', e.target.checked)}
+                        className='w-4 h-4 accent-[#03356C]'
+                      />
+                      <span className='text-sm font-medium text-muted-foreground w-5'>
+                        {opsi.label}.
+                      </span>
                       <Input
                         value={opsi.option_text}
                         onChange={(e) => handleOpsiChange(index, 'option_text', e.target.value)}
-                        placeholder='Isi opsi jawaban...'
-                        className='flex-1'
+                        placeholder={`Opsi ${opsi.label}`}
+                        className={`flex-1 ${opsi.is_correct ? 'border-green-400 bg-green-50/50' : ''}`}
                       />
+                      {opsi.is_correct && <CheckCircle2 className="w-4 h-4 text-green-600 flex-shrink-0" />}
                       <Button
-                        type='button'
-                        variant='outline'
+                        variant='ghost'
                         size='icon'
+                        className='h-8 w-8 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity'
                         onClick={() => handleRemoveOpsi(index)}
-                        className='text-red-600 hover:bg-red-50'
                         disabled={opsiJawaban.length <= 2}
                       >
-                        <Trash2 className='w-4 h-4' />
+                        <X className='w-4 h-4' />
                       </Button>
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
 
-                <p className='text-xs text-gray-500'>
-                  {tipeSoal === 'SINGLE_CHOICE' 
-                    ? 'Pilih satu opsi sebagai jawaban benar' 
-                    : 'Pilih satu atau lebih opsi sebagai jawaban benar'}
-                </p>
+            {tipeSoal === 'ESSAY' && (
+              <div className="bg-gray-50 rounded-lg p-4 text-sm text-muted-foreground italic">
+                Siswa akan menulis jawaban dalam bentuk teks bebas.
               </div>
             )}
           </CardContent>

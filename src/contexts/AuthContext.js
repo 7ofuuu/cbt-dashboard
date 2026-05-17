@@ -51,14 +51,22 @@ export function AuthProvider({ children }) {
     loadUser();
   }, []);
 
-  const login = (token, userData) => {
-    // Store only non-sensitive user info in cookie
-    const safeUserData = {
+  const buildSafeUserData = (userData) => {
+    const profile = userData?.profile || {};
+    return {
       id: userData.id,
       username: userData.username,
       role: userData.role,
-      full_name: userData.full_name || userData.profile?.full_name,
+      full_name: userData.full_name || profile.full_name,
+      is_super_admin: userData.is_super_admin || false,
+      is_coordinator: profile.is_coordinator === true || userData.is_coordinator === true,
+      subject: profile.subject || userData.subject || null,
     };
+  };
+
+  const login = (token, userData) => {
+    // Store only non-sensitive user info in cookie
+    const safeUserData = buildSafeUserData(userData);
     Cookies.set('token', token, COOKIE_OPTIONS);
     Cookies.set('user', JSON.stringify(safeUserData), COOKIE_OPTIONS);
     setUser(safeUserData);

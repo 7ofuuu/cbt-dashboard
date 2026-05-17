@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { motion } from 'framer-motion';
 
 import { House, Clipboard, Calendar, Book, KeyRound } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
@@ -66,10 +67,30 @@ export default function Sidebar() {
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-colors ${isActive ? 'bg-gray-200 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
+                className={`relative flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-colors group ${isActive ? 'text-sky-900 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
               >
-                {item.icon}
-                <span>{item.name}</span>
+                {isActive && (
+                  <motion.span
+                    layoutId='teacher-sidebar-active'
+                    className='absolute inset-0 bg-sky-100 rounded-lg -z-0'
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                  />
+                )}
+                {isActive && (
+                  <motion.span
+                    layoutId='teacher-sidebar-indicator'
+                    className='absolute left-0 top-2 bottom-2 w-1 bg-sky-600 rounded-r-full'
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                  />
+                )}
+                <motion.span
+                  className='relative z-10 flex items-center'
+                  whileHover={{ scale: 1.08 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                >
+                  {item.icon}
+                </motion.span>
+                <span className='relative z-10'>{item.name}</span>
               </Link>
             );
           })}

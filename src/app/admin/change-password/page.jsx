@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { Eye, EyeOff, Home, KeyRound, Loader2 } from 'lucide-react';
-import TeacherLayout from '../teacherLayout';
+import AdminLayout from '../adminLayout';
 import { useAuth } from '@/hooks/useAuth';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
@@ -15,8 +15,8 @@ import { PageHeader } from '@/components/ui/page-header';
 
 const isStrongPassword = (password) => /(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/.test(password);
 
-export default function TeacherChangePasswordPage() {
-  useAuth(['teacher']);
+export default function AdminChangePasswordPage() {
+  useAuth(['admin']);
 
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
@@ -73,12 +73,12 @@ export default function TeacherChangePasswordPage() {
   };
 
   return (
-    <TeacherLayout>
+    <AdminLayout>
       <div className='overflow-hidden'>
         <Breadcrumb className='mb-4'>
           <BreadcrumbList>
             <BreadcrumbItem>
-              <BreadcrumbLink href='/teacher/dashboard'>
+              <BreadcrumbLink href='/admin/dashboard'>
                 <Home className='h-4 w-4' />
               </BreadcrumbLink>
             </BreadcrumbItem>
@@ -91,15 +91,15 @@ export default function TeacherChangePasswordPage() {
 
         <PageHeader
           title='Ubah Password'
-          description='Perbarui password akun guru Anda dengan aman.'
+          description='Perbarui password akun admin Anda dengan aman.'
         />
 
         <div className='max-w-md'>
           <Card>
             <CardHeader>
               <div className='flex items-center gap-3'>
-                <div className='rounded-lg bg-sky-100 p-2'>
-                  <KeyRound className='h-5 w-5 text-sky-700' />
+                <div className='rounded-lg bg-blue-100 p-2'>
+                  <KeyRound className='h-5 w-5 text-blue-700' />
                 </div>
                 <div>
                   <CardTitle>Keamanan Akun</CardTitle>
@@ -110,10 +110,10 @@ export default function TeacherChangePasswordPage() {
             <CardContent>
               <form onSubmit={handleSubmit} className='space-y-5'>
                 <div className='space-y-2'>
-                  <Label htmlFor='teacher_current_password'>Password Saat Ini</Label>
+                  <Label htmlFor='admin_current_password'>Password Saat Ini</Label>
                   <div className='relative'>
                     <Input
-                      id='teacher_current_password'
+                      id='admin_current_password'
                       type={showCurrent ? 'text' : 'password'}
                       value={currentPassword}
                       onChange={(event) => setCurrentPassword(event.target.value)}
@@ -132,10 +132,10 @@ export default function TeacherChangePasswordPage() {
                 </div>
 
                 <div className='space-y-2'>
-                  <Label htmlFor='teacher_new_password'>Password Baru</Label>
+                  <Label htmlFor='admin_new_password'>Password Baru</Label>
                   <div className='relative'>
                     <Input
-                      id='teacher_new_password'
+                      id='admin_new_password'
                       type={showNew ? 'text' : 'password'}
                       value={newPassword}
                       onChange={(event) => setNewPassword(event.target.value)}
@@ -154,10 +154,10 @@ export default function TeacherChangePasswordPage() {
                 </div>
 
                 <div className='space-y-2'>
-                  <Label htmlFor='teacher_confirm_password'>Konfirmasi Password Baru</Label>
+                  <Label htmlFor='admin_confirm_password'>Konfirmasi Password Baru</Label>
                   <div className='relative'>
                     <Input
-                      id='teacher_confirm_password'
+                      id='admin_confirm_password'
                       type={showConfirm ? 'text' : 'password'}
                       value={confirmPassword}
                       onChange={(event) => setConfirmPassword(event.target.value)}
@@ -175,7 +175,7 @@ export default function TeacherChangePasswordPage() {
                   </div>
                 </div>
 
-                <Button type='submit' disabled={isLoading} className='w-full bg-sky-700 hover:bg-sky-800 text-white'>
+                <Button type='submit' disabled={isLoading} className='w-full bg-[#003366] hover:bg-[#002244] text-white'>
                   {isLoading ? (
                     <>
                       <Loader2 className='mr-2 h-4 w-4 animate-spin' />
@@ -190,6 +190,6 @@ export default function TeacherChangePasswordPage() {
           </Card>
         </div>
       </div>
-    </TeacherLayout>
+    </AdminLayout>
   );
 }

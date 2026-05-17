@@ -11,6 +11,7 @@ import { Pagination, PaginationContent, PaginationItem, PaginationLink, Paginati
 import { Checkbox } from '@/components/ui/checkbox';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Search, Home, Trash2 } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
@@ -357,10 +358,13 @@ export default function SemuaPenggunaPage() {
                   </TableCell>
                 </TableRow>
               ) : (
-                users.map(user => (
-                  <TableRow
+                users.map((user, idx) => (
+                  <motion.tr
                     key={user.id}
-                    className={`hover:bg-gray-50 cursor-pointer ${selectedIds.has(user.id) ? 'bg-blue-50' : ''}`}
+                    initial={{ opacity: 0, y: 6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: Math.min(idx * 0.025, 0.3), duration: 0.25 }}
+                    className={`border-b transition-colors hover:bg-gray-50 cursor-pointer ${selectedIds.has(user.id) ? 'bg-blue-50' : ''}`}
                   >
                     <TableCell onClick={e => e.stopPropagation()}>
                       <Checkbox
@@ -382,7 +386,7 @@ export default function SemuaPenggunaPage() {
                     <TableCell className='text-gray-900' onClick={() => router.push(`/admin/user-detail/${user.id}`)}>{user.grade_level || '-'}</TableCell>
                     <TableCell className='text-gray-900' onClick={() => router.push(`/admin/user-detail/${user.id}`)}>{user.major || '-'}</TableCell>
                     <TableCell className='text-gray-900 capitalize' onClick={() => router.push(`/admin/user-detail/${user.id}`)}>{user.role}</TableCell>
-                  </TableRow>
+                  </motion.tr>
                 ))
               )}
             </TableBody>

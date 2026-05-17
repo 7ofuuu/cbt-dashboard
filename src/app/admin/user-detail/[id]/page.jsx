@@ -5,6 +5,7 @@ import { useRouter, useParams } from 'next/navigation';
 import AdminLayout from '../../adminLayout';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
@@ -16,6 +17,7 @@ import toast from 'react-hot-toast';
 import request from '@/utils/request';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useAuth } from '@/hooks/useAuth';
+import { SUBJECT_OPTIONS } from '@/lib/constants';
 
 export default function UserDetailPage() {
   useAuth(['admin']);
@@ -49,6 +51,8 @@ export default function UserDetailPage() {
     nomorKelas: '',
     nisn: '',
     nip: '',
+    subject: '',
+    is_coordinator: false,
   });
 
   useEffect(() => {
@@ -90,6 +94,8 @@ export default function UserDetailPage() {
           nomorKelas: nomorKelas,
           nisn: userData.nisn || '',
           nip: userData.nip || '',
+          subject: userData.subject || '',
+          is_coordinator: userData.is_coordinator === true,
         });
       }
     } catch (err) {
@@ -143,6 +149,13 @@ export default function UserDetailPage() {
 
       // Add teacher-specific fields
       if (formData.role === 'teacher') {
+        if (!formData.subject) {
+          toast.error('Mata pelajaran wajib diisi untuk guru');
+          setSaving(false);
+          return;
+        }
+        updatePayload.subject = formData.subject;
+        updatePayload.is_coordinator = formData.is_coordinator;
         if (formData.nip !== undefined) updatePayload.nip = formData.nip || null;
       }
 
@@ -443,23 +456,61 @@ export default function UserDetailPage() {
 
               {/* Guru specific fields */}
               {formData.role === 'teacher' && (
-                <div className='space-y-2'>
-                  <Label
-                    htmlFor='nip'
-                    className='text-gray-700'
-                  >
-                    NIP
-                  </Label>
-                  <Input
-                    id='nip'
-                    type='text'
-                    placeholder='Nomor Induk Pegawai'
-                    value={formData.nip}
-                    onChange={e => handleInputChange('nip', e.target.value)}
-                    disabled={!canEdit}
-                    className='bg-white border-gray-300'
-                  />
-                </div>
+                <>
+                  <div className='space-y-2'>
+                    <Label
+                      htmlFor='subject'
+                      className='text-gray-700'
+                    >
+                      Mata Pelajaran
+                    </Label>
+                    <Select
+                      value={formData.subject}
+                      onValueChange={value => handleInputChange('subject', value)}
+                      disabled={!canEdit}
+                    >
+                      <SelectTrigger className='bg-white border-gray-300'>
+                        <SelectValue placeholder='Pilih Mata Pelajaran' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {SUBJECT_OPTIONS.map(subject => (
+                          <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className='space-y-2'>
+                    <Label
+                      htmlFor='nip'
+                      className='text-gray-700'
+                    >
+                      NIP
+                    </Label>
+                    <Input
+                      id='nip'
+                      type='text'
+                      placeholder='Nomor Induk Pegawai'
+                      value={formData.nip}
+                      onChange={e => handleInputChange('nip', e.target.value)}
+                      disabled={!canEdit}
+                      className='bg-white border-gray-300'
+                    />
+                  </div>
+
+                  <div className='md:col-span-2 flex items-center gap-3 rounded-md border border-gray-200 bg-gray-50 p-3'>
+                    <Checkbox
+                      id='is_coordinator'
+                      checked={formData.is_coordinator}
+                      onCheckedChange={checked => handleInputChange('is_coordinator', checked === true)}
+                      disabled={!canEdit}
+                    />
+                    <div className='space-y-0.5'>
+                      <Label htmlFor='is_coordinator' className='text-gray-700'>Koordinator Mata Pelajaran</Label>
+                      <p className='text-xs text-gray-500'>Koordinator memiliki akses lintas mata pelajaran.</p>
+                    </div>
+                  </div>
+                </>
               )}
             </div>
 

@@ -3,8 +3,9 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { motion } from 'framer-motion';
 
-import { House, Users, History, UserPlus } from 'lucide-react';
+import { House, Users, History, UserPlus, School, UserCog, KeyRound } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import {
   AlertDialog,
@@ -53,6 +54,21 @@ export default function Sidebar() {
       href: '/admin/activity',
       icon: <History className='w-5 h-5' />,
     },
+    {
+      name: 'Profil Saya',
+      href: '/admin/profile',
+      icon: <UserCog className='w-5 h-5' />,
+    },
+    {
+      name: 'Ubah Password',
+      href: '/admin/change-password',
+      icon: <KeyRound className='w-5 h-5' />,
+    },
+    {
+      name: 'Profil Sekolah',
+      href: '/admin/school-profile',
+      icon: <School className='w-5 h-5' />,
+    },
   ];
 
   return (
@@ -64,17 +80,37 @@ export default function Sidebar() {
         </div>
 
         {/* Menu Items */}
-        <div className='flex-1 px-3'>
+        <div className='flex-1 px-3 overflow-y-auto'>
           {menuItems.map(item => {
             const isActive = pathname === item.href;
             return (
               <Link
                 key={item.name}
                 href={item.href}
-                className={`flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-colors ${isActive ? 'bg-gray-200 text-gray-900 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
+                className={`relative flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-colors group ${isActive ? 'text-sky-900 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
               >
-                {item.icon}
-                <span>{item.name}</span>
+                {isActive && (
+                  <motion.span
+                    layoutId='admin-sidebar-active'
+                    className='absolute inset-0 bg-sky-100 rounded-lg -z-0'
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                  />
+                )}
+                {isActive && (
+                  <motion.span
+                    layoutId='admin-sidebar-indicator'
+                    className='absolute left-0 top-2 bottom-2 w-1 bg-sky-600 rounded-r-full'
+                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                  />
+                )}
+                <motion.span
+                  className='relative z-10 flex items-center'
+                  whileHover={{ scale: 1.08 }}
+                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+                >
+                  {item.icon}
+                </motion.span>
+                <span className='relative z-10'>{item.name}</span>
               </Link>
             );
           })}

@@ -15,14 +15,14 @@ function getColor(index) {
   return CARD_COLORS[index % CARD_COLORS.length];
 }
 
-export default function KelasCard({ classroom, mataPelajaran, ujianId, index = 0 }) {
+export default function KelasCard({ classroom, mataPelajaran, ujianId, review = 'all', index = 0 }) {
   const color = getColor(index);
   const percentage = classroom.totalSiswa > 0
     ? Math.round((classroom.selesai / classroom.totalSiswa) * 100)
     : 0;
 
   return (
-    <Link href={`/teacher/exam-results/student-list?mata=${encodeURIComponent(classroom.mataPelajaran || mataPelajaran || 'Matematika')}&classroom=${encodeURIComponent(classroom.full_name)}&ujianId=${ujianId}`}>
+    <Link href={`/teacher/exam-results/student-list?mata=${encodeURIComponent(classroom.mataPelajaran || mataPelajaran || 'Matematika')}&classroom=${encodeURIComponent(classroom.full_name)}&ujianId=${ujianId}&review=${encodeURIComponent(review)}`}>
       <Card className='hover:shadow-lg transition-all h-full overflow-hidden cursor-pointer group'>
         <div className={`${color.bg} text-white px-5 py-4`}>
           <div className='flex items-center justify-between'>

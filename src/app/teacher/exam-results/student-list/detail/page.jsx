@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Home, FileText, Calendar, Award, CheckCircle2 } from 'lucide-react';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
@@ -10,7 +10,7 @@ import request from '@/utils/request';
 import { useAuth } from '@/hooks/useAuth';
 import toast from 'react-hot-toast';
 
-export default function DetailNilaiPage() {
+function DetailNilaiPageContent() {
   useAuth(['teacher']);
   const router = useRouter();
   const params = useSearchParams();
@@ -204,5 +204,21 @@ export default function DetailNilaiPage() {
         </div>
       </div>
     </TeacherLayout>
+  );
+}
+
+export default function DetailNilaiPage() {
+  return (
+    <Suspense
+      fallback={
+        <TeacherLayout>
+          <div className='flex justify-center items-center h-64'>
+            <p className='text-gray-600'>Loading...</p>
+          </div>
+        </TeacherLayout>
+      }
+    >
+      <DetailNilaiPageContent />
+    </Suspense>
   );
 }

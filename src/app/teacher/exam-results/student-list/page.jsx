@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Search, Home } from 'lucide-react';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
@@ -10,13 +10,23 @@ import request from '@/utils/request';
 import { useAuth } from '@/hooks/useAuth';
 import toast from 'react-hot-toast';
 
-export default function ListSiswaPage() {
+function ListSiswaPageContent() {
   useAuth(['teacher']);
   const router = useRouter();
   const params = useSearchParams();
   const mataPelajaran = params.get('mata') || 'Matematika';
   const classroom = params.get('classroom') || 'XII - IPA 1';
   const ujianId = params.get('ujianId');
+  const reviewModeParam = params.get('review') || 'all';
+  const reviewMode = ['all', 'pending', 'graded'].includes(reviewModeParam)
+    ? reviewModeParam
+    : 'all';
+
+  const reviewLabel = reviewMode === 'pending'
+    ? 'Belum Dinilai'
+    : reviewMode === 'graded'
+    ? 'Sudah Dinilai'
+    : 'Semua Hasil';
 
   const [query, setQuery] = useState('');
   const [siswaData, setSiswaData] = useState([]);
@@ -35,7 +45,11 @@ export default function ListSiswaPage() {
         
         if (selectedUjian && selectedUjian.participant_results) {
           const filteredSiswa = selectedUjian.participant_results.filter(item => {
-            return item.student?.classroom === classroom;
+            const sameClassroom = item.student?.classroom === classroom;
+            const matchReview = reviewMode === 'all'
+              || (reviewMode === 'pending' && item.exam_status === 'COMPLETED')
+              || (reviewMode === 'graded' && item.exam_status === 'GRADED');
+            return sameClassroom && matchReview;
           });
           
           const transformedSiswa = filteredSiswa.map((item) => ({
@@ -64,7 +78,7 @@ export default function ListSiswaPage() {
     if (ujianId) {
       fetchSiswaList();
     }
-  }, [ujianId, classroom]);
+  }, [ujianId, classroom, reviewMode]);
 
   const filtered = siswaData.filter((s) => {
     const target = `${s.email} ${s.full_name} ${s.classroom}`.toLowerCase();
@@ -104,7 +118,7 @@ export default function ListSiswaPage() {
       <div className='space-y-6'>
         <PageHeader
           title={classroom}
-          description={`Daftar siswa dan hasil ujian ${mataPelajaran}`}
+          description={`Daftar siswa dan hasil ujian ${mataPelajaran} (${reviewLabel})`}
         />
 
         {/* Search */}
@@ -177,5 +191,21 @@ export default function ListSiswaPage() {
         </div>
       </div>
     </TeacherLayout>
+  );
+}
+
+export default function ListSiswaPage() {
+  return (
+    <Suspense
+      fallback={
+        <TeacherLayout>
+          <div className='flex justify-center items-center h-64'>
+            <p className='text-gray-600'>Loading...</p>
+          </div>
+        </TeacherLayout>
+      }
+    >
+      <ListSiswaPageContent />
+    </Suspense>
   );
 }

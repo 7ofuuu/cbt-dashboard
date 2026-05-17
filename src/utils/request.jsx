@@ -10,6 +10,13 @@ const request = axios.create({
   },
   withCredentials: true,
 });
+
+let isHandlingAuthFailure = false;
+
+const getApiErrorMessage = error => {
+  return error?.response?.data?.error || error?.response?.data?.message || null;
+};
+
 const requestHandler = request => {
   let token = Cookies.get('token');
 
@@ -35,13 +42,19 @@ const expiredTokenHandler = () => {
 };
 
 const errorHandler = error => {
-  if (error.response && error.response.status === 401) {
-    expiredTokenHandler();
-    toast.error(error?.response?.data?.message || 'Sesi telah berakhir');
+  const status = error?.response?.status;
+  const apiErrorMessage = getApiErrorMessage(error);
+
+  if (status === 401) {
+    if (!isHandlingAuthFailure) {
+      isHandlingAuthFailure = true;
+      expiredTokenHandler();
+      toast.error(apiErrorMessage || 'Sesi telah berakhir');
+    }
   } else if (error.code === 'ERR_NETWORK') {
     toast.error('Koneksi jaringan bermasalah');
   } else if (error.response) {
-    toast.error(error.response.data?.message || `Terjadi kesalahan (${error.response.status})`);
+    toast.error(apiErrorMessage || `Terjadi kesalahan (${status})`);
   }
 
   // Tambahkan ini agar error bisa tertangkap di .catch()
