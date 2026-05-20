@@ -65,8 +65,8 @@ export default function AdminChangePasswordPage() {
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-    } catch (error) {
-      toast.error(error?.response?.data?.error || 'Gagal mengubah password');
+    } catch {
+      // API error toast is shown globally by the request interceptor.
     } finally {
       setIsLoading(false);
     }
@@ -94,7 +94,7 @@ export default function AdminChangePasswordPage() {
           description='Perbarui password akun admin Anda dengan aman.'
         />
 
-        <div className='max-w-md'>
+        <div className='w-full'>
           <Card>
             <CardHeader>
               <div className='flex items-center gap-3'>
@@ -109,6 +109,7 @@ export default function AdminChangePasswordPage() {
             </CardHeader>
             <CardContent>
               <form onSubmit={handleSubmit} className='space-y-5'>
+                <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
                 <div className='space-y-2'>
                   <Label htmlFor='admin_current_password'>Password Saat Ini</Label>
                   <div className='relative'>
@@ -175,16 +176,23 @@ export default function AdminChangePasswordPage() {
                   </div>
                 </div>
 
-                <Button type='submit' disabled={isLoading} className='w-full bg-[#003366] hover:bg-[#002244] text-white'>
-                  {isLoading ? (
-                    <>
-                      <Loader2 className='mr-2 h-4 w-4 animate-spin' />
-                      Menyimpan...
-                    </>
-                  ) : (
-                    'Simpan Password Baru'
-                  )}
-                </Button>
+                </div>
+
+                <div className='flex flex-col gap-3 border-t pt-4 sm:flex-row sm:items-center sm:justify-between'>
+                  <p className='text-xs text-muted-foreground'>
+                    Password minimal 8 karakter dan harus mengandung huruf besar, huruf kecil, serta angka.
+                  </p>
+                  <Button type='submit' disabled={isLoading} className='w-full sm:w-auto sm:px-10 bg-[#003366] hover:bg-[#002244] text-white'>
+                    {isLoading ? (
+                      <>
+                        <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                        Menyimpan...
+                      </>
+                    ) : (
+                      'Simpan Password Baru'
+                    )}
+                  </Button>
+                </div>
               </form>
             </CardContent>
           </Card>
