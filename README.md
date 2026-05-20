@@ -1,102 +1,279 @@
 # CBT Dashboard
 
-Admin and Teacher web dashboard for the Computer-Based Test (CBT) application, built with Next.js 16 and Tailwind CSS v4.
+Web-based admin and teacher dashboard for Computer-Based Test (CBT) system. Manage users, create exams, grade responses, and monitor exam activity in real-time.
+
+**Built with:** Next.js 16 | React 19 | Tailwind CSS v4 | shadcn/ui | Axios
+
+---
 
 ## Features
 
 ### Admin Panel
-- **Dashboard** — User statistics, recent activity logs, active users (last 24 hours)
-- **User Management** — CRUD admin/teacher/student, batch import, toggle active/inactive
-- **User Detail** — Full profile, role management, Super Admin protection
-- **Exam Activity Monitoring** — Real-time exam status (not started, in progress, completed)
-- **Block/Unblock Participants** — Block cheating students, generate unlock codes
-- **Activity Logs** — Login history, exam start/finish, auto-finish events
+- **Dashboard** — Overview statistics, recent activity logs, active users (last 24 hours)
+- **User Management** — CRUD admin/teacher/student, batch CSV import, activate/deactivate
+- **User Detail View** — Full profile, role management, password reset
+- **Super Admin Protection** — Special admin account cannot be deleted or downgraded
+- **Exam Activity Monitoring** — Real-time participant status (not started, in progress, completed)
+- **Block/Unblock Participants** — Block cheating students mid-exam, generate unlock codes
+- **Activity Logs** — View login history, exam events (start/finish), auto-finish records
+- **School Profile** — Update school name, logo, and contact information
 
 ### Teacher Panel
-- **Dashboard** — Exam and question bank overview
-- **Question Banks** — CRUD with globally unique names
-- **Question Management** — Create/edit questions (Single Choice, Multiple Choice, Essay) with answer options
-- **Exam Schedule** — Create/edit exams with compact 3-column layout, assign questions from banks, assign students, auto-reassign on category change
-- **Question Bank Picker** — Inline question bank selection with search, warning badges for exams with 0 questions
-- **Exam Results** — View results by exam, by class, by student
-- **Essay Grading** — Manual essay grading, score finalization
+- **Dashboard** — Exam overview, question bank summary, quick-access stats
+- **Question Banks** — Create, edit, delete banks with globally unique names
+- **Question Management** — Create/edit questions in three types:
+  - Single Choice (4 options, 1 correct)
+  - Multiple Choice (multiple correct answers)
+  - Essay (teacher grades manually)
+- **Exam Schedule** — Create/edit/delete exams with clean 3-column layout
+  - Assign questions from banks individually or in bulk
+  - Assign students by grade level + major (auto or manual)
+  - Enable/disable question randomization
+  - Set global deadline and duration
+- **Question Bank Picker** — Inline search, add banks to exams, warning badges
+- **Exam Results** — View/filter results by exam, class, or student
+- **Essay Grading** — Manual grading interface for essay questions, finalize scores
 
-### General
-- **Authentication** — Login with role-based redirect (Admin → `/admin/dashboard`, Teacher → `/teacher/dashboard`)
-- **Student Login Block** — Students are shown an error message directing them to use the mobile app
-- **Super Admin Badge** — Visual identifier for the Super Admin account
-- **Responsive Design** — Sidebar navigation, mobile-friendly
-- **Toast Notifications** — Real-time action feedback
+### Authentication & Authorization
+- **Login Portal** — Role-based login with JWT cookie storage
+- **Role-Based Redirect** — Auto-route to Admin Dashboard or Teacher Dashboard
+- **Student Block** — Students shown error message directing to mobile app
+- **Super Admin Badge** — Visual indicator for Super Admin accounts
+- **Session Persistence** — JWT stored in secure HTTP-only cookies
+
+### UI/UX
+- **Responsive Design** — Mobile-friendly sidebar + main content layout
+- **Dark/Light Mode** — Theme toggle (optional, via Tailwind)
+- **Toast Notifications** — Real-time feedback for actions (success, error, warning)
+- **Modal Dialogs** — Confirmation, forms, detailed views
+- **Loading States** — Skeleton loaders and spinners
+- **Error Boundaries** — Graceful error handling and user messages
+
+---
 
 ## Tech Stack
 
-| Component | Technology |
-|-----------|-----------|
-| Framework | Next.js 16.0.1 (App Router) |
-| React | v19.2.0 |
-| Styling | Tailwind CSS v4 |
-| UI Components | shadcn/ui (Radix UI primitives) |
-| Icons | Lucide React |
-| HTTP Client | Axios |
-| Auth | JWT via cookies (js-cookie) |
-| Notifications | react-hot-toast, sonner |
+| Layer | Technology | Version |
+|-------|-----------|---------|
+| Framework | Next.js | 16.0.1+ |
+| Runtime | React | 19.2.0+ |
+| Styling | Tailwind CSS | v4 |
+| UI Library | shadcn/ui | Latest |
+| Icons | Lucide React | Latest |
+| HTTP Client | Axios | Latest |
+| Auth | JWT (via js-cookie) | Latest |
+| Notifications | sonner, react-hot-toast | Latest |
+| Language | JavaScript (JSX) | ES2020+ |
 
-## Setup
+---
 
-### Prerequisites
+## Prerequisites
 
-- Node.js v18+
-- npm
-- CBT Backend API running at `http://localhost:3000`
+- **Node.js** v18 or higher
+- **npm** (comes with Node.js)
+- **CBT Backend API** running at `http://localhost:3000`
 
-### Installation
+---
+
+## Installation & Setup
+
+### 1. Clone Repository
 
 ```bash
 cd cbt-dashboard
+```
+
+### 2. Install Dependencies
+
+```bash
 npm install
 ```
 
-### Environment Variables
+### 3. Configure Environment Variables
 
-Use `.env` in the project root (standardized onboarding, no `.env.local`).
-
-```bash
-# PowerShell
-Copy-Item .env.example .env
-```
-
-or create `.env` manually:
+Create `.env` file in project root:
 
 ```env
 NEXT_PUBLIC_HOST=http://localhost:3000/api/
 ```
 
-- `NEXT_PUBLIC_HOST` must point to backend API base URL.
-- If backend runs on another host/port, update this value accordingly.
+**Environment Variables Reference:**
+- `NEXT_PUBLIC_HOST` — Backend API base URL (must end with `/api/`)
+  - Local development: `http://localhost:3000/api/`
+  - Remote server: `https://your-server.com/api/`
 
-### Running the Application
+---
+
+## Running the Application
+
+### Development Mode
 
 ```bash
-# Development (port 3001)
 npm run dev
-
-# Production build
-npm run build
-npm run start
 ```
 
-Dashboard runs at `http://localhost:3001`.
+Dashboard starts at `http://localhost:3001` with:
+- Hot module reloading
+- Fast refresh on file changes
+- Development console logs
 
-### Scripts
+### Production Build
 
 ```bash
-npm run dev      # Development server (port 3001)
+npm run build    # Compile Next.js app
+npm run start    # Run production server on port 3001
+```
+
+---
+
+## Useful Commands
+
+```bash
+npm run dev      # Development server (port 3001, auto-reload)
 npm run build    # Production build
 npm run start    # Production server (port 3001)
 npm run lint     # ESLint check
 ```
 
+---
+
+## Project Structure
+
+```
+cbt-dashboard/
+├── package.json
+├── README.md                        # This file
+├── next.config.mjs
+├── components.json                  # shadcn/ui config
+├── tailwind.config.js
+├── postcss.config.mjs
+├── eslint.config.mjs
+│
+├── public/                          # Static assets
+│
+├── src/
+│   ├── middleware.js                # Next.js middleware (auth guards)
+│   │
+│   ├── app/                         # App Router (pages)
+│   │   ├── layout.js                # Root layout
+│   │   ├── page.js                  # Home page (redirects to login)
+│   │   ├── providers.jsx            # Client context providers
+│   │   ├── globals.css              # Global styles
+│   │   │
+│   │   ├── login/                   # Login page
+│   │   │   └── page.jsx
+│   │   │
+│   │   ├── admin/                   # Admin routes
+│   │   │   ├── layout.jsx           # Admin layout wrapper
+│   │   │   ├── dashboard/
+│   │   │   ├── users/
+│   │   │   ├── activities/
+│   │   │   ├── school-profile/
+│   │   │   └── ...
+│   │   │
+│   │   └── teacher/                 # Teacher routes
+│   │       ├── layout.jsx           # Teacher layout wrapper
+│   │       ├── dashboard/
+│   │       ├── question-banks/
+│   │       ├── questions/
+│   │       ├── exams/
+│   │       ├── exam-results/
+│   │       └── ...
+│   │
+│   ├── components/
+│   │   ├── ui/                      # shadcn/ui components (40+)
+│   │   │   ├── button.jsx
+│   │   │   ├── dialog.jsx
+│   │   │   ├── form.jsx
+│   │   │   ├── input.jsx
+│   │   │   ├── table.jsx
+│   │   │   └── ...
+│   │   │
+│   │   ├── _shared/                 # Shared components (auth, layout)
+│   │   │   ├── Sidebar.jsx
+│   │   │   ├── AdminSidebar.jsx
+│   │   │   ├── TeacherSidebar.jsx
+│   │   │   ├── Navbar.jsx
+│   │   │   └── ...
+│   │   │
+│   │   ├── admin/                   # Admin-specific components
+│   │   │   ├── UserForm.jsx
+│   │   │   ├── ExamActivityMonitor.jsx
+│   │   │   └── ...
+│   │   │
+│   │   ├── teacher/                 # Teacher-specific components
+│   │   │   ├── ExamForm.jsx
+│   │   │   ├── QuestionForm.jsx
+│   │   │   ├── ExamResultsTable.jsx
+│   │   │   └── ...
+│   │   │
+│   │   └── examples/                # Demo/example components
+│   │
+│   ├── contexts/
+│   │   └── AuthContext.js           # Auth state + JWT management
+│   │
+│   ├── hooks/
+│   │   ├── useAuth.js               # Get current user + login/logout
+│   │   ├── useSchoolProfile.js      # Fetch school info
+│   │   └── use-mobile.js            # Mobile detection
+│   │
+│   ├── lib/
+│   │   ├── constants.js             # Shared constants (subjects, grades, colors)
+│   │   └── utils.js                 # Helper utilities
+│   │
+│   └── utils/
+│       ├── auth.js                  # Auth helpers (decode JWT, etc.)
+│       └── request.jsx              # Shared Axios instance with auth header
+│
+└── tests/                           # Test files
+```
+
+### Key Directories Explained
+
+- **`app/`** — Next.js App Router pages and layouts
+- **`components/ui/`** — shadcn/ui component library (pre-built, customizable)
+- **`components/_shared/`** — Navigation, sidebars, common UI
+- **`contexts/AuthContext.js`** — Global auth state (current user, login status)
+- **`utils/request.jsx`** — Shared Axios instance that auto-attaches JWT to requests
+- **`lib/constants.js`** — Subject names, grade levels, major options, color schemes
+
+---
+
 ## Coding Standards
+
+### Naming Conventions
+
+| Context | Convention | Example |
+|---------|-----------|---------|
+| Page File | `page.js` or `page.jsx` | `app/admin/dashboard/page.jsx` |
+| Component File | PascalCase | `UserForm.jsx`, `AdminSidebar.jsx` |
+| Hook/Utility | camelCase | `useAuth.js`, `request.jsx`, `auth.js` |
+| Route Path | kebab-case | `/admin/exam-results`, `/teacher/question-banks` |
+| Variable | camelCase | `userData`, `isLoading`, `handleSubmit` |
+| Constant | UPPER_SNAKE or PascalCase | `API_BASE_URL`, `Colors.PRIMARY` |
+
+### Component Patterns
+
+- **Client Components** — Use `"use client"` directive for interactive components (forms, buttons, modals)
+- **Server Components** — Default; fetch data on server, pass as props
+- **Hooks with useSearchParams** — Wrap in `Suspense` to avoid CSR bailout in production builds
+- **Error Handling** — Use `error?.response?.data?.error` for backend error messages
+
+### Authentication Flow
+
+1. User logs in with username/password
+2. Backend returns JWT token
+3. Token stored in cookie via `js-cookie`
+4. `AuthContext` decodes JWT and exposes `user` state
+5. Shared Axios instance (`request.jsx`) auto-attaches token to all requests
+6. Protected routes check `useAuth()` hook and redirect if not authenticated
+
+### API Integration
+
+- Use shared `request.jsx` Axios instance for all API calls
+- All endpoints prepend `NEXT_PUBLIC_HOST` automatically
+- Error format: `error.response.data.error` (from backend `{ error: "message" }`)
+- Success responses vary per endpoint; check API docs
 
 ### Naming Conventions
 
