@@ -15,7 +15,8 @@ import { useAuth } from '@/hooks/useAuth';
 import request from '@/utils/request';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { SUBJECT_OPTIONS } from '@/lib/constants';
+import { GRADE_LEVELS, MAJOR_OPTIONS } from '@/lib/constants';
+import { SubjectSelect } from '@/components/SubjectSelect';
 
 export default function TambahJadwalPage() {
   useAuth(['teacher']);
@@ -147,15 +148,12 @@ export default function TambahJadwalPage() {
                     <Label htmlFor="exam_name" className="text-xs">Nama Ujian <span className="text-red-500">*</span></Label>
                     <Input id="exam_name" required placeholder="UTS Matematika" value={form.exam_name} onChange={update('exam_name')} className="h-9" />
                   </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="subject" className="text-xs">Mata Pelajaran <span className="text-red-500">*</span></Label>
-                    <Select value={form.subject} onValueChange={updateSelect('subject')}>
-                      <SelectTrigger id="subject" className="h-9"><SelectValue placeholder="Pilih" /></SelectTrigger>
-                      <SelectContent>
-                        {SUBJECT_OPTIONS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <SubjectSelect
+                    id="subject"
+                    required
+                    value={form.subject}
+                    onChange={updateSelect('subject')}
+                  />
                 </div>
               </div>
             </div>
@@ -174,9 +172,7 @@ export default function TambahJadwalPage() {
                     <Select value={form.grade_level} onValueChange={updateSelect('grade_level')}>
                       <SelectTrigger className="h-9"><SelectValue placeholder="Pilih" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="X">X</SelectItem>
-                        <SelectItem value="XI">XI</SelectItem>
-                        <SelectItem value="XII">XII</SelectItem>
+                        {GRADE_LEVELS.map((g) => <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -185,8 +181,7 @@ export default function TambahJadwalPage() {
                     <Select value={form.major} onValueChange={updateSelect('major')}>
                       <SelectTrigger className="h-9"><SelectValue placeholder="Pilih" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="IPA">IPA</SelectItem>
-                        <SelectItem value="IPS">IPS</SelectItem>
+                        {MAJOR_OPTIONS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>

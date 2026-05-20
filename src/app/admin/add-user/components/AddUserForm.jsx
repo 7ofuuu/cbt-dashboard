@@ -26,7 +26,7 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import request from '@/utils/request';
 import { Checkbox } from '@/components/ui/checkbox';
-import { SUBJECT_OPTIONS } from '@/lib/constants';
+import { SUBJECT_OPTIONS, GRADE_LEVELS, MAJOR_OPTIONS } from '@/lib/constants';
 import { Eye, EyeOff, CheckCircle2, XCircle, AlertCircle, RotateCcw, Upload } from 'lucide-react';
 import BatchImportDialog from './BatchImportDialog';
 
@@ -398,9 +398,9 @@ export default function AddUserForm({ role = 'general' }) {
                     <SelectValue placeholder="Pilih Tingkat *" />
                   </SelectTrigger>
                   <SelectContent className="w-full">
-                    <SelectItem value="X">X</SelectItem>
-                    <SelectItem value="XI">XI</SelectItem>
-                    <SelectItem value="XII">XII</SelectItem>
+                    {GRADE_LEVELS.map((g) => (
+                      <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>
@@ -414,9 +414,9 @@ export default function AddUserForm({ role = 'general' }) {
                     <SelectValue placeholder="Pilih Jurusan *" />
                   </SelectTrigger>
                   <SelectContent className="w-full">
-                    <SelectItem value="IPA">IPA</SelectItem>
-                    <SelectItem value="IPS">IPS</SelectItem>
-                    <SelectItem value="Bahasa">Bahasa</SelectItem>
+                    {MAJOR_OPTIONS.map((m) => (
+                      <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                    ))}
                   </SelectContent>
                 </Select>
               </div>

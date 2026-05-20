@@ -34,7 +34,8 @@ import { ArrowLeft, FileText, Edit, Trash2, RefreshCw, AlertTriangle, Home, Save
 import Link from 'next/link';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
-import { SUBJECT_OPTIONS, GRADE_LEVELS, MAJOR_OPTIONS } from '@/lib/constants';
+import { GRADE_LEVELS, MAJOR_OPTIONS } from '@/lib/constants';
+import { SubjectSelect } from '@/components/SubjectSelect';
 
 export default function KelolaBankSoalPage() {
   useAuth(['teacher']);
@@ -809,22 +810,12 @@ export default function KelolaBankSoalPage() {
             </DialogHeader>
             
             <div className='space-y-4'>
-              <div className='space-y-2'>
-                <label className='text-sm font-medium'>Mata Pelajaran *</label>
-                <Select 
-                  value={editBankData.subject} 
-                  onValueChange={(v) => setEditBankData({...editBankData, subject: v})}
-                >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SUBJECT_OPTIONS.map((s) => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <SubjectSelect
+                id="subject"
+                required
+                value={editBankData.subject}
+                onChange={(v) => setEditBankData({ ...editBankData, subject: v })}
+              />
 
               <div className='space-y-2'>
                 <label className='text-sm font-medium'>Tingkat *</label>
