@@ -55,6 +55,7 @@ export default function Sidebar() {
 
   const containerRef = useRef(null);
   const itemRefs = useRef({});
+  const groupBtnRef = useRef(null);
   const [indicator, setIndicator] = useState({ top: 0, height: 0, visible: false });
 
   // Measure the active item's position relative to the (scrollable) container so
@@ -62,7 +63,12 @@ export default function Sidebar() {
   // scroll offset (fixes the bottom->top jump).
   const measureIndicator = () => {
     const container = containerRef.current;
-    const activeEl = itemRefs.current[pathname];
+    // Normally the highlight tracks the link matching the current path. But when
+    // the path is a User Management child AND the group is collapsed, that child
+    // is hidden — so track the parent toggle button instead, letting the
+    // highlight slide up to it as the dropdown closes.
+    const activeEl =
+      isUserMgmtPath && !groupOpen ? groupBtnRef.current : itemRefs.current[pathname];
     if (!container || !activeEl) {
       setIndicator(prev => (prev.visible ? { ...prev, visible: false } : prev));
       return;
@@ -77,7 +83,18 @@ export default function Sidebar() {
   };
 
   // eslint-disable-next-line react-hooks/set-state-in-effect -- positioning the highlight requires reading DOM layout then committing it to state
-  useLayoutEffect(measureIndicator, [pathname, groupOpen]);
+  useLayoutEffect(measureIndicator, [pathname, groupOpen, isUserMgmtPath]);
+
+  // Hold the latest measureIndicator in a ref (updated in an effect, never during
+  // render). The panel's onAnimationComplete must re-measure after the expand
+  // animation so items BELOW the panel — pushed down as it grows — land correctly.
+  // But AnimatePresence keeps the OLD panel mounted for its exit animation, whose
+  // onAnimationComplete carries a stale closure (groupOpen=true). Calling through
+  // this ref always runs the current closure, so closing no longer bounces back.
+  const measureRef = useRef(measureIndicator);
+  useLayoutEffect(() => {
+    measureRef.current = measureIndicator;
+  });
 
   const linkClass = (isActive, extra = '') =>
     `relative z-10 flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-colors ${
@@ -140,6 +157,7 @@ export default function Sidebar() {
           {/* User Management group */}
           <button
             type='button'
+            ref={groupBtnRef}
             onClick={() => setGroupOpen(open => !open)}
             className={`relative z-10 flex items-center gap-3 w-full px-4 py-3 rounded-lg mb-1 transition-colors ${
               isUserMgmtPath ? 'text-sky-900 font-medium' : 'text-gray-600 hover:bg-gray-100/60'
@@ -165,7 +183,7 @@ export default function Sidebar() {
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.25, ease: 'easeInOut' }}
                 className='overflow-hidden'
-                onAnimationComplete={measureIndicator}
+                onAnimationComplete={() => measureRef.current()}
               >
                 {userMgmtItems.map(item => {
                   const isActive = pathname === item.href;
