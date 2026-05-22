@@ -9,17 +9,23 @@ import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbS
 import { PageHeader } from '@/components/ui/page-header';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from '@/components/ui/pagination';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Search, Home, Trash2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/contexts/AuthContext';
+import toast from 'react-hot-toast';
 import request from '@/utils/request';
 
 export default function SemuaPenggunaPage() {
   useAuth(['admin']);
   const router = useRouter();
+  const { user: currentUser } = useAuthContext();
+  const [togglingId, setTogglingId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [tingkatFilter, setTingkatFilter] = useState('all');
@@ -142,6 +148,19 @@ export default function SemuaPenggunaPage() {
       setSelectedIds(new Set());
     } else {
       setSelectedIds(new Set(users.map(u => u.id)));
+    }
+  };
+
+  const handleToggleStatus = async (user) => {
+    setTogglingId(user.id);
+    try {
+      const res = await request.patch(`/users/${user.id}/status`);
+      setUsers(prev => prev.map(u => (u.id === user.id ? { ...u, is_active: res.data.is_active } : u)));
+      toast.success(res.data.message || 'Status pengguna berhasil diubah');
+    } catch (err) {
+      toast.error(err.response?.data?.error || err.response?.data?.message || 'Gagal mengubah status pengguna');
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -327,13 +346,14 @@ export default function SemuaPenggunaPage() {
                 <TableHead className='text-white font-semibold'>Tingkat</TableHead>
                 <TableHead className='text-white font-semibold'>Jurusan</TableHead>
                 <TableHead className='text-white font-semibold'>Role</TableHead>
+                <TableHead className='text-white font-semibold'>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
                   <TableCell
-                    colSpan={9}
+                    colSpan={10}
                     className='text-center py-12 text-gray-500'
                   >
                     Loading...
@@ -342,7 +362,7 @@ export default function SemuaPenggunaPage() {
               ) : error ? (
                 <TableRow>
                   <TableCell
-                    colSpan={9}
+                    colSpan={10}
                     className='text-center py-12 text-red-500'
                   >
                     {error}
@@ -351,7 +371,7 @@ export default function SemuaPenggunaPage() {
               ) : users.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={9}
+                    colSpan={10}
                     className='text-center py-12 text-gray-500'
                   >
                     Tidak ada data pengguna ditemukan
@@ -364,7 +384,7 @@ export default function SemuaPenggunaPage() {
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: Math.min(idx * 0.025, 0.3), duration: 0.25 }}
-                    className={`border-b transition-colors hover:bg-gray-50 cursor-pointer ${selectedIds.has(user.id) ? 'bg-blue-50' : ''}`}
+                    className={`border-b transition-colors hover:bg-gray-50 cursor-pointer ${selectedIds.has(user.id) ? 'bg-blue-50' : ''} ${user.is_active === false ? 'opacity-60' : ''}`}
                   >
                     <TableCell onClick={e => e.stopPropagation()}>
                       <Checkbox
@@ -386,6 +406,24 @@ export default function SemuaPenggunaPage() {
                     <TableCell className='text-gray-900' onClick={() => router.push(`/admin/user-detail/${user.id}`)}>{user.grade_level || '-'}</TableCell>
                     <TableCell className='text-gray-900' onClick={() => router.push(`/admin/user-detail/${user.id}`)}>{user.major || '-'}</TableCell>
                     <TableCell className='text-gray-900 capitalize' onClick={() => router.push(`/admin/user-detail/${user.id}`)}>{user.role}</TableCell>
+                    <TableCell onClick={e => e.stopPropagation()}>
+                      {(() => {
+                        const active = user.is_active !== false;
+                        const canToggle = !user.is_super_admin && currentUser?.id?.toString() !== user.id?.toString();
+                        return (
+                          <div className='flex items-center gap-2'>
+                            <Switch
+                              checked={active}
+                              disabled={!canToggle || togglingId === user.id}
+                              onCheckedChange={() => handleToggleStatus(user)}
+                            />
+                            <Badge className={active ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-200 text-gray-600 border-gray-300'}>
+                              {active ? 'Aktif' : 'Nonaktif'}
+                            </Badge>
+                          </div>
+                        );
+                      })()}
+                    </TableCell>
                   </motion.tr>
                 ))
               )}
