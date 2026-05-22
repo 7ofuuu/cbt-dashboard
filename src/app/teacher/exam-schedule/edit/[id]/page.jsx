@@ -15,7 +15,8 @@ import { Home, Save, X, Clock, BookOpen, Users, FileText, Calendar, Loader2, Tra
 import { useAuth } from '@/hooks/useAuth';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
-import { SUBJECT_OPTIONS, getSubjectColor } from '@/lib/constants';
+import { GRADE_LEVELS, MAJOR_OPTIONS, getSubjectColor } from '@/lib/constants';
+import { SubjectSelect } from '@/components/SubjectSelect';
 
 export default function EditJadwalPage() {
   useAuth(['teacher']);
@@ -318,15 +319,13 @@ export default function EditJadwalPage() {
                     <Label htmlFor="exam_name" className="text-xs">Nama Ujian <span className="text-red-500">*</span></Label>
                     <Input id="exam_name" required disabled={!isEditable} placeholder="UTS Matematika" value={form.exam_name} onChange={update('exam_name')} className="h-9" />
                   </div>
-                  <div className="space-y-1.5">
-                    <Label htmlFor="subject" className="text-xs">Mata Pelajaran <span className="text-red-500">*</span></Label>
-                    <Select value={form.subject} onValueChange={updateSelect('subject')} disabled={!isEditable}>
-                      <SelectTrigger id="subject" className="h-9"><SelectValue placeholder="Pilih" /></SelectTrigger>
-                      <SelectContent>
-                        {SUBJECT_OPTIONS.map((s) => <SelectItem key={s} value={s}>{s}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <SubjectSelect
+                    id="subject"
+                    required
+                    value={form.subject}
+                    onChange={updateSelect('subject')}
+                    disabled={!isEditable}
+                  />
                 </div>
               </div>
             </div>
@@ -346,9 +345,7 @@ export default function EditJadwalPage() {
                     <Select value={form.grade_level} onValueChange={updateSelect('grade_level')} disabled={!isEditable}>
                       <SelectTrigger className="h-9"><SelectValue placeholder="Pilih" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="X">X</SelectItem>
-                        <SelectItem value="XI">XI</SelectItem>
-                        <SelectItem value="XII">XII</SelectItem>
+                        {GRADE_LEVELS.map((g) => <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -357,8 +354,7 @@ export default function EditJadwalPage() {
                     <Select value={form.major} onValueChange={updateSelect('major')} disabled={!isEditable}>
                       <SelectTrigger className="h-9"><SelectValue placeholder="Pilih" /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="IPA">IPA</SelectItem>
-                        <SelectItem value="IPS">IPS</SelectItem>
+                        {MAJOR_OPTIONS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>

@@ -14,7 +14,8 @@ import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbS
 import { ArrowLeft, Save, RefreshCw, Home, Trash2, Plus, Image as ImageIcon, X, CircleDot, SquareCheck, FileText, CheckCircle2, Loader2 } from 'lucide-react';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
-import { SUBJECT_OPTIONS, GRADE_LEVELS, MAJOR_OPTIONS } from '@/lib/constants';
+import { GRADE_LEVELS, MAJOR_OPTIONS } from '@/lib/constants';
+import { SubjectSelect } from '@/components/SubjectSelect';
 
 export default function EditSoalPage() {
   useAuth(['teacher']);
@@ -435,19 +436,12 @@ export default function EditSoalPage() {
 
             {/* Metadata: Subject, Grade, Major */}
             <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-              <div className='space-y-2'>
-                <label className='text-sm font-medium'>Mata Pelajaran <span className="text-red-500">*</span></label>
-                <Select value={mataPelajaran} onValueChange={setMataPelajaran}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Pilih..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {SUBJECT_OPTIONS.map(s => (
-                      <SelectItem key={s} value={s}>{s}</SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
+              <SubjectSelect
+                id="subject"
+                required
+                value={mataPelajaran}
+                onChange={setMataPelajaran}
+              />
 
               <div className='space-y-2'>
                 <label className='text-sm font-medium'>Tingkat <span className="text-red-500">*</span></label>

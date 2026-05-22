@@ -11,7 +11,8 @@ import { Button } from '@/components/ui/button';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { PageHeader } from '@/components/ui/page-header';
-import { Trash2, Save, Home, ShieldCheck } from 'lucide-react';
+import { Trash2, Save, Home, ShieldCheck, Power } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import Link from 'next/link';
 import toast from 'react-hot-toast';
 import request from '@/utils/request';
@@ -32,12 +33,16 @@ export default function UserDetailPage() {
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+  const [togglingStatus, setTogglingStatus] = useState(false);
+  const [showStatusDialog, setShowStatusDialog] = useState(false);
 
   // Super admin protection flags
   const isSuperAdmin = user?.is_super_admin || false;
   const isOwnProfile = currentUser?.id?.toString() === userId?.toString();
   const canEdit = !isSuperAdmin || isOwnProfile;
   const canDelete = !isSuperAdmin;
+  const canToggleStatus = !isSuperAdmin && !isOwnProfile;
+  const isActive = user?.is_active !== false;
 
   // Form state
   const [formData, setFormData] = useState({
@@ -195,6 +200,20 @@ export default function UserDetailPage() {
     }
   };
 
+  const handleToggleStatus = async () => {
+    try {
+      setTogglingStatus(true);
+      const response = await request.patch(`/users/${userId}/status`);
+      toast.success(response.data.message || 'Status pengguna berhasil diubah');
+      setShowStatusDialog(false);
+      fetchUserDetail();
+    } catch (err) {
+      toast.error(err.response?.data?.error || err.response?.data?.message || 'Gagal mengubah status pengguna');
+    } finally {
+      setTogglingStatus(false);
+    }
+  };
+
   if (loading) {
     return (
       <AdminLayout>
@@ -268,7 +287,10 @@ export default function UserDetailPage() {
                 <p className='text-sm text-gray-500 lowercase'>{user.role}</p>
               </div>
             </div>
-            <div>
+            <div className='flex items-center gap-2'>
+              <Badge className={isActive ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-200 text-gray-600 border-gray-300'}>
+                {isActive ? 'Aktif' : 'Nonaktif'}
+              </Badge>
               <span className={`px-4 py-2 rounded-full text-sm font-medium ${isSiswa ? 'bg-blue-100 text-blue-700' : isGuru ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-700'}`}>
                 {user.role === 'student' ? 'Siswa' : user.role === 'teacher' ? 'Guru' : 'Admin'}
               </span>
@@ -531,6 +553,18 @@ export default function UserDetailPage() {
 
             {/* Action Buttons */}
             <div className='flex justify-end gap-4 pt-4'>
+              {canToggleStatus && (
+                <Button
+                  type='button'
+                  variant='outline'
+                  onClick={() => setShowStatusDialog(true)}
+                  disabled={togglingStatus || saving || deleting}
+                  className={`flex items-center gap-2 ${isActive ? 'border-amber-300 text-amber-700 hover:bg-amber-50' : 'border-green-300 text-green-700 hover:bg-green-50'}`}
+                >
+                  <Power className='w-4 h-4' />
+                  {isActive ? 'Nonaktifkan' : 'Aktifkan'}
+                </Button>
+              )}
               {canDelete && (
                 <Button
                   type='button'
@@ -578,6 +612,41 @@ export default function UserDetailPage() {
                 className='bg-red-600 hover:bg-red-700'
               >
                 {deleting ? 'Menghapus...' : 'Hapus'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+
+        {/* Toggle Status Confirmation Dialog */}
+        <AlertDialog
+          open={showStatusDialog}
+          onOpenChange={setShowStatusDialog}
+        >
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                Konfirmasi {isActive ? 'Nonaktifkan' : 'Aktifkan'} Pengguna
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {isActive ? (
+                  <>
+                    Pengguna <span className='font-semibold text-gray-900'>{user.full_name || user.username}</span> akan dinonaktifkan dan tidak dapat login hingga diaktifkan kembali.
+                  </>
+                ) : (
+                  <>
+                    Pengguna <span className='font-semibold text-gray-900'>{user.full_name || user.username}</span> akan diaktifkan kembali dan dapat login.
+                  </>
+                )}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel disabled={togglingStatus}>Batal</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleToggleStatus}
+                disabled={togglingStatus}
+                className={isActive ? 'bg-amber-600 hover:bg-amber-700' : 'bg-green-600 hover:bg-green-700'}
+              >
+                {togglingStatus ? 'Memproses...' : isActive ? 'Nonaktifkan' : 'Aktifkan'}
               </AlertDialogAction>
             </AlertDialogFooter>
           </AlertDialogContent>
