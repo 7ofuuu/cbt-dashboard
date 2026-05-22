@@ -85,6 +85,17 @@ export default function Sidebar() {
   // eslint-disable-next-line react-hooks/set-state-in-effect -- positioning the highlight requires reading DOM layout then committing it to state
   useLayoutEffect(measureIndicator, [pathname, groupOpen, isUserMgmtPath]);
 
+  // Hold the latest measureIndicator in a ref (updated in an effect, never during
+  // render). The panel's onAnimationComplete must re-measure after the expand
+  // animation so items BELOW the panel — pushed down as it grows — land correctly.
+  // But AnimatePresence keeps the OLD panel mounted for its exit animation, whose
+  // onAnimationComplete carries a stale closure (groupOpen=true). Calling through
+  // this ref always runs the current closure, so closing no longer bounces back.
+  const measureRef = useRef(measureIndicator);
+  useLayoutEffect(() => {
+    measureRef.current = measureIndicator;
+  });
+
   const linkClass = (isActive, extra = '') =>
     `relative z-10 flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-colors ${
       isActive ? 'text-sky-900 font-medium' : 'text-gray-600 hover:bg-gray-100/60'
@@ -172,7 +183,7 @@ export default function Sidebar() {
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.25, ease: 'easeInOut' }}
                 className='overflow-hidden'
-                onAnimationComplete={measureIndicator}
+                onAnimationComplete={() => measureRef.current()}
               >
                 {userMgmtItems.map(item => {
                   const isActive = pathname === item.href;
