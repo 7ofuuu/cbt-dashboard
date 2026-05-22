@@ -371,7 +371,7 @@ export default function AddUserForm({ role = 'general' }) {
         {/* Additional fields for Siswa role */}
         {formData.role === 'student' && (
           <>
-            {/* NISN */}
+            {/* Row: NISN and Tingkat */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div className="space-y-2">
                 <Label htmlFor="nisn">NISN</Label>
@@ -384,17 +384,13 @@ export default function AddUserForm({ role = 'general' }) {
                   onChange={handleInputChange}
                 />
               </div>
-            </div>
-
-            {/* Row 3: Tingkat and Jurusan */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div className="space-y-2">
                 <Label htmlFor="grade_level">Tingkat</Label>
                 <Select
                   value={formData.grade_level}
                   onValueChange={(value) => handleSelectChange('grade_level', value)}
                 >
-                  <SelectTrigger id="grade_level">
+                  <SelectTrigger id="grade_level" className="w-full">
                     <SelectValue placeholder="Pilih Tingkat *" />
                   </SelectTrigger>
                   <SelectContent className="w-full">
@@ -404,13 +400,17 @@ export default function AddUserForm({ role = 'general' }) {
                   </SelectContent>
                 </Select>
               </div>
+            </div>
+
+            {/* Row: Jurusan and Nomor Kelas */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
               <div className="space-y-2">
                 <Label htmlFor="major">Jurusan</Label>
                 <Select
                   value={formData.major}
                   onValueChange={(value) => handleSelectChange('major', value)}
                 >
-                  <SelectTrigger id="major">
+                  <SelectTrigger id="major" className="w-full">
                     <SelectValue placeholder="Pilih Jurusan *" />
                   </SelectTrigger>
                   <SelectContent className="w-full">
@@ -420,48 +420,45 @@ export default function AddUserForm({ role = 'general' }) {
                   </SelectContent>
                 </Select>
               </div>
-            </div>
-
-            {/* Row 4: Nomor Kelas - generates classroom automatically */}
-            <div className="mb-6">
               <div className="space-y-2">
                 <Label htmlFor="nomorKelas">Nomor Kelas</Label>
-                <div className="flex gap-4 items-center">
-                  <Select
-                    value={formData.nomorKelas || ''}
-                    onValueChange={(value) => {
-                      setFormData(prev => ({
-                        ...prev,
-                        nomorKelas: value,
-                        classroom: prev.grade_level && prev.major ? `${prev.grade_level}-${prev.major}-${value}` : ''
-                      }));
-                    }}
-                    disabled={!formData.grade_level || !formData.major}
-                  >
-                    <SelectTrigger id="nomorKelas" className="w-32">
-                      <SelectValue placeholder="No. *" />
-                    </SelectTrigger>
-                    <SelectContent className="w-full">
-                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
-                        <SelectItem key={num} value={String(num)}>{num}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <div className="flex-1">
-                    <div className="px-3 py-2 bg-gray-100 rounded-md text-gray-700 font-medium">
-                      {formData.grade_level && formData.major && formData.nomorKelas
-                        ? `Kelas: ${formData.grade_level}-${formData.major}-${formData.nomorKelas}`
-                        : <span className="text-gray-400">Pilih grade_level, major, dan nomor classroom</span>
-                      }
-                    </div>
-                  </div>
-                </div>
-                {(!formData.grade_level || !formData.major) && (
-                  <p className="text-xs text-yellow-600 mt-1">
-                    Pilih grade_level dan major terlebih dahulu
-                  </p>
-                )}
+                <Select
+                  value={formData.nomorKelas || ''}
+                  onValueChange={(value) => {
+                    setFormData(prev => ({
+                      ...prev,
+                      nomorKelas: value,
+                      classroom: prev.grade_level && prev.major ? `${prev.grade_level}-${prev.major}-${value}` : ''
+                    }));
+                  }}
+                  disabled={!formData.grade_level || !formData.major}
+                >
+                  <SelectTrigger id="nomorKelas" className="w-full">
+                    <SelectValue placeholder="Pilih Nomor *" />
+                  </SelectTrigger>
+                  <SelectContent className="w-full">
+                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(num => (
+                      <SelectItem key={num} value={String(num)}>{num}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
+            </div>
+
+            {/* Row: Generated classroom (full width) */}
+            <div className="mb-6 space-y-2">
+              <Label>Kelas</Label>
+              <div className="px-3 py-2 bg-gray-100 rounded-md text-gray-700 font-medium">
+                {formData.grade_level && formData.major && formData.nomorKelas
+                  ? `${formData.grade_level}-${formData.major}-${formData.nomorKelas}`
+                  : <span className="text-gray-400">Pilih tingkat, jurusan, dan nomor kelas terlebih dahulu</span>
+                }
+              </div>
+              {(!formData.grade_level || !formData.major) && (
+                <p className="text-xs text-yellow-600 mt-1">
+                  Pilih tingkat dan jurusan terlebih dahulu
+                </p>
+              )}
             </div>
           </>
         )}
