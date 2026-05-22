@@ -95,12 +95,16 @@ Create `.env` file in project root:
 
 ```env
 NEXT_PUBLIC_HOST=http://localhost:3000/api/
+NEXT_PUBLIC_HOST_NGROK=https://cbt-be.ngrok-free.app/api/
 ```
 
 **Environment Variables Reference:**
-- `NEXT_PUBLIC_HOST` — Backend API base URL (must end with `/api/`)
-  - Local development: `http://localhost:3000/api/`
-  - Remote server: `https://your-server.com/api/`
+- `NEXT_PUBLIC_HOST` — Backend API base URL for **local** access (must end with `/api/`)
+- `NEXT_PUBLIC_HOST_NGROK` — Backend URL via ngrok static domain; used automatically when the dashboard is opened through an ngrok URL. Replace with your reserved domain. See [NGROK-FIREBASE-SETUP.md](../NGROK-FIREBASE-SETUP.md).
+
+> **Deploy to Vercel:** the dashboard can be hosted on Vercel while the backend
+> stays local + exposed via ngrok. Set both env vars above to your ngrok backend
+> URL in the Vercel project. Full steps: [VERCEL-DEPLOY.md](./VERCEL-DEPLOY.md).
 
 ---
 
