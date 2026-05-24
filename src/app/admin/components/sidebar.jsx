@@ -1,11 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useLayoutEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
-import { House, Users, History, UserPlus, School, UserCog, KeyRound } from 'lucide-react';
+import { House, History, UserPlus, School, UserCog, KeyRound, UsersRound, ChevronDown } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import {
   AlertDialog,
@@ -18,58 +18,98 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
+const userMgmtItems = [
+  { name: 'Semua Admin', href: '/admin/all-admins' },
+  { name: 'Semua Guru', href: '/admin/all-teachers' },
+  { name: 'Semua Siswa', href: '/admin/all-students' },
+];
+
+const topItems = [
+  { name: 'Beranda', href: '/admin/dashboard', icon: <House className='w-5 h-5' /> },
+  { name: 'Tambah Pengguna', href: '/admin/add-user', icon: <UserPlus className='w-5 h-5' /> },
+];
+
+const bottomItems = [
+  { name: 'Aktivitas', href: '/admin/activity', icon: <History className='w-5 h-5' /> },
+  { name: 'Profil Saya', href: '/admin/profile', icon: <UserCog className='w-5 h-5' /> },
+  { name: 'Ubah Password', href: '/admin/change-password', icon: <KeyRound className='w-5 h-5' /> },
+  { name: 'Profil Sekolah', href: '/admin/school-profile', icon: <School className='w-5 h-5' /> },
+];
+
 export default function Sidebar() {
   const pathname = usePathname();
   const { logout } = useAuthContext();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
-  const menuItems = [
-    {
-      name: 'Beranda',
-      href: '/admin/dashboard',
-      icon: <House className='w-5 h-5' />,
-    },
-    {
-      name: 'Tambah Pengguna',
-      href: '/admin/add-user',
-      icon: <UserPlus className='w-5 h-5' />,
-    },
-    {
-      name: 'Semua Siswa',
-      href: '/admin/all-students',
-      icon: <Users className='w-5 h-5' />,
-    },
-    {
-      name: 'Semua Guru',
-      href: '/admin/all-teachers',
-      icon: <Users className='w-5 h-5' />,
-    },
-    {
-      name: 'Semua Admin',
-      href: '/admin/all-admins',
-      icon: <Users className='w-5 h-5' />,
-    },
-    {
-      name: 'Aktivitas',
-      href: '/admin/activity',
-      icon: <History className='w-5 h-5' />,
-    },
-    {
-      name: 'Profil Saya',
-      href: '/admin/profile',
-      icon: <UserCog className='w-5 h-5' />,
-    },
-    {
-      name: 'Ubah Password',
-      href: '/admin/change-password',
-      icon: <KeyRound className='w-5 h-5' />,
-    },
-    {
-      name: 'Profil Sekolah',
-      href: '/admin/school-profile',
-      icon: <School className='w-5 h-5' />,
-    },
-  ];
+  const isUserMgmtPath = userMgmtItems.some(item => item.href === pathname);
+  const [groupOpen, setGroupOpen] = useState(() => isUserMgmtPath);
+
+  // Auto-open the group when navigating into one of its sub-pages. Comparing the
+  // previous pathname in state (not a ref) is the React-recommended way to adjust
+  // state during render without an effect.
+  const [prevPath, setPrevPath] = useState(pathname);
+  if (pathname !== prevPath) {
+    setPrevPath(pathname);
+    if (isUserMgmtPath) setGroupOpen(true);
+  }
+
+  const containerRef = useRef(null);
+  const itemRefs = useRef({});
+  const groupBtnRef = useRef(null);
+  const [indicator, setIndicator] = useState({ top: 0, height: 0, visible: false });
+
+  // Measure the active item's position relative to the (scrollable) container so
+  // the highlight is placed in container coordinates — correct regardless of
+  // scroll offset (fixes the bottom->top jump).
+  const measureIndicator = () => {
+    const container = containerRef.current;
+    // Normally the highlight tracks the link matching the current path. But when
+    // the path is a User Management child AND the group is collapsed, that child
+    // is hidden — so track the parent toggle button instead, letting the
+    // highlight slide up to it as the dropdown closes.
+    const activeEl =
+      isUserMgmtPath && !groupOpen ? groupBtnRef.current : itemRefs.current[pathname];
+    if (!container || !activeEl) {
+      setIndicator(prev => (prev.visible ? { ...prev, visible: false } : prev));
+      return;
+    }
+    const containerRect = container.getBoundingClientRect();
+    const elRect = activeEl.getBoundingClientRect();
+    setIndicator({
+      top: elRect.top - containerRect.top + container.scrollTop,
+      height: elRect.height,
+      visible: true,
+    });
+  };
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- positioning the highlight requires reading DOM layout then committing it to state
+  useLayoutEffect(measureIndicator, [pathname, groupOpen, isUserMgmtPath]);
+
+  // Hold the latest measureIndicator in a ref (updated in an effect, never during
+  // render). The panel's onAnimationComplete must re-measure after the expand
+  // animation so items BELOW the panel — pushed down as it grows — land correctly.
+  // But AnimatePresence keeps the OLD panel mounted for its exit animation, whose
+  // onAnimationComplete carries a stale closure (groupOpen=true). Calling through
+  // this ref always runs the current closure, so closing no longer bounces back.
+  const measureRef = useRef(measureIndicator);
+  useLayoutEffect(() => {
+    measureRef.current = measureIndicator;
+  });
+
+  const linkClass = (isActive, extra = '') =>
+    `relative z-10 flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-colors ${
+      isActive ? 'text-sky-900 font-medium' : 'text-gray-600 hover:bg-gray-100/60'
+    } ${extra}`;
+
+  const renderIcon = icon => (
+    <motion.span
+      className='relative z-10 flex items-center'
+      whileHover={{ scale: 1.08 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 20 }}
+    >
+      {icon}
+    </motion.span>
+  );
 
   return (
     <aside className='fixed left-0 top-16 bottom-0 w-64 bg-white border-r border-gray-200 z-30'>
@@ -80,36 +120,98 @@ export default function Sidebar() {
         </div>
 
         {/* Menu Items */}
-        <div className='flex-1 px-3 overflow-y-auto'>
-          {menuItems.map(item => {
+        <div ref={containerRef} className='relative flex-1 px-3 overflow-y-auto'>
+          {/* Single shared highlight indicator */}
+          {indicator.visible && (
+            <>
+              <motion.span
+                className='absolute left-3 right-3 bg-sky-100 rounded-lg pointer-events-none z-0'
+                initial={false}
+                animate={{ top: indicator.top, height: indicator.height }}
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+              />
+              <motion.span
+                className='absolute left-3 w-1 bg-sky-600 rounded-r-full pointer-events-none z-0'
+                initial={false}
+                animate={{ top: indicator.top + 8, height: Math.max(indicator.height - 16, 0) }}
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+              />
+            </>
+          )}
+
+          {topItems.map(item => {
             const isActive = pathname === item.href;
             return (
               <Link
                 key={item.name}
                 href={item.href}
-                className={`relative flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-colors group ${isActive ? 'text-sky-900 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
+                ref={el => { itemRefs.current[item.href] = el; }}
+                className={linkClass(isActive)}
               >
-                {isActive && (
-                  <motion.span
-                    layoutId='admin-sidebar-active'
-                    className='absolute inset-0 bg-sky-100 rounded-lg -z-0'
-                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                  />
-                )}
-                {isActive && (
-                  <motion.span
-                    layoutId='admin-sidebar-indicator'
-                    className='absolute left-0 top-2 bottom-2 w-1 bg-sky-600 rounded-r-full'
-                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                  />
-                )}
-                <motion.span
-                  className='relative z-10 flex items-center'
-                  whileHover={{ scale: 1.08 }}
-                  transition={{ type: 'spring', stiffness: 400, damping: 20 }}
-                >
-                  {item.icon}
-                </motion.span>
+                {renderIcon(item.icon)}
+                <span className='relative z-10'>{item.name}</span>
+              </Link>
+            );
+          })}
+
+          {/* User Management group */}
+          <button
+            type='button'
+            ref={groupBtnRef}
+            onClick={() => setGroupOpen(open => !open)}
+            className={`relative z-10 flex items-center gap-3 w-full px-4 py-3 rounded-lg mb-1 transition-colors ${
+              isUserMgmtPath ? 'text-sky-900 font-medium' : 'text-gray-600 hover:bg-gray-100/60'
+            }`}
+          >
+            {renderIcon(<UsersRound className='w-5 h-5' />)}
+            <span className='relative z-10 flex-1 text-left'>Manajemen Pengguna</span>
+            <motion.span
+              className='relative z-10'
+              animate={{ rotate: groupOpen ? 180 : 0 }}
+              transition={{ duration: 0.2 }}
+            >
+              <ChevronDown className='w-4 h-4' />
+            </motion.span>
+          </button>
+
+          <AnimatePresence initial={false}>
+            {groupOpen && (
+              <motion.div
+                key='user-mgmt-group'
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: 'auto', opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.25, ease: 'easeInOut' }}
+                className='overflow-hidden'
+                onAnimationComplete={() => measureRef.current()}
+              >
+                {userMgmtItems.map(item => {
+                  const isActive = pathname === item.href;
+                  return (
+                    <Link
+                      key={item.name}
+                      href={item.href}
+                      ref={el => { itemRefs.current[item.href] = el; }}
+                      className={linkClass(isActive, 'pl-11')}
+                    >
+                      <span className='relative z-10 text-sm'>{item.name}</span>
+                    </Link>
+                  );
+                })}
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {bottomItems.map(item => {
+            const isActive = pathname === item.href;
+            return (
+              <Link
+                key={item.name}
+                href={item.href}
+                ref={el => { itemRefs.current[item.href] = el; }}
+                className={linkClass(isActive)}
+              >
+                {renderIcon(item.icon)}
                 <span className='relative z-10'>{item.name}</span>
               </Link>
             );

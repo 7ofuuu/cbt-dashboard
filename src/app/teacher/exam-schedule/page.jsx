@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/contexts/AuthContext';
 import { Home, Plus, Search, Pencil, Trash2, AlertTriangle, BookOpen } from 'lucide-react';
 import Link from 'next/link';
 import request from '@/utils/request';
@@ -30,6 +31,8 @@ import {
 
 export default function JadwalUjianPage() {
   useAuth(['teacher']);
+  const { user } = useAuthContext();
+  const isCoordinator = user?.is_coordinator === true;
 
   const [ujians, setUjians] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -160,17 +163,19 @@ export default function JadwalUjianPage() {
                 </div>
               </div>
 
-              <Select value={filterSubject} onValueChange={setFilterSubject}>
-                <SelectTrigger className="w-full sm:w-48">
-                  <SelectValue placeholder="Mata Pelajaran" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Semua Mapel</SelectItem>
-                  {SUBJECT_OPTIONS.map((subject) => (
-                    <SelectItem key={subject} value={subject}>{subject}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              {isCoordinator && (
+                <Select value={filterSubject} onValueChange={setFilterSubject}>
+                  <SelectTrigger className="w-full sm:w-48">
+                    <SelectValue placeholder="Mata Pelajaran" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Mapel</SelectItem>
+                    {SUBJECT_OPTIONS.map((subject) => (
+                      <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
 
               <Select value={filterGrade} onValueChange={setFilterGrade}>
                 <SelectTrigger className="w-full sm:w-40">

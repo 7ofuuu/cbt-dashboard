@@ -10,11 +10,14 @@ import TeacherLayout from '../teacherLayout';
 import ExamResultCard from './components/ExamResultCard';
 import request from '@/utils/request';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
 import { SUBJECT_OPTIONS, GRADE_LEVELS, MAJOR_OPTIONS } from '@/lib/constants';
 
 export default function HasilUjianPage() {
   useAuth(['teacher']);
+  const { user } = useAuthContext();
+  const isCoordinator = user?.is_coordinator === true;
   const [searchQuery, setSearchQuery] = useState('');
   const [filterGrade, setFilterGrade] = useState('all');
   const [filterMajor, setFilterMajor] = useState('all');
@@ -131,17 +134,19 @@ export default function HasilUjianPage() {
             </div>
           </div>
 
-          <Select value={filterSubject} onValueChange={setFilterSubject}>
-            <SelectTrigger className='w-full sm:w-48'>
-              <SelectValue placeholder='Mata Pelajaran' />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='all'>Semua Mapel</SelectItem>
-              {SUBJECT_OPTIONS.map((subject) => (
-                <SelectItem key={subject} value={subject}>{subject}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          {isCoordinator && (
+            <Select value={filterSubject} onValueChange={setFilterSubject}>
+              <SelectTrigger className='w-full sm:w-48'>
+                <SelectValue placeholder='Mata Pelajaran' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='all'>Semua Mapel</SelectItem>
+                {SUBJECT_OPTIONS.map((subject) => (
+                  <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
 
           <Select value={filterGrade} onValueChange={setFilterGrade}>
             <SelectTrigger className='w-full sm:w-40'>
