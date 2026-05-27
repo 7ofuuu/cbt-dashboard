@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import TeacherLayout from '../../teacherLayout';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
@@ -10,13 +10,17 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Home, Save, X, Clock, BookOpen, Users, FileText, Calendar, ArrowRight, Info, Loader2 } from 'lucide-react';
+import { Home, X, Clock, BookOpen, Users, FileText, Calendar, ArrowRight, Info } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import request from '@/utils/request';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { GRADE_LEVELS, MAJOR_OPTIONS } from '@/lib/constants';
 import { SubjectSelect } from '@/components/SubjectSelect';
+
+// Key used to hand the exam draft to the select-bank step. The exam is not
+// created in the backend until the teacher completes both steps — closing the
+// tab or navigating away discards the draft, so no orphan exams are produced.
+const DRAFT_KEY = 'teacher.examDraft';
 
 export default function TambahJadwalPage() {
   useAuth(['teacher']);
@@ -33,78 +37,33 @@ export default function TambahJadwalPage() {
     is_shuffle_questions: true,
   });
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // Rehydrate the form if the teacher came back from the select-bank step.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY);
+      if (raw) setForm((s) => ({ ...s, ...JSON.parse(raw) }));
+    } catch (_) {}
+  }, []);
 
   const update = (field) => (e) => setForm((s) => ({ ...s, [field]: e.target.value }));
   const updateSelect = (field) => (value) => setForm((s) => ({ ...s, [field]: value }));
 
-  async function handleSubmit(e) {
+  function handleSubmit(e) {
     e.preventDefault();
-    if (isSubmitting) return;
 
     if (!form.exam_name || !form.tanggal || !form.pukul || !form.grade_level || !form.major || !form.subject) {
       toast.error('Harap lengkapi semua field yang wajib diisi.');
       return;
     }
 
-    const startTime = new Date(`${form.tanggal}T${form.pukul}:00.000+07:00`);
-    const duration = parseInt(form.duration_minutes) || 120;
-    const endTime = new Date(startTime.getTime() + duration * 60000);
-
     try {
-      setIsSubmitting(true);
-
-      const examPayload = {
-        exam_name: form.exam_name,
-        subject: form.subject,
-        grade_level: form.grade_level,
-        major: form.major,
-        start_date: startTime.toISOString(),
-        end_date: endTime.toISOString(),
-        duration_minutes: duration,
-        is_shuffle_questions: form.is_shuffle_questions,
-      };
-
-      const createRes = await request.post('/exams', examPayload);
-      const newUjianId = createRes.data.exam.exam_id;
-      const siswaAssigned = createRes.data.auto_assigned_students || 0;
-
-      if (siswaAssigned > 0) {
-        toast.success(`Jadwal berhasil dibuat! ${siswaAssigned} siswa telah di-assign secara otomatis.`, {
-          duration: 4000
-        });
-      } else {
-        toast.success('Jadwal berhasil dibuat!', { duration: 2000 });
-        toast('Tidak ada siswa yang cocok untuk di-assign otomatis.', {
-          icon: '⚠️',
-          duration: 5000,
-          style: {
-            background: '#FEF3C7',
-            color: '#92400E',
-            border: '1px solid #FCD34D'
-          }
-        });
-      }
-
-      router.push(`/teacher/exam-schedule/add/select-bank?ujianId=${newUjianId}`);
-
-    } catch (error) {
-      let errorMessage = 'Gagal membuat jadwal ujian.';
-
-      if (error.response) {
-        const status = error.response.status;
-        if (status === 400) errorMessage = 'Data yang dikirim tidak valid. Periksa kembali form Anda.';
-        else if (status === 403) errorMessage = 'Anda tidak memiliki akses untuk membuat jadwal ujian.';
-        else if (status === 409) errorMessage = 'Jadwal ujian dengan data tersebut sudah ada.';
-        else errorMessage = 'Terjadi kesalahan pada server. Silakan coba lagi.';
-      } else if (error.request) {
-        errorMessage = 'Server tidak merespons. Pastikan koneksi internet Anda.';
-      }
-
-      toast.error(errorMessage, { duration: 5000 });
-    } finally {
-      setIsSubmitting(false);
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(form));
+    } catch (_) {
+      toast.error('Browser tidak mendukung penyimpanan sementara.');
+      return;
     }
+
+    router.push('/teacher/exam-schedule/add/select-bank');
   }
 
   const formComplete = form.exam_name && form.tanggal && form.pukul && form.grade_level && form.major && form.subject;
@@ -261,17 +220,10 @@ export default function TambahJadwalPage() {
               <Button
                 type="submit"
                 size="sm"
-                disabled={isSubmitting}
                 className="bg-sky-800 hover:bg-sky-900"
               >
-                {isSubmitting ? (
-                  <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> Menyimpan...</>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4 mr-1" /> Simpan & Pilih Soal
-                    <ArrowRight className="w-4 h-4 ml-1" />
-                  </>
-                )}
+                Lanjut Pilih Soal
+                <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
             </div>
           </form>

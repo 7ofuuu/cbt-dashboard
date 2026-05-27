@@ -1,30 +1,51 @@
 "use client";
 
 import { Suspense, useState, useEffect } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import TeacherLayout from '../../../teacherLayout';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { Input } from '@/components/ui/input';
-import { Home, Search, CheckCircle2, BookOpen, Loader2 } from 'lucide-react';
+import { Home, Search, CheckCircle2, BookOpen, Loader2, ArrowLeft } from 'lucide-react';
 import { getSubjectColor } from '@/lib/constants';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
 import { useAuth } from '@/hooks/useAuth';
 
+// Must match the key used by add/page.jsx
+const DRAFT_KEY = 'teacher.examDraft';
+
 function PilihBankSoalPageContent() {
   useAuth(['teacher']);
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const ujianId = searchParams.get('ujianId');
 
+  const [draft, setDraft] = useState(null);
+  const [draftChecked, setDraftChecked] = useState(false);
   const [banks, setBanks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedBank, setSelectedBank] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Hydrate the exam draft from sessionStorage. If absent the teacher landed
+  // here directly without filling step 1 — send them back.
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY);
+      if (raw) {
+        setDraft(JSON.parse(raw));
+      } else {
+        toast.error('Lengkapi data ujian terlebih dahulu.');
+        router.replace('/teacher/exam-schedule/add');
+      }
+    } catch (_) {
+      router.replace('/teacher/exam-schedule/add');
+    } finally {
+      setDraftChecked(true);
+    }
+  }, [router]);
 
   useEffect(() => {
     fetchBankSoal();
@@ -35,27 +56,86 @@ function PilihBankSoalPageContent() {
       const res = await request.get('/questions/bank');
       setBanks(res.data.question_bank || []);
     } catch (error) {
-      toast.error("Gagal memuat Bank Soal");
+      toast.error('Gagal memuat Bank Soal');
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAssign = async () => {
-    if (!selectedBank) return toast.error("Pilih salah satu Bank Soal!");
+  // Atomic create-then-assign: only commit the exam after a bank is chosen.
+  // If the assign step fails after the exam exists, roll back the exam so the
+  // teacher never ends up with an orphan record.
+  const handleConfirm = async () => {
+    if (!selectedBank) return toast.error('Pilih salah satu Bank Soal!');
+    if (!draft) return toast.error('Data ujian tidak ditemukan.');
 
     setSubmitting(true);
+    let createdExamId = null;
+
     try {
-      const payload = {
-        exam_id: Number(ujianId),
-        question_bank_id: selectedBank.question_bank_id,
+      const startTime = new Date(`${draft.tanggal}T${draft.pukul}:00.000+07:00`);
+      const duration = parseInt(draft.duration_minutes) || 120;
+      const endTime = new Date(startTime.getTime() + duration * 60000);
+
+      const examPayload = {
+        exam_name: draft.exam_name,
+        subject: draft.subject,
+        grade_level: draft.grade_level,
+        major: draft.major,
+        start_date: startTime.toISOString(),
+        end_date: endTime.toISOString(),
+        duration_minutes: duration,
+        is_shuffle_questions: draft.is_shuffle_questions,
       };
 
-      const res = await request.post('/exams/assign-bank', payload);
-      toast.success(res.data.message || "Soal berhasil ditambahkan!");
+      const createRes = await request.post('/exams', examPayload);
+      createdExamId = createRes.data.exam.exam_id;
+      const siswaAssigned = createRes.data.auto_assigned_students || 0;
+
+      await request.post('/exams/assign-bank', {
+        exam_id: createdExamId,
+        question_bank_id: selectedBank.question_bank_id,
+      });
+
+      if (siswaAssigned > 0) {
+        toast.success(
+          `Jadwal berhasil dibuat! ${siswaAssigned} siswa di-assign otomatis.`,
+          { duration: 4000 }
+        );
+      } else {
+        toast.success('Jadwal berhasil dibuat!');
+        toast('Tidak ada siswa yang cocok untuk di-assign otomatis.', {
+          icon: '⚠️',
+          duration: 5000,
+          style: { background: '#FEF3C7', color: '#92400E', border: '1px solid #FCD34D' },
+        });
+      }
+
+      sessionStorage.removeItem(DRAFT_KEY);
       router.push('/teacher/exam-schedule');
     } catch (error) {
-      toast.error("Gagal menambahkan soal ke ujian");
+      // Rollback the exam if it was created before the assign step failed,
+      // so we never leave an exam without questions.
+      if (createdExamId) {
+        try {
+          await request.delete(`/exams/${createdExamId}`);
+        } catch (_) {
+          // Swallow rollback errors — the original failure is what we surface.
+        }
+      }
+
+      let errorMessage = 'Gagal membuat jadwal ujian.';
+      if (error.response) {
+        const status = error.response.status;
+        const serverMsg = error.response.data?.error;
+        if (serverMsg) errorMessage = serverMsg;
+        else if (status === 400) errorMessage = 'Data tidak valid. Periksa form Anda.';
+        else if (status === 403) errorMessage = 'Anda tidak memiliki akses.';
+        else if (status === 409) errorMessage = 'Jadwal ujian dengan data tersebut sudah ada.';
+      } else if (error.request) {
+        errorMessage = 'Server tidak merespons. Pastikan koneksi internet Anda.';
+      }
+      toast.error(errorMessage, { duration: 5000 });
     } finally {
       setSubmitting(false);
     }
@@ -72,6 +152,19 @@ function PilihBankSoalPageContent() {
     );
   });
 
+  // Block render until we know whether the draft exists — avoids a flash of
+  // the bank list before the redirect kicks in.
+  if (!draftChecked || !draft) {
+    return (
+      <TeacherLayout>
+        <div className='flex items-center justify-center py-20'>
+          <Loader2 className='w-6 h-6 animate-spin text-muted-foreground mr-2' />
+          <span className='text-muted-foreground'>Loading...</span>
+        </div>
+      </TeacherLayout>
+    );
+  }
+
   return (
     <TeacherLayout>
       <Breadcrumb className="mb-4">
@@ -83,7 +176,11 @@ function PilihBankSoalPageContent() {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink href='/teacher/exam-schedule'>Kelola Ujian</BreadcrumbLink>
+            <BreadcrumbLink href='/teacher/exam-schedule'>Jadwal Ujian</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbSeparator />
+          <BreadcrumbItem>
+            <BreadcrumbLink href='/teacher/exam-schedule/add'>Tambah Jadwal</BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
@@ -98,26 +195,35 @@ function PilihBankSoalPageContent() {
           <div>
             <h2 className="text-2xl font-bold">Pilih Bank Soal</h2>
             <p className="text-sm text-muted-foreground">
-              Pilih bank soal untuk ujian #{ujianId}
+              Pilih bank soal untuk <strong>{draft.exam_name}</strong> ({draft.subject})
             </p>
           </div>
-          <Button
-            onClick={handleAssign}
-            disabled={submitting || !selectedBank}
-            className="bg-[#03356C] hover:bg-[#02509E] text-white"
-          >
-            {submitting ? (
-              <>
-                <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                Memproses...
-              </>
-            ) : (
-              <>
-                <CheckCircle2 className="w-4 h-4 mr-2" />
-                Konfirmasi &amp; Simpan
-              </>
-            )}
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              onClick={() => router.push('/teacher/exam-schedule/add')}
+            >
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Kembali
+            </Button>
+            <Button
+              onClick={handleConfirm}
+              disabled={submitting || !selectedBank}
+              className="bg-[#03356C] hover:bg-[#02509E] text-white"
+            >
+              {submitting ? (
+                <>
+                  <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                  Memproses...
+                </>
+              ) : (
+                <>
+                  <CheckCircle2 className="w-4 h-4 mr-2" />
+                  Buat Ujian
+                </>
+              )}
+            </Button>
+          </div>
         </div>
 
         {/* Search */}

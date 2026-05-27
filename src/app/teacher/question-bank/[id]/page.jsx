@@ -18,7 +18,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
-import { ArrowLeft, FileText, Edit, Trash2, RefreshCw, AlertTriangle, Home, Settings, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, FileText, Edit, Trash2, RefreshCw, AlertTriangle, Home, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
@@ -209,14 +209,13 @@ export default function DetailBankSoalPage() {
             </div>
           </div>
           <div className='flex items-center gap-2'>
-            <Button 
+            <Button
               onClick={() => router.push(`/teacher/manage-question-bank/${params.id}`)}
               variant="outline"
               size="sm"
               className='text-blue-600 hover:bg-blue-50 hover:border-blue-300'
-              disabled={soals.length === 0}
             >
-              <Settings className='w-4 h-4 mr-2' /> Kelola Bank
+              <Edit className='w-4 h-4 mr-2' /> Edit Bank Soal
             </Button>
             <Button 
               onClick={handleDeleteBankClick}
