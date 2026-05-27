@@ -2,16 +2,17 @@
 
 import { useEffect } from 'react';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { SUBJECT_OPTIONS, getSubjectTheme } from '@/lib/constants';
+import { getSubjectTheme } from '@/lib/constants';
 import { Lock } from 'lucide-react';
 
 /**
  * Subject picker that follows subject-based access:
  * - Regular teacher: locked to their own subject (read-only badge, auto-synced to parent state).
- * - Coordinator: full dropdown of every subject.
+ * - Coordinator/Admin: full dropdown of every active subject from the dynamic taxonomy.
  *
  * Mirrors the backend rule in subjectAccessService.getSubjectForCreate.
  */
@@ -25,6 +26,7 @@ export function SubjectSelect({
   className = '',
 }) {
   const { user } = useAuthContext();
+  const { subjects } = useTaxonomy();
   const isCoordinator = user?.is_coordinator === true;
   const teacherSubject = user?.subject || null;
 
@@ -50,8 +52,8 @@ export function SubjectSelect({
             <SelectValue placeholder="Pilih Mata Pelajaran" />
           </SelectTrigger>
           <SelectContent>
-            {SUBJECT_OPTIONS.map((s) => (
-              <SelectItem key={s} value={s}>{s}</SelectItem>
+            {subjects.map((s) => (
+              <SelectItem key={s.subject_id} value={s.name}>{s.name}</SelectItem>
             ))}
           </SelectContent>
         </Select>

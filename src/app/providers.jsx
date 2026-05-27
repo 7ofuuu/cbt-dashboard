@@ -1,12 +1,15 @@
 'use client';
 
 import { AuthProvider } from '@/contexts/AuthContext';
+import { TaxonomyProvider } from '@/contexts/TaxonomyContext';
 import { Toaster } from 'react-hot-toast';
 
 export default function Providers({ children }) {
   return (
     <>
-      <AuthProvider>{children}</AuthProvider>
+      <AuthProvider>
+        <TaxonomyProvider>{children}</TaxonomyProvider>
+      </AuthProvider>
       <Toaster
         position="top-right"
         toastOptions={{
