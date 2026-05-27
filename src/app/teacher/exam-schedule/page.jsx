@@ -254,15 +254,59 @@ export default function JadwalUjianPage() {
             </div>
 
             {loading ? (
-              <div className="text-center py-10">Memuat data...</div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+                {[0, 1, 2, 3, 4, 5, 6, 7].map((i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: i * 0.04 }}
+                    className="bg-white rounded-lg shadow-sm border overflow-hidden"
+                  >
+                    <div className="h-14 bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse" />
+                    <div className="p-4 space-y-2.5">
+                      <div className="flex justify-between border-b py-1.5">
+                        <div className="h-3 bg-gray-200 rounded animate-pulse w-1/3" />
+                        <div className="h-3 bg-gray-200 rounded animate-pulse w-1/3" />
+                      </div>
+                      <div className="flex justify-between border-b py-1.5">
+                        <div className="h-3 bg-gray-200 rounded animate-pulse w-1/2" />
+                        <div className="h-3 bg-gray-200 rounded animate-pulse w-1/4" />
+                      </div>
+                      <div className="flex justify-between border-b py-1.5">
+                        <div className="h-3 bg-gray-200 rounded animate-pulse w-1/3" />
+                        <div className="h-3 bg-gray-200 rounded animate-pulse w-1/4" />
+                      </div>
+                      <div className="space-y-1.5 pt-1">
+                        <div className="h-2.5 bg-gray-100 rounded animate-pulse w-1/4" />
+                        <div className="h-3 bg-gray-200 rounded animate-pulse w-3/4" />
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                        <div className="h-8 bg-gray-100 rounded animate-pulse flex-1" />
+                        <div className="h-8 bg-gray-100 rounded animate-pulse w-10" />
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
             ) : filteredUjians.length === 0 ? (
                 <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="text-center py-10 text-gray-500"
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.4 }}
+                  className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-gray-200"
                 >
-                  {ujians.length === 0 ? 'Belum ada jadwal ujian' : 'Tidak ada ujian yang cocok dengan filter'}
+                  <div className="w-16 h-16 mx-auto rounded-full bg-gray-50 flex items-center justify-center mb-3">
+                    <BookOpen className="w-8 h-8 text-gray-300" />
+                  </div>
+                  <p className="text-gray-700 font-medium mb-1">
+                    {ujians.length === 0 ? 'Belum ada jadwal ujian' : 'Tidak ada ujian yang cocok'}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {ujians.length === 0
+                      ? 'Mulai dengan membuat jadwal ujian pertama.'
+                      : 'Coba longgarkan kata kunci atau filter Anda.'}
+                  </p>
                 </motion.div>
               ) : (
               <StaggerList className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
