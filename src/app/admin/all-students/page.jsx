@@ -31,6 +31,8 @@ export default function SemuaPenggunaPage() {
   const [tingkatFilter, setTingkatFilter] = useState('all');
   const [jurusanFilter, setJurusanFilter] = useState('all');
   const [kelasFilter, setKelasFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'inactive'
+  const [inactiveCount, setInactiveCount] = useState(0);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -81,6 +83,9 @@ export default function SemuaPenggunaPage() {
         if (kelasFilter !== 'all') {
           params.classroom = kelasFilter;
         }
+        if (statusFilter !== 'all') {
+          params.status = statusFilter;
+        }
 
         const response = await request.get('/users/students', params);
 
@@ -95,7 +100,20 @@ export default function SemuaPenggunaPage() {
     };
 
     fetchUsers();
-  }, [currentPage, debouncedSearch, tingkatFilter, jurusanFilter, kelasFilter]);
+  }, [currentPage, debouncedSearch, tingkatFilter, jurusanFilter, kelasFilter, statusFilter]);
+
+  // Separately fetch the inactive count so the filter chip can show it even
+  // when the current view is filtered (and thus may not contain inactives).
+  useEffect(() => {
+    let cancelled = false;
+    request
+      .get('/users/students', { status: 'inactive', limit: 1, page: 1 })
+      .then((res) => {
+        if (!cancelled) setInactiveCount(res.data.pagination?.total || 0);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [users]); // refresh when list mutates (toggle, delete)
 
   // Clear selection when data changes
   useEffect(() => {
@@ -283,7 +301,43 @@ export default function SemuaPenggunaPage() {
               <SelectItem value='3'>Kelas 3</SelectItem>
             </SelectContent>
           </Select>
+
+          {/* Status filter — drives the active/inactive view + bulk-delete flow */}
+          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}>
+            <SelectTrigger className='w-full sm:w-[180px] bg-white border-gray-300'>
+              <SelectValue placeholder='Status' />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value='all'>Semua Status</SelectItem>
+              <SelectItem value='active'>Aktif</SelectItem>
+              <SelectItem value='inactive'>
+                Non-aktif {inactiveCount > 0 && `(${inactiveCount})`}
+              </SelectItem>
+            </SelectContent>
+          </Select>
         </div>
+
+        {/* Bulk delete inactive — visible when there are any inactives.
+            We don't pre-select them because students are paginated; the
+            backend batch delete operates on explicit IDs only. Instead the
+            button switches to the inactive view so the admin can review
+            then "Pilih Semua" + delete. */}
+        {inactiveCount > 0 && statusFilter !== 'inactive' && (
+          <div className='flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg'>
+            <Trash2 className='w-4 h-4 text-amber-600' />
+            <span className='text-sm text-amber-900 flex-1'>
+              Ada <strong>{inactiveCount}</strong> siswa non-aktif yang dapat dihapus.
+            </span>
+            <Button
+              variant='outline'
+              size='sm'
+              className='border-amber-400 text-amber-700 hover:bg-amber-100'
+              onClick={() => { setStatusFilter('inactive'); setCurrentPage(1); }}
+            >
+              Tampilkan Non-aktif
+            </Button>
+          </div>
+        )}
 
         {/* Batch Actions Bar */}
         {(selectedIds.size > 0 || (tingkatFilter !== 'all' && users.length > 0)) && (

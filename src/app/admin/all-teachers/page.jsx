@@ -11,6 +11,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { PageHeader } from '@/components/ui/page-header';
 import { Search, Home, Trash2 } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -25,6 +26,7 @@ export default function SemuaGuruPage() {
   const { user: currentUser } = useAuthContext();
   const [togglingId, setTogglingId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'inactive'
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -60,8 +62,31 @@ export default function SemuaGuruPage() {
       nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
       mapel.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
+    const isActive = user.is_active !== false;
+    const matchesStatus =
+      statusFilter === 'all' ||
+      (statusFilter === 'active' && isActive) ||
+      (statusFilter === 'inactive' && !isActive);
+    return matchesSearch && matchesStatus;
   });
+
+  const inactiveCount = users.filter(u => u.is_active === false).length;
+
+  // Convenience action: select every inactive teacher (excluding super-admin
+  // and the current user; the batch endpoint skips them anyway). Pair with
+  // the existing batch-delete dialog.
+  const selectAllInactive = () => {
+    const ids = users
+      .filter(u => u.is_active === false && !u.is_super_admin && currentUser?.id?.toString() !== u.id?.toString())
+      .map(u => u.id);
+    setSelectedIds(new Set(ids));
+    setStatusFilter('inactive');
+    if (ids.length === 0) {
+      toast('Tidak ada guru non-aktif untuk dihapus.', { icon: 'ℹ️' });
+    } else {
+      toast.success(`${ids.length} guru non-aktif terpilih`);
+    }
+  };
 
   const toggleSelect = (id) => {
     setSelectedIds((prev) => {
@@ -137,9 +162,8 @@ export default function SemuaGuruPage() {
           description="Kelola dan lihat semua pengguna dengan role guru"
         />
 
-        {/* Search */}
+        {/* Search + Filter */}
         <div className='flex flex-col sm:flex-row gap-4'>
-          {/* Search Input */}
           <div className='relative flex-1'>
             <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5' />
             <Input
@@ -150,6 +174,27 @@ export default function SemuaGuruPage() {
               className='pl-10 bg-white border-gray-300'
             />
           </div>
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full sm:w-44 bg-white">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">Semua Status</SelectItem>
+              <SelectItem value="active">Aktif</SelectItem>
+              <SelectItem value="inactive">Non-aktif {inactiveCount > 0 && `(${inactiveCount})`}</SelectItem>
+            </SelectContent>
+          </Select>
+          {inactiveCount > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-red-600 hover:bg-red-50 hover:border-red-300"
+              onClick={selectAllInactive}
+            >
+              <Trash2 className='w-4 h-4 mr-2' />
+              Pilih Semua Non-aktif ({inactiveCount})
+            </Button>
+          )}
         </div>
 
         {selectedIds.size > 0 && (
