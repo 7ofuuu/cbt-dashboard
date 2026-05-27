@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 
-import { House, History, UserPlus, School, UserCog, KeyRound, UsersRound, ChevronDown } from 'lucide-react';
+import { House, History, UserPlus, School, UserCog, KeyRound, UsersRound, ChevronDown, Database } from 'lucide-react';
 import { useAuthContext } from '@/contexts/AuthContext';
 import {
   AlertDialog,
@@ -31,6 +31,7 @@ const topItems = [
 
 const bottomItems = [
   { name: 'Aktivitas', href: '/admin/activity', icon: <History className='w-5 h-5' /> },
+  { name: 'Master Data', href: '/admin/master-data', icon: <Database className='w-5 h-5' /> },
   { name: 'Profil Saya', href: '/admin/profile', icon: <UserCog className='w-5 h-5' /> },
   { name: 'Ubah Password', href: '/admin/change-password', icon: <KeyRound className='w-5 h-5' /> },
   { name: 'Profil Sekolah', href: '/admin/school-profile', icon: <School className='w-5 h-5' /> },
