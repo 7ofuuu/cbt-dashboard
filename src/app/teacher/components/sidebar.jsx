@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef, useLayoutEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -18,38 +18,41 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
+const menuItems = [
+  { name: 'Beranda', href: '/teacher/dashboard', icon: <House className='w-5 h-5' /> },
+  { name: 'Bank Soal', href: '/teacher/question-bank', icon: <Clipboard className='w-5 h-5' /> },
+  { name: 'Jadwal Ujian', href: '/teacher/exam-schedule', icon: <Calendar className='w-5 h-5' /> },
+  { name: 'Hasil Ujian', href: '/teacher/exam-results', icon: <Book className='w-5 h-5' /> },
+  { name: 'Ubah Password', href: '/teacher/change-password', icon: <KeyRound className='w-5 h-5' /> },
+];
+
 export default function Sidebar() {
   const pathname = usePathname();
   const { logout } = useAuthContext();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
 
-  const menuItems = [
-    {
-      name: 'Beranda',
-      href: '/teacher/dashboard',
-      icon: <House className='w-5 h-5' />,
-    },
-    {
-      name: 'Bank Soal',
-      href: '/teacher/question-bank',
-      icon: <Clipboard className='w-5 h-5' />,
-    },
-    {
-      name: 'Jadwal Ujian',
-      href: '/teacher/exam-schedule',
-      icon: <Calendar className='w-5 h-5' />,
-    },
-    {
-      name: 'Hasil Ujian',
-      href: '/teacher/exam-results',
-      icon: <Book className='w-5 h-5' />,
-    },
-    {
-      name: 'Ubah Password',
-      href: '/teacher/change-password',
-      icon: <KeyRound className='w-5 h-5' />,
-    },
-  ];
+  const containerRef = useRef(null);
+  const itemRefs = useRef({});
+  const [indicator, setIndicator] = useState({ top: 0, height: 0, visible: false });
+
+  const activeHref = menuItems.find(item => pathname?.startsWith(item.href))?.href;
+
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- positioning the highlight requires reading DOM layout then committing it to state
+  useLayoutEffect(() => {
+    const container = containerRef.current;
+    const activeEl = activeHref ? itemRefs.current[activeHref] : null;
+    if (!container || !activeEl) {
+      setIndicator(prev => (prev.visible ? { ...prev, visible: false } : prev));
+      return;
+    }
+    const containerRect = container.getBoundingClientRect();
+    const elRect = activeEl.getBoundingClientRect();
+    setIndicator({
+      top: elRect.top - containerRect.top + container.scrollTop,
+      height: elRect.height,
+      visible: true,
+    });
+  }, [activeHref]);
 
   return (
     <aside className='fixed left-0 top-16 bottom-0 w-64 bg-white border-r border-gray-200 z-30'>
@@ -60,29 +63,35 @@ export default function Sidebar() {
         </div>
 
         {/* Menu Items */}
-        <div className='flex-1 px-3'>
+        <div ref={containerRef} className='relative flex-1 px-3 overflow-y-auto'>
+          {indicator.visible && (
+            <>
+              <motion.span
+                className='absolute left-3 right-3 bg-sky-100 rounded-lg pointer-events-none z-0'
+                initial={false}
+                animate={{ top: indicator.top, height: indicator.height }}
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+              />
+              <motion.span
+                className='absolute left-3 w-1 bg-sky-600 rounded-r-full pointer-events-none z-0'
+                initial={false}
+                animate={{ top: indicator.top + 8, height: Math.max(indicator.height - 16, 0) }}
+                transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+              />
+            </>
+          )}
+
           {menuItems.map(item => {
-            const isActive = pathname?.startsWith(item.href);
+            const isActive = activeHref === item.href;
             return (
               <Link
                 key={item.name}
                 href={item.href}
-                className={`relative flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-colors group ${isActive ? 'text-sky-900 font-medium' : 'text-gray-600 hover:bg-gray-100'}`}
+                ref={el => { itemRefs.current[item.href] = el; }}
+                className={`relative z-10 flex items-center gap-3 px-4 py-3 rounded-lg mb-1 transition-colors ${
+                  isActive ? 'text-sky-900 font-medium' : 'text-gray-600 hover:bg-gray-100/60'
+                }`}
               >
-                {isActive && (
-                  <motion.span
-                    layoutId='teacher-sidebar-active'
-                    className='absolute inset-0 bg-sky-100 rounded-lg -z-0'
-                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                  />
-                )}
-                {isActive && (
-                  <motion.span
-                    layoutId='teacher-sidebar-indicator'
-                    className='absolute left-0 top-2 bottom-2 w-1 bg-sky-600 rounded-r-full'
-                    transition={{ type: 'spring', stiffness: 380, damping: 30 }}
-                  />
-                )}
                 <motion.span
                   className='relative z-10 flex items-center'
                   whileHover={{ scale: 1.08 }}
