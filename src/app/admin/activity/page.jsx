@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { PageHeader } from '@/components/ui/page-header';
-import { Home, Search, X, RefreshCw } from 'lucide-react';
+import { Home, Search, X, RefreshCw, Filter } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
@@ -236,73 +236,93 @@ export default function AktivitasPage() {
           </Button>
         </PageHeader>
 
-        {/* Search Bar */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <Input
-            type="text"
-            placeholder="Cari ujian, mata pelajaran, tingkat, atau jurusan..."
-            value={filters.search}
-            onChange={(e) => handleFilterChange('search', e.target.value)}
-            className="pl-10 pr-4"
-          />
-        </div>
+        {/* Filter & Search card */}
+        <div className="bg-white border rounded-lg shadow-sm p-3 space-y-3">
+          <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
+            <Filter className="w-4 h-4" />
+            <span>Filter & Pencarian</span>
+            {getActiveFilterCount() > 0 && (
+              <Badge variant="secondary" className="ml-1 text-[10px] h-5">
+                {getActiveFilterCount()} aktif
+              </Badge>
+            )}
+            <div className="flex-1" />
+            {getActiveFilterCount() > 0 && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                className="h-8 text-xs"
+                onClick={handleResetFilters}
+              >
+                <X className="w-3.5 h-3.5 mr-1" />
+                Reset
+              </Button>
+            )}
+          </div>
 
-        {/* Filters */}
-        <div className="space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <Select value={filters.jenisUjian} onValueChange={(value) => handleFilterChange('jenisUjian', value)}>
-              <SelectTrigger className="w-full">
+            <div className="relative sm:col-span-2">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Cari ujian, mapel, tingkat, jurusan..."
+                value={filters.search}
+                onChange={(e) => handleFilterChange('search', e.target.value)}
+                className="pl-10 h-10 w-full"
+              />
+            </div>
+
+            <Select value={filters.jenisUjian} onValueChange={(v) => handleFilterChange('jenisUjian', v)}>
+              <SelectTrigger className="h-10 w-full">
                 <SelectValue placeholder="Jenis Ujian" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Jenis Ujian</SelectItem>
-                {uniqueJenisUjian.map(jenis => (
+                {uniqueJenisUjian.map((jenis) => (
                   <SelectItem key={jenis} value={jenis}>{jenis}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
-            <Select value={filters.mataPelajaran} onValueChange={(value) => handleFilterChange('mataPelajaran', value)}>
-              <SelectTrigger className="w-full">
+            <Select value={filters.mataPelajaran} onValueChange={(v) => handleFilterChange('mataPelajaran', v)}>
+              <SelectTrigger className="h-10 w-full">
                 <SelectValue placeholder="Mata Pelajaran" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Semua Mata Pelajaran</SelectItem>
-                {uniqueMapel.map(mapel => (
+                <SelectItem value="all">Semua Mapel</SelectItem>
+                {uniqueMapel.map((mapel) => (
                   <SelectItem key={mapel} value={mapel}>{mapel}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
-            <Select value={filters.grade_level} onValueChange={(value) => handleFilterChange('grade_level', value)}>
-              <SelectTrigger className="w-full">
+            <Select value={filters.grade_level} onValueChange={(v) => handleFilterChange('grade_level', v)}>
+              <SelectTrigger className="h-10 w-full">
                 <SelectValue placeholder="Tingkat" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Tingkat</SelectItem>
-                {uniqueTingkat.map(grade_level => (
-                  <SelectItem key={grade_level} value={grade_level}>Kelas {grade_level}</SelectItem>
+                {uniqueTingkat.map((g) => (
+                  <SelectItem key={g} value={g}>Kelas {g}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
-            <Select value={filters.major} onValueChange={(value) => handleFilterChange('major', value)}>
-              <SelectTrigger className="w-full">
+            <Select value={filters.major} onValueChange={(v) => handleFilterChange('major', v)}>
+              <SelectTrigger className="h-10 w-full">
                 <SelectValue placeholder="Jurusan" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Jurusan</SelectItem>
-                {uniqueJurusan.map(major => (
-                  <SelectItem key={major} value={major}>{major}</SelectItem>
+                {uniqueJurusan.map((m) => (
+                  <SelectItem key={m} value={m}>{m}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
-              <SelectTrigger className="w-full">
+            <Select value={filters.status} onValueChange={(v) => handleFilterChange('status', v)}>
+              <SelectTrigger className="h-10 w-full">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -313,8 +333,8 @@ export default function AktivitasPage() {
               </SelectContent>
             </Select>
 
-            <Select value={filters.sortBy} onValueChange={(value) => handleFilterChange('sortBy', value)}>
-              <SelectTrigger className="w-full">
+            <Select value={filters.sortBy} onValueChange={(v) => handleFilterChange('sortBy', v)}>
+              <SelectTrigger className="h-10 w-full">
                 <SelectValue placeholder="Urutkan" />
               </SelectTrigger>
               <SelectContent>
@@ -325,23 +345,6 @@ export default function AktivitasPage() {
               </SelectContent>
             </Select>
           </div>
-
-          {/* Active Filters Badge and Reset Button */}
-          {getActiveFilterCount() > 0 && (
-            <div className="flex items-center gap-3">
-              <Badge variant="secondary" className="flex items-center gap-1">
-                {getActiveFilterCount()} Filter Aktif
-              </Badge>
-              <Button
-                onClick={handleResetFilters}
-                variant="ghost"
-                size="sm"
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-              >
-                <X className="w-4 h-4" /> Reset Filter
-              </Button>
-            </div>
-          )}
         </div>
 
         {/* Activities Grid */}

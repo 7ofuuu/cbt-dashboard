@@ -5,20 +5,23 @@ import TeacherLayout from '../teacherLayout';
 import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { PageHeader } from '@/components/ui/page-header';
-import { Search, Plus, RefreshCw, Eye, BookOpen, FileText, ListChecks, Home } from 'lucide-react';
+import { Search, Plus, RefreshCw, Eye, BookOpen, FileText, ListChecks, Home, Filter, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
-import { GRADE_LEVELS, MAJOR_OPTIONS, getSubjectTheme } from '@/lib/constants';
+import { useTaxonomy } from '@/contexts/TaxonomyContext';
+import { getSubjectTheme } from '@/lib/constants';
 
 export default function BankSoalPage() {
   useAuth(['teacher']);
   const router = useRouter();
+  const { gradeLevels, majors } = useTaxonomy();
 
   const [bankSoal, setBankSoal] = useState([]);
   const [totalSoal, setTotalSoal] = useState(0);
@@ -205,56 +208,75 @@ export default function BankSoalPage() {
         </div>
 
         {/* Search and Filters */}
-        <div className='flex flex-col sm:flex-row items-center gap-4'>
-          <div className='flex-1 w-full'>
-            <div className='relative'>
+        <div className='bg-white border rounded-lg shadow-sm p-3 space-y-3'>
+          <div className='flex items-center gap-2 text-sm font-medium text-muted-foreground'>
+            <Filter className='w-4 h-4' />
+            <span>Filter & Pencarian</span>
+            {(() => {
+              const active = [query, filterTingkat !== 'all', filterJurusan !== 'all'].filter(Boolean).length;
+              return active > 0 ? <Badge variant='secondary' className='ml-1 text-[10px] h-5'>{active} aktif</Badge> : null;
+            })()}
+            <div className='flex-1' />
+            {(query || filterTingkat !== 'all' || filterJurusan !== 'all') && (
+              <Button
+                type='button'
+                variant='ghost'
+                size='sm'
+                className='h-8 text-xs'
+                onClick={() => { setQuery(''); setFilterTingkat('all'); setFilterJurusan('all'); }}
+              >
+                <X className='w-3.5 h-3.5 mr-1' />
+                Reset
+              </Button>
+            )}
+          </div>
+          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3'>
+            <div className='relative lg:col-span-1'>
+              <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder='Cari Bank Soal (mata pelajaran, tingkat, atau jurusan)'
-                className='pr-10'
+                placeholder='Cari bank soal...'
+                className='pl-10 h-10 w-full'
               />
-              <div className='absolute right-3 top-1/2 -translate-y-1/2 text-gray-400'>
-                <Search className='w-5 h-5' />
-              </div>
             </div>
+
+            <Select value={filterTingkat} onValueChange={setFilterTingkat}>
+              <SelectTrigger className='h-10 w-full'>
+                <SelectValue placeholder='Tingkat' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='all'>Semua Tingkat</SelectItem>
+                {gradeLevels.map((g) => (
+                  <SelectItem key={g.grade_level_id} value={g.value}>{g.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={filterJurusan} onValueChange={setFilterJurusan}>
+              <SelectTrigger className='h-10 w-full'>
+                <SelectValue placeholder='Jurusan' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='all'>Semua Jurusan</SelectItem>
+                {majors.map((m) => (
+                  <SelectItem key={m.major_id} value={m.value}>{m.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className='h-10 w-full'>
+                <SelectValue placeholder='Urutkan' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='terbanyak'>Terbanyak</SelectItem>
+                <SelectItem value='tersedikit'>Tersedikit</SelectItem>
+                <SelectItem value='nama-asc'>Nama A-Z</SelectItem>
+                <SelectItem value='nama-desc'>Nama Z-A</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
-
-          <Select value={filterTingkat} onValueChange={setFilterTingkat}>
-            <SelectTrigger className='w-full sm:w-40'>
-              <SelectValue placeholder='Tingkat' />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='all'>Semua Tingkat</SelectItem>
-              {GRADE_LEVELS.map((grade) => (
-                <SelectItem key={grade.value} value={grade.value}>Tingkat {grade.value}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={filterJurusan} onValueChange={setFilterJurusan}>
-            <SelectTrigger className='w-full sm:w-40'>
-              <SelectValue placeholder='Jurusan' />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='all'>Semua Jurusan</SelectItem>
-              {MAJOR_OPTIONS.map((major) => (
-                <SelectItem key={major.value} value={major.value}>{major.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className='w-full sm:w-40'>
-              <SelectValue placeholder='Urutkan' />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='terbanyak'>Terbanyak</SelectItem>
-              <SelectItem value='tersedikit'>Tersedikit</SelectItem>
-              <SelectItem value='nama-asc'>Nama A-Z</SelectItem>
-              <SelectItem value='nama-desc'>Nama Z-A</SelectItem>
-            </SelectContent>
-          </Select>
         </div>
 
         {/* Bank Soal Cards */}

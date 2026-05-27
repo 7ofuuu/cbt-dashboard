@@ -12,12 +12,13 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Search, Home, Trash2 } from 'lucide-react';
+import { Search, Home, Trash2, Filter, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import toast from 'react-hot-toast';
 import request from '@/utils/request';
 
@@ -25,6 +26,7 @@ export default function SemuaPenggunaPage() {
   useAuth(['admin']);
   const router = useRouter();
   const { user: currentUser } = useAuthContext();
+  const { gradeLevels, majors } = useTaxonomy();
   const [togglingId, setTogglingId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -243,78 +245,95 @@ export default function SemuaPenggunaPage() {
         />
 
         {/* Search and Filters */}
-        <div className='flex flex-col sm:flex-row gap-4'>
-          {/* Search Input */}
-          <div className='relative flex-1'>
-            <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5' />
-            <Input
-              type='text'
-              placeholder='Cari Pengguna'
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className='pl-10 bg-white border-gray-300'
-            />
+        <div className='bg-white border rounded-lg shadow-sm p-3 space-y-3'>
+          <div className='flex items-center gap-2 text-sm font-medium text-muted-foreground'>
+            <Filter className='w-4 h-4' />
+            <span>Filter & Pencarian</span>
+            {(() => {
+              const active = [searchQuery, tingkatFilter !== 'all', jurusanFilter !== 'all', kelasFilter !== 'all', statusFilter !== 'all'].filter(Boolean).length;
+              return active > 0 ? <Badge variant='secondary' className='ml-1 text-[10px] h-5'>{active} aktif</Badge> : null;
+            })()}
+            <div className='flex-1' />
+            {(searchQuery || tingkatFilter !== 'all' || jurusanFilter !== 'all' || kelasFilter !== 'all' || statusFilter !== 'all') && (
+              <Button
+                type='button'
+                variant='ghost'
+                size='sm'
+                className='h-8 text-xs'
+                onClick={() => {
+                  setSearchQuery('');
+                  setTingkatFilter('all');
+                  setJurusanFilter('all');
+                  setKelasFilter('all');
+                  setStatusFilter('all');
+                  setCurrentPage(1);
+                }}
+              >
+                <X className='w-3.5 h-3.5 mr-1' />
+                Reset
+              </Button>
+            )}
           </div>
 
-          {/* Filter Dropdowns */}
-          <Select
-            value={tingkatFilter}
-            onValueChange={setTingkatFilter}
-          >
-            <SelectTrigger className='w-full sm:w-[180px] bg-white border-gray-300'>
-              <SelectValue placeholder='Semua Tingkat' />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='all'>Semua Tingkat</SelectItem>
-              <SelectItem value='X'>Kelas 10</SelectItem>
-              <SelectItem value='XI'>Kelas 11</SelectItem>
-              <SelectItem value='XII'>Kelas 12</SelectItem>
-            </SelectContent>
-          </Select>
+          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3'>
+            <div className='relative sm:col-span-2 lg:col-span-1'>
+              <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
+              <Input
+                type='text'
+                placeholder='Cari nama, username, NISN...'
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className='pl-10 h-10 w-full'
+              />
+            </div>
 
-          <Select
-            value={jurusanFilter}
-            onValueChange={setJurusanFilter}
-          >
-            <SelectTrigger className='w-full sm:w-[180px] bg-white border-gray-300'>
-              <SelectValue placeholder='Semua Jurusan' />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='all'>Semua Jurusan</SelectItem>
-              <SelectItem value='IPA'>IPA</SelectItem>
-              <SelectItem value='IPS'>IPS</SelectItem>
-              <SelectItem value='Bahasa'>Bahasa</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select value={tingkatFilter} onValueChange={setTingkatFilter}>
+              <SelectTrigger className='h-10 w-full'>
+                <SelectValue placeholder='Semua Tingkat' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='all'>Semua Tingkat</SelectItem>
+                {gradeLevels.map((g) => (
+                  <SelectItem key={g.grade_level_id} value={g.value}>{g.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <Select
-            value={kelasFilter}
-            onValueChange={setKelasFilter}
-          >
-            <SelectTrigger className='w-full sm:w-[180px] bg-white border-gray-300'>
-              <SelectValue placeholder='Semua Kelas' />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='all'>Semua Kelas</SelectItem>
-              <SelectItem value='1'>Kelas 1</SelectItem>
-              <SelectItem value='2'>Kelas 2</SelectItem>
-              <SelectItem value='3'>Kelas 3</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select value={jurusanFilter} onValueChange={setJurusanFilter}>
+              <SelectTrigger className='h-10 w-full'>
+                <SelectValue placeholder='Semua Jurusan' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='all'>Semua Jurusan</SelectItem>
+                {majors.map((m) => (
+                  <SelectItem key={m.major_id} value={m.value}>{m.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          {/* Status filter — drives the active/inactive view + bulk-delete flow */}
-          <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}>
-            <SelectTrigger className='w-full sm:w-[180px] bg-white border-gray-300'>
-              <SelectValue placeholder='Status' />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='all'>Semua Status</SelectItem>
-              <SelectItem value='active'>Aktif</SelectItem>
-              <SelectItem value='inactive'>
-                Non-aktif {inactiveCount > 0 && `(${inactiveCount})`}
-              </SelectItem>
-            </SelectContent>
-          </Select>
+            <Select value={kelasFilter} onValueChange={setKelasFilter}>
+              <SelectTrigger className='h-10 w-full'>
+                <SelectValue placeholder='Semua Kelas' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='all'>Semua Kelas</SelectItem>
+                <SelectItem value='1'>Kelas 1</SelectItem>
+                <SelectItem value='2'>Kelas 2</SelectItem>
+                <SelectItem value='3'>Kelas 3</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}>
+              <SelectTrigger className='h-10 w-full'>
+                <SelectValue placeholder='Status' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='all'>Semua Status</SelectItem>
+                <SelectItem value='active'>Aktif</SelectItem>
+                <SelectItem value='inactive'>Non-aktif {inactiveCount > 0 && `(${inactiveCount})`}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Bulk delete inactive — visible when there are any inactives.

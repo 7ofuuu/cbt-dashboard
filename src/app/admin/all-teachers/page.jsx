@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { PageHeader } from '@/components/ui/page-header';
-import { Search, Home, Trash2 } from 'lucide-react';
+import { Search, Home, Trash2, Filter, X } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
@@ -163,38 +163,61 @@ export default function SemuaGuruPage() {
         />
 
         {/* Search + Filter */}
-        <div className='flex flex-col sm:flex-row gap-4'>
-          <div className='relative flex-1'>
-            <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5' />
-            <Input
-              type='text'
-              placeholder='Cari Guru'
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className='pl-10 bg-white border-gray-300'
-            />
+        <div className='bg-white border rounded-lg shadow-sm p-3 space-y-3'>
+          <div className='flex items-center gap-2 text-sm font-medium text-muted-foreground'>
+            <Filter className='w-4 h-4' />
+            <span>Filter & Pencarian</span>
+            {(searchQuery || statusFilter !== 'all') && (
+              <Badge variant='secondary' className='ml-1 text-[10px] h-5'>
+                {(searchQuery ? 1 : 0) + (statusFilter !== 'all' ? 1 : 0)} aktif
+              </Badge>
+            )}
+            <div className='flex-1' />
+            {(searchQuery || statusFilter !== 'all') && (
+              <Button
+                type='button'
+                variant='ghost'
+                size='sm'
+                className='h-8 text-xs'
+                onClick={() => { setSearchQuery(''); setStatusFilter('all'); }}
+              >
+                <X className='w-3.5 h-3.5 mr-1' />
+                Reset
+              </Button>
+            )}
           </div>
-          <Select value={statusFilter} onValueChange={setStatusFilter}>
-            <SelectTrigger className="w-full sm:w-44 bg-white">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Semua Status</SelectItem>
-              <SelectItem value="active">Aktif</SelectItem>
-              <SelectItem value="inactive">Non-aktif {inactiveCount > 0 && `(${inactiveCount})`}</SelectItem>
-            </SelectContent>
-          </Select>
-          {inactiveCount > 0 && (
+          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3'>
+            <div className='relative sm:col-span-2'>
+              <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
+              <Input
+                type='text'
+                placeholder='Cari nama, username, atau mapel...'
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className='pl-10 h-10 w-full'
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className='h-10 w-full'>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='all'>Semua Status</SelectItem>
+                <SelectItem value='active'>Aktif</SelectItem>
+                <SelectItem value='inactive'>Non-aktif {inactiveCount > 0 && `(${inactiveCount})`}</SelectItem>
+              </SelectContent>
+            </Select>
             <Button
-              variant="outline"
-              size="sm"
-              className="text-red-600 hover:bg-red-50 hover:border-red-300"
+              variant='outline'
+              size='sm'
+              disabled={inactiveCount === 0}
+              className={`h-10 w-full ${inactiveCount > 0 ? 'text-red-600 hover:bg-red-50 hover:border-red-300' : ''}`}
               onClick={selectAllInactive}
             >
               <Trash2 className='w-4 h-4 mr-2' />
-              Pilih Semua Non-aktif ({inactiveCount})
+              Pilih Semua Non-aktif{inactiveCount > 0 ? ` (${inactiveCount})` : ''}
             </Button>
-          )}
+          </div>
         </div>
 
         {selectedIds.size > 0 && (

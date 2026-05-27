@@ -1,10 +1,12 @@
 'use client';
 
 import { useEffect, useState, useMemo } from 'react';
-import { Search, Home } from 'lucide-react';
+import { Search, Home, Filter, X } from 'lucide-react';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { PageHeader } from '@/components/ui/page-header';
 import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import TeacherLayout from '../teacherLayout';
 import ExamResultCard from './components/ExamResultCard';
@@ -12,11 +14,12 @@ import request from '@/utils/request';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthContext } from '@/contexts/AuthContext';
 import toast from 'react-hot-toast';
-import { SUBJECT_OPTIONS, GRADE_LEVELS, MAJOR_OPTIONS } from '@/lib/constants';
+import { useTaxonomy } from '@/contexts/TaxonomyContext';
 
 export default function HasilUjianPage() {
   useAuth(['teacher']);
   const { user } = useAuthContext();
+  const { subjects, gradeLevels, majors } = useTaxonomy();
   const isCoordinator = user?.is_coordinator === true;
   const [searchQuery, setSearchQuery] = useState('');
   const [filterGrade, setFilterGrade] = useState('all');
@@ -118,72 +121,97 @@ export default function HasilUjianPage() {
         />
 
         {/* Search & Filters */}
-        <div className='flex flex-col sm:flex-row items-center gap-4'>
-          <div className='flex-1 w-full'>
-            <div className='relative'>
-              <Input
-                type='text'
-                placeholder='Cari ujian (nama, mapel, kelas...)'
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className='pr-10'
-              />
-              <div className='absolute right-3 top-1/2 -translate-y-1/2 text-gray-400'>
-                <Search className='w-5 h-5' />
-              </div>
-            </div>
+        <div className='bg-white border rounded-lg shadow-sm p-3 space-y-3'>
+          <div className='flex items-center gap-2 text-sm font-medium text-muted-foreground'>
+            <Filter className='w-4 h-4' />
+            <span>Filter & Pencarian</span>
+            {(() => {
+              const active = [searchQuery, isCoordinator && filterSubject !== 'all', filterGrade !== 'all', filterMajor !== 'all'].filter(Boolean).length;
+              return active > 0 ? <Badge variant='secondary' className='ml-1 text-[10px] h-5'>{active} aktif</Badge> : null;
+            })()}
+            <div className='flex-1' />
+            {(searchQuery || filterSubject !== 'all' || filterGrade !== 'all' || filterMajor !== 'all') && (
+              <Button
+                type='button'
+                variant='ghost'
+                size='sm'
+                className='h-8 text-xs'
+                onClick={() => {
+                  setSearchQuery('');
+                  setFilterSubject('all');
+                  setFilterGrade('all');
+                  setFilterMajor('all');
+                }}
+              >
+                <X className='w-3.5 h-3.5 mr-1' />
+                Reset
+              </Button>
+            )}
           </div>
 
-          {isCoordinator && (
-            <Select value={filterSubject} onValueChange={setFilterSubject}>
-              <SelectTrigger className='w-full sm:w-48'>
-                <SelectValue placeholder='Mata Pelajaran' />
+          <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 ${isCoordinator ? 'lg:grid-cols-5' : 'lg:grid-cols-4'}`}>
+            <div className='relative lg:col-span-1'>
+              <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
+              <Input
+                type='text'
+                placeholder='Cari ujian...'
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className='pl-10 h-10 w-full'
+              />
+            </div>
+
+            {isCoordinator && (
+              <Select value={filterSubject} onValueChange={setFilterSubject}>
+                <SelectTrigger className='h-10 w-full'>
+                  <SelectValue placeholder='Mata Pelajaran' />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value='all'>Semua Mapel</SelectItem>
+                  {subjects.map((s) => (
+                    <SelectItem key={s.subject_id} value={s.name}>{s.name}</SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+
+            <Select value={filterGrade} onValueChange={setFilterGrade}>
+              <SelectTrigger className='h-10 w-full'>
+                <SelectValue placeholder='Tingkat' />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value='all'>Semua Mapel</SelectItem>
-                {SUBJECT_OPTIONS.map((subject) => (
-                  <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                <SelectItem value='all'>Semua Tingkat</SelectItem>
+                {gradeLevels.map((g) => (
+                  <SelectItem key={g.grade_level_id} value={g.value}>{g.label}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          )}
 
-          <Select value={filterGrade} onValueChange={setFilterGrade}>
-            <SelectTrigger className='w-full sm:w-40'>
-              <SelectValue placeholder='Tingkat' />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='all'>Semua Tingkat</SelectItem>
-              {GRADE_LEVELS.map((grade) => (
-                <SelectItem key={grade.value} value={grade.value}>Tingkat {grade.value}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Select value={filterMajor} onValueChange={setFilterMajor}>
+              <SelectTrigger className='h-10 w-full'>
+                <SelectValue placeholder='Jurusan' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='all'>Semua Jurusan</SelectItem>
+                {majors.map((m) => (
+                  <SelectItem key={m.major_id} value={m.value}>{m.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <Select value={filterMajor} onValueChange={setFilterMajor}>
-            <SelectTrigger className='w-full sm:w-40'>
-              <SelectValue placeholder='Jurusan' />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='all'>Semua Jurusan</SelectItem>
-              {MAJOR_OPTIONS.map((major) => (
-                <SelectItem key={major.value} value={major.value}>{major.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className='w-full sm:w-40'>
-              <SelectValue placeholder='Urutkan' />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='terbaru'>Terbaru</SelectItem>
-              <SelectItem value='score-desc'>Nilai Tertinggi</SelectItem>
-              <SelectItem value='score-asc'>Nilai Terendah</SelectItem>
-              <SelectItem value='nama-asc'>Nama A-Z</SelectItem>
-              <SelectItem value='nama-desc'>Nama Z-A</SelectItem>
-            </SelectContent>
-          </Select>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className='h-10 w-full'>
+                <SelectValue placeholder='Urutkan' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='terbaru'>Terbaru</SelectItem>
+                <SelectItem value='score-desc'>Nilai Tertinggi</SelectItem>
+                <SelectItem value='score-asc'>Nilai Terendah</SelectItem>
+                <SelectItem value='nama-asc'>Nama A-Z</SelectItem>
+                <SelectItem value='nama-desc'>Nama Z-A</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
         </div>
 
         {/* Cards Grid */}
