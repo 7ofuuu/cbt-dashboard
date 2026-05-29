@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import TeacherLayout from '../../teacherLayout';
 import { useAuth } from '@/hooks/useAuth';
+import { resolvePreviewUrl } from '@/components/ImageUploader';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -300,7 +301,7 @@ export default function DetailBankSoalPage() {
                           {soal.question_image && (
                             <div className='mt-3'>
                               <img
-                                src={soal.question_image}
+                                src={resolvePreviewUrl(soal.question_image)}
                                 alt={`Gambar soal ${index + 1}`}
                                 className='max-h-60 rounded-lg border object-contain bg-gray-50'
                                 onError={(e) => {

@@ -239,13 +239,10 @@ export default function EditBankSoalPage() {
         let questionImage = q.existingImage;
         if (q.imageFile) {
           try {
-            const fd = new FormData();
-            fd.append('image', q.imageFile);
-            const up = await request.post('/upload', fd, {
-              headers: { 'Content-Type': 'multipart/form-data' },
-            });
+            const up = await request.postMultipart('/upload/question-image', { file: q.imageFile });
             questionImage = up.data.url || up.data.path;
-          } catch {
+          } catch (err) {
+            console.warn('Image upload failed', err);
             // Fall back to existing/url if upload fails — don't block save.
           }
         } else if (q.imageUrl && q.imageUrl.trim()) {

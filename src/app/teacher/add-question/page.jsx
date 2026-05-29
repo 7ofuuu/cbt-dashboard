@@ -136,16 +136,13 @@ export default function TambahSoalPage() {
 
         // Handle image upload if present
         if (q.imageFile) {
-          const formData = new FormData();
-          formData.append('image', q.imageFile);
           try {
-            const uploadRes = await request.post('/upload', formData, {
-              headers: { 'Content-Type': 'multipart/form-data' },
-            });
+            const uploadRes = await request.postMultipart('/upload/question-image', { file: q.imageFile });
             payload.question_image = uploadRes.data.url || uploadRes.data.path;
-          } catch {
-            // Continue without image if upload fails
-            console.warn('Image upload failed, continuing without image');
+          } catch (err) {
+            // Surface the failure so the teacher knows the image was dropped
+            console.warn('Image upload failed', err);
+            toast.error(`Gagal mengunggah gambar untuk salah satu soal: ${err?.response?.data?.error || err?.message || ''}`);
           }
         } else if (q.imageUrl && q.imageUrl.trim()) {
           // Use URL directly (e.g., Google Drive link)

@@ -18,6 +18,7 @@ import {
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
 import { motion } from 'framer-motion';
+import ImageUploader, { resolvePreviewUrl } from '@/components/ImageUploader';
 
 const SCHOOL_LEVELS = ['SD', 'SMP', 'SMA', 'SMK', 'MA', 'MTs', 'MI'];
 const ACCREDITATIONS = ['Unggul', 'Baik Sekali', 'Baik', 'A', 'B', 'C'];
@@ -150,7 +151,7 @@ export default function SchoolProfilePage() {
             {showLogo ? (
               <div className='w-20 h-20 md:w-24 md:h-24 rounded-2xl bg-white/95 p-2 flex items-center justify-center shadow-md ring-4 ring-white/20'>
                 <img
-                  src={profile.logo_url}
+                  src={resolvePreviewUrl(profile.logo_url)}
                   alt='Logo'
                   className='max-w-full max-h-full object-contain'
                   onError={() => setLogoError(true)}
@@ -305,45 +306,15 @@ export default function SchoolProfilePage() {
           subtitle='Logo akan muncul di seluruh aplikasi'
           accent='violet'
         >
-          <div className='space-y-3'>
-            {/* Logo preview area */}
-            <div className='flex items-center gap-3'>
-              <div className='flex-shrink-0'>
-                {showLogo ? (
-                  <div className='w-20 h-20 rounded-xl border-2 border-violet-200 bg-white overflow-hidden flex items-center justify-center shadow-sm'>
-                    <img
-                      src={profile.logo_url}
-                      alt='Logo Preview'
-                      className='max-w-full max-h-full object-contain'
-                      onError={() => setLogoError(true)}
-                    />
-                  </div>
-                ) : (
-                  <div className='w-20 h-20 rounded-xl border-2 border-dashed border-gray-200 bg-gray-50 flex items-center justify-center'>
-                    <ImageIcon className='w-7 h-7 text-gray-300' />
-                  </div>
-                )}
-              </div>
-              <div className='flex-1 min-w-0'>
-                <p className='text-xs font-medium text-gray-700'>
-                  {showLogo ? 'Preview Logo' : profile.logo_url ? 'Gagal memuat logo' : 'Belum ada logo'}
-                </p>
-                <p className='text-[11px] text-gray-500 mt-0.5'>
-                  Direkomendasikan PNG transparan, 1:1 ratio
-                </p>
-              </div>
-            </div>
-
-            <div className='space-y-1.5'>
-              <Label htmlFor='logo_url' className='text-xs flex items-center gap-1'><ImageIcon className='w-3 h-3' /> URL Logo</Label>
-              <Input
-                id='logo_url'
-                value={profile.logo_url}
-                onChange={(e) => handleChange('logo_url', e.target.value)}
-                placeholder='/logo-sekolah.png atau https://...'
-                className='h-10 w-full text-xs'
-              />
-            </div>
+          <div className='space-y-4'>
+            <ImageUploader
+              value={profile.logo_url}
+              onChange={(url) => handleChange('logo_url', url)}
+              bucket='logo'
+              label='Logo Sekolah'
+              hint='Direkomendasikan PNG transparan, rasio 1:1, maks 5MB'
+              previewClassName='w-20 h-20'
+            />
 
             <div className='space-y-1.5'>
               <Label htmlFor='website' className='text-xs flex items-center gap-1'><Globe className='w-3 h-3' /> Website</Label>

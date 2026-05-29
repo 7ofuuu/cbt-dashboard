@@ -3,6 +3,7 @@
 import { useAuthContext } from '@/contexts/AuthContext';
 import useSchoolProfile from '@/hooks/useSchoolProfile';
 import { School } from 'lucide-react';
+import { resolvePreviewUrl } from '@/components/ImageUploader';
 
 export default function Header() {
   const { user } = useAuthContext();
@@ -21,7 +22,7 @@ export default function Header() {
         <div className='flex items-center gap-3'>
           {logoUrl ? (
             <img
-              src={logoUrl}
+              src={resolvePreviewUrl(logoUrl)}
               alt='Logo'
               width={40}
               height={40}
