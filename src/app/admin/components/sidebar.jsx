@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useRef, useLayoutEffect } from 'react';
+import { useState, useRef, useLayoutEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -29,18 +29,30 @@ const topItems = [
   { name: 'Tambah Pengguna', href: '/admin/add-user', icon: <UserPlus className='w-5 h-5' /> },
 ];
 
-const bottomItems = [
+const BOTTOM_ITEMS_BASE = [
   { name: 'Aktivitas', href: '/admin/activity', icon: <History className='w-5 h-5' /> },
   { name: 'Master Data', href: '/admin/master-data', icon: <Database className='w-5 h-5' /> },
-  { name: 'Profil Saya', href: '/admin/profile', icon: <UserCog className='w-5 h-5' /> },
-  { name: 'Ubah Password', href: '/admin/change-password', icon: <KeyRound className='w-5 h-5' /> },
   { name: 'Profil Sekolah', href: '/admin/school-profile', icon: <School className='w-5 h-5' /> },
+  // Profil Saya — super-admin only (inserted at render time)
+  { name: 'Ubah Password', href: '/admin/change-password', icon: <KeyRound className='w-5 h-5' /> },
 ];
+
+const PROFILE_ITEM = { name: 'Profil Saya', href: '/admin/profile', icon: <UserCog className='w-5 h-5' /> };
 
 export default function Sidebar() {
   const pathname = usePathname();
-  const { logout } = useAuthContext();
+  const { logout, user } = useAuthContext();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+
+  // Profil Saya is reserved for the super admin only.
+  const bottomItems = useMemo(() => {
+    if (!user?.is_super_admin) return BOTTOM_ITEMS_BASE;
+    // Insert "Profil Saya" right after "Profil Sekolah"
+    const out = [...BOTTOM_ITEMS_BASE];
+    const idx = out.findIndex(i => i.href === '/admin/school-profile');
+    out.splice(idx + 1, 0, PROFILE_ITEM);
+    return out;
+  }, [user?.is_super_admin]);
 
   const isUserMgmtPath = userMgmtItems.some(item => item.href === pathname);
   const [groupOpen, setGroupOpen] = useState(() => isUserMgmtPath);
