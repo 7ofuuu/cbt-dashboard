@@ -20,6 +20,8 @@ import { Home, Search, X, RefreshCw, Filter } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
+import { StaggerList, StaggerItem } from '@/components/motion/stagger-list';
+import { AnimatePresence, motion } from 'framer-motion';
 
 export default function AktivitasPage() {
   useAuth(['admin']);
@@ -349,59 +351,82 @@ export default function AktivitasPage() {
 
         {/* Activities Grid */}
         {loading ? (
-          <div className="col-span-full text-center py-12 text-gray-500">
-            <p className="text-lg">Memuat data...</p>
-          </div>
-        ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredAndSortedActivities().length === 0 ? (
-              <div className="col-span-full text-center py-12 text-gray-500">
-                <p className="text-lg">
-                  {activities.length === 0 ? 'Belum ada aktivitas ujian' : 'Tidak ada hasil yang sesuai dengan filter'}
-                </p>
-              </div>
-            ) : (
-              filteredAndSortedActivities().map(activity => (
-                <Card
-                  key={activity.exam_id}
-                  className="hover:shadow-lg transition-shadow cursor-pointer overflow-hidden border"
-                  onClick={() => handleCardClick(activity.exam_id)}
-                >
-                  <div className={`${getCardColor(activity.exam_type)} text-white p-4`}>
-                    <h3 className="text-xl font-semibold">{activity.exam_name}</h3>
-                  </div>
-                  <CardContent className="p-4">
-                    <div className="space-y-2 text-sm text-gray-700">
-                      <div className="flex justify-between border-b py-1">
-                        <span className="font-medium">Mapel:</span>
-                        <span>{activity.subject}</span>
-                      </div>
-                      <div className="flex justify-between border-b py-1">
-                        <span className="font-medium">Tingkat/Jurusan:</span>
-                        <span>{activity.grade_level} - {activity.major || 'Umum'}</span>
-                      </div>
-                      <div className="flex justify-between border-b py-1">
-                        <span className="font-medium">Peserta:</span>
-                        <span>{activity.participant_count}</span>
-                      </div>
-                      <div className="flex justify-between border-b py-1">
-                        <span className="font-medium">Status:</span>
-                        <span>{activity.status}</span>
-                      </div>
-                      <div className="flex flex-col mt-2">
-                        <span className="font-medium text-xs text-gray-400 uppercase">Mulai:</span>
-                        <span>{formatDate(activity.start_date)}</span>
-                      </div>
-                      <div className="flex flex-col mt-1">
-                        <span className="font-medium text-xs text-gray-400 uppercase">Selesai:</span>
-                        <span>{formatDate(activity.end_date)}</span>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
+            {[0, 1, 2, 3, 4, 5].map((i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.3, delay: i * 0.04 }}
+                className="rounded-lg bg-white shadow-sm border overflow-hidden"
+              >
+                <div className="h-16 bg-gradient-to-br from-gray-200 to-gray-300 animate-pulse" />
+                <div className="p-4 space-y-3">
+                  <div className="flex justify-between"><div className="h-3 w-16 bg-gray-200 rounded animate-pulse" /><div className="h-3 w-20 bg-gray-200 rounded animate-pulse" /></div>
+                  <div className="flex justify-between"><div className="h-3 w-24 bg-gray-200 rounded animate-pulse" /><div className="h-3 w-16 bg-gray-200 rounded animate-pulse" /></div>
+                  <div className="flex justify-between"><div className="h-3 w-16 bg-gray-200 rounded animate-pulse" /><div className="h-3 w-8 bg-gray-200 rounded animate-pulse" /></div>
+                  <div className="h-3 w-32 bg-gray-100 rounded animate-pulse mt-2" />
+                  <div className="h-3 w-32 bg-gray-100 rounded animate-pulse" />
+                </div>
+              </motion.div>
+            ))}
           </div>
+        ) : filteredAndSortedActivities().length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4 }}
+            className="text-center py-12 bg-white rounded-2xl border-2 border-dashed border-gray-200 text-gray-500"
+          >
+            <p className="text-lg">
+              {activities.length === 0 ? 'Belum ada aktivitas ujian' : 'Tidak ada hasil yang sesuai dengan filter'}
+            </p>
+          </motion.div>
+        ) : (
+          <StaggerList className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <AnimatePresence mode="popLayout">
+              {filteredAndSortedActivities().map(activity => (
+                <StaggerItem key={activity.exam_id}>
+                  <Card
+                    className="hover:shadow-lg transition-shadow cursor-pointer overflow-hidden border h-full"
+                    onClick={() => handleCardClick(activity.exam_id)}
+                  >
+                    <div className={`${getCardColor(activity.exam_type)} text-white p-4`}>
+                      <h3 className="text-xl font-semibold">{activity.exam_name}</h3>
+                    </div>
+                    <CardContent className="p-4">
+                      <div className="space-y-2 text-sm text-gray-700">
+                        <div className="flex justify-between border-b py-1">
+                          <span className="font-medium">Mapel:</span>
+                          <span>{activity.subject}</span>
+                        </div>
+                        <div className="flex justify-between border-b py-1">
+                          <span className="font-medium">Tingkat/Jurusan:</span>
+                          <span>{activity.grade_level} - {activity.major || 'Umum'}</span>
+                        </div>
+                        <div className="flex justify-between border-b py-1">
+                          <span className="font-medium">Peserta:</span>
+                          <span>{activity.participant_count}</span>
+                        </div>
+                        <div className="flex justify-between border-b py-1">
+                          <span className="font-medium">Status:</span>
+                          <span>{activity.status}</span>
+                        </div>
+                        <div className="flex flex-col mt-2">
+                          <span className="font-medium text-xs text-gray-400 uppercase">Mulai:</span>
+                          <span>{formatDate(activity.start_date)}</span>
+                        </div>
+                        <div className="flex flex-col mt-1">
+                          <span className="font-medium text-xs text-gray-400 uppercase">Selesai:</span>
+                          <span>{formatDate(activity.end_date)}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </StaggerItem>
+              ))}
+            </AnimatePresence>
+          </StaggerList>
         )}
 
         {/* Results Counter */}

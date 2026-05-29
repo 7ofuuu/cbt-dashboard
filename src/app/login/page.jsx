@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import request from '@/utils/request';
 import { useAuthContext } from '@/contexts/AuthContext';
+import { PageTransition } from '@/components/motion/page-transition';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -94,13 +95,15 @@ export default function LoginPage() {
         type: 'error',
         text: error?.response?.data?.message || error?.response?.data?.error || 'Login gagal. Periksa username/password kamu.',
       });
+      // Clear password but keep username so the user doesn't have to retype it.
+      setData(prev => ({ ...prev, password: '' }));
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className='flex min-h-screen items-center justify-center bg-gray-100 p-4'>
+    <PageTransition className='flex min-h-screen items-center justify-center bg-gray-100 p-4'>
       <Card className='w-full max-w-sm py-8 bg-white'>
         <CardContent>
           <form onSubmit={onSubmit}>
@@ -169,6 +172,6 @@ export default function LoginPage() {
           </form>
         </CardContent>
       </Card>
-    </div>
+    </PageTransition>
   );
 }
