@@ -19,16 +19,31 @@ import {
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter,
 } from '@/components/ui/dialog';
-import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { Home, Plus, Edit, EyeOff, Eye, RefreshCw, Loader2, Database, BookOpen, GraduationCap, Layers } from 'lucide-react';
+import { Home, Plus, Edit, EyeOff, Eye, RefreshCw, Loader2, Database, BookOpen, GraduationCap, Layers, Check } from 'lucide-react';
+import { HexColorPicker, HexColorInput } from 'react-colorful';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
 
-const SUBJECT_COLOR_OPTIONS = [
-  'blue', 'green', 'pink', 'sky', 'fuchsia', 'emerald',
-  'amber', 'lime', 'orange', 'rose', 'red', 'violet',
-  'teal', 'indigo', 'cyan',
+const COLOR_HEX = {
+  blue: '#3b82f6', green: '#22c55e', pink: '#ec4899', sky: '#0ea5e9',
+  fuchsia: '#d946ef', emerald: '#10b981', amber: '#f59e0b', lime: '#84cc16',
+  orange: '#f97316', rose: '#f43f5e', red: '#ef4444', violet: '#8b5cf6',
+  teal: '#14b8a6', indigo: '#6366f1', cyan: '#06b6d4',
+};
+
+// Preset swatches for quick pick (HEX values, curated palette)
+const SUBJECT_COLOR_PRESETS = [
+  '#3b82f6', '#22c55e', '#ec4899', '#0ea5e9', '#d946ef', '#10b981',
+  '#f59e0b', '#84cc16', '#f97316', '#f43f5e', '#ef4444', '#8b5cf6',
+  '#14b8a6', '#6366f1', '#06b6d4',
 ];
+
+// Accept any color value: HEX (#abc123) passes through; legacy name resolves via COLOR_HEX.
+const resolveColor = (v) => {
+  if (!v) return null;
+  if (typeof v === 'string' && v.startsWith('#')) return v;
+  return COLOR_HEX[v] || null;
+};
 
 export default function MasterDataPage() {
   useAuth(['admin']);
@@ -174,7 +189,16 @@ export default function MasterDataPage() {
                 idKey="subject_id"
                 columns={[
                   { key: 'name', label: 'Nama', primary: true },
-                  { key: 'color', label: 'Warna', render: (v) => v ? <Badge className={`bg-${v}-100 text-${v}-700`} variant="outline">{v}</Badge> : '—' },
+                  { key: 'color', label: 'Warna', render: (v) => {
+                    const hex = resolveColor(v);
+                    if (!hex) return '—';
+                    return (
+                      <span className="flex items-center gap-1.5">
+                        <span className="inline-block w-4 h-4 rounded-full border border-white shadow-sm" style={{ backgroundColor: hex }} />
+                        <span className="text-xs text-gray-600 font-mono">{hex.toUpperCase()}</span>
+                      </span>
+                    );
+                  } },
                   { key: 'sort_order', label: 'Urutan' },
                 ]}
                 onAdd={() => setEditing({ kind: 'subjects', item: null })}
@@ -359,7 +383,7 @@ function EditDialog({ editing, onClose, onSave, saving }) {
     } else {
       // sensible defaults for "create" mode
       setForm(editing.kind === 'subjects'
-        ? { name: '', color: 'blue', sort_order: 0 }
+        ? { name: '', color: '#3b82f6', sort_order: 0 }
         : { value: '', label: '', sort_order: 0 });
     }
     setCascadeRename(false);
@@ -408,21 +432,12 @@ function EditDialog({ editing, onClose, onSave, saving }) {
                   placeholder="Contoh: Matematika"
                 />
               </div>
-              <div className="space-y-1.5">
-                <Label htmlFor="color" className="text-xs">Warna Tema</Label>
-                <Select value={form.color || 'blue'} onValueChange={(v) => setForm({ ...form, color: v })}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {SUBJECT_COLOR_OPTIONS.map((c) => (
-                      <SelectItem key={c} value={c}>
-                        <span className="flex items-center gap-2">
-                          <span className={`inline-block w-3 h-3 rounded-full bg-${c}-500`} />
-                          {c}
-                        </span>
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+              <div className="space-y-2">
+                <Label className="text-xs">Warna Tema</Label>
+                <SubjectColorPicker
+                  value={resolveColor(form.color) || '#3b82f6'}
+                  onChange={(hex) => setForm({ ...form, color: hex })}
+                />
               </div>
             </>
           ) : (
@@ -491,5 +506,73 @@ function EditDialog({ editing, onClose, onSave, saving }) {
         </form>
       </DialogContent>
     </Dialog>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Subject color picker — HEX slider + manual input + preset swatches
+// ---------------------------------------------------------------------------
+function SubjectColorPicker({ value, onChange }) {
+  const safe = (value || '#3b82f6').toUpperCase();
+  return (
+    <div className="border rounded-md p-3 bg-gray-50 space-y-3">
+      <div className="flex gap-3">
+        {/* Slider panel (saturation + hue) */}
+        <div className="shrink-0">
+          <HexColorPicker
+            color={safe}
+            onChange={onChange}
+            style={{ width: 180, height: 140 }}
+          />
+        </div>
+        {/* Live preview + HEX input */}
+        <div className="flex-1 min-w-0 flex flex-col justify-between gap-2">
+          <div>
+            <p className="text-[11px] text-muted-foreground mb-1">Preview</p>
+            <div
+              className="w-full h-12 rounded-md border border-white shadow-inner"
+              style={{ backgroundColor: safe }}
+            />
+          </div>
+          <div>
+            <Label htmlFor="subject_color_hex" className="text-[11px] text-muted-foreground">Kode HEX</Label>
+            <div className="flex items-center mt-1 border rounded-md bg-white overflow-hidden focus-within:ring-2 focus-within:ring-gray-400">
+              <span className="px-2 text-gray-400 text-sm font-mono">#</span>
+              <HexColorInput
+                id="subject_color_hex"
+                color={safe}
+                onChange={onChange}
+                prefixed={false}
+                className="flex-1 py-1.5 pr-2 text-sm font-mono uppercase outline-none bg-transparent"
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Preset swatches */}
+      <div>
+        <p className="text-[11px] text-muted-foreground mb-1.5">Preset</p>
+        <div className="flex flex-wrap gap-1.5">
+          {SUBJECT_COLOR_PRESETS.map((hex) => {
+            const selected = safe === hex.toUpperCase();
+            return (
+              <button
+                key={hex}
+                type="button"
+                title={hex}
+                onClick={() => onChange(hex)}
+                className={`relative w-6 h-6 rounded-full transition-all focus:outline-none focus:ring-2 focus:ring-offset-1 focus:ring-gray-400 ${selected ? 'ring-2 ring-offset-1 ring-gray-700 scale-110' : 'hover:scale-110'}`}
+                style={{ backgroundColor: hex }}
+              >
+                {selected && (
+                  <Check className="absolute inset-0 m-auto w-3 h-3 text-white drop-shadow" />
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+    </div>
   );
 }
