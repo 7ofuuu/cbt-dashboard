@@ -6,7 +6,7 @@ import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select';
-import { getSubjectTheme } from '@/lib/constants';
+import { useSubjectTheme } from '@/hooks/useSubjectTheme';
 import { Lock } from 'lucide-react';
 
 /**
@@ -72,7 +72,7 @@ export function SubjectSelect({
     );
   }
 
-  const theme = getSubjectTheme(teacherSubject);
+  const theme = useSubjectTheme(teacherSubject);
   return (
     <div className={`space-y-1.5 ${className}`}>
       {labelEl}

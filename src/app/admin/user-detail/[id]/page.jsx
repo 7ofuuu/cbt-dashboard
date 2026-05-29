@@ -18,7 +18,7 @@ import toast from 'react-hot-toast';
 import request from '@/utils/request';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { useAuth } from '@/hooks/useAuth';
-import { SUBJECT_OPTIONS } from '@/lib/constants';
+import { useTaxonomy } from '@/contexts/TaxonomyContext';
 
 export default function UserDetailPage() {
   useAuth(['admin']);
@@ -26,6 +26,7 @@ export default function UserDetailPage() {
   const params = useParams();
   const userId = params.id;
   const { user: currentUser } = useAuthContext();
+  const { subjects } = useTaxonomy();
 
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -495,8 +496,8 @@ export default function UserDetailPage() {
                         <SelectValue placeholder='Pilih Mata Pelajaran' />
                       </SelectTrigger>
                       <SelectContent>
-                        {SUBJECT_OPTIONS.map(subject => (
-                          <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                        {subjects.map(s => (
+                          <SelectItem key={s.subject_id} value={s.name}>{s.name}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>

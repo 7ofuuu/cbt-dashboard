@@ -24,7 +24,7 @@ import {
 } from 'lucide-react';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
-import { GRADE_LEVELS, MAJOR_OPTIONS } from '@/lib/constants';
+import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { SubjectSelect } from '@/components/SubjectSelect';
 
 // Local id generator for React keys + tracking which questions are new vs
@@ -88,6 +88,7 @@ export default function EditBankSoalPage() {
   useAuth(['teacher']);
   const params = useParams();
   const router = useRouter();
+  const { gradeLevels, majors } = useTaxonomy();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -561,8 +562,8 @@ export default function EditBankSoalPage() {
                       <SelectValue placeholder="Pilih Tingkat" />
                     </SelectTrigger>
                     <SelectContent>
-                      {GRADE_LEVELS.map(g => (
-                        <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
+                      {gradeLevels.map(g => (
+                        <SelectItem key={g.grade_level_id} value={g.value}>{g.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -575,8 +576,8 @@ export default function EditBankSoalPage() {
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="UMUM">Semua Jurusan</SelectItem>
-                      {MAJOR_OPTIONS.map(m => (
-                        <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                      {majors.map(m => (
+                        <SelectItem key={m.major_id} value={m.value}>{m.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
