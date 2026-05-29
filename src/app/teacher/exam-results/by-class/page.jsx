@@ -16,10 +16,12 @@ function ListKelasPageContent() {
   const params = useSearchParams();
   const [searchQuery, setSearchQuery] = useState('');
   const [kelasData, setKelasData] = useState([]);
+  const [examName, setExamName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  
+
   const mataPelajaran = params?.get('mata') || 'Matematika';
   const ujianId = params?.get('ujianId');
+  const isArchived = params?.get('archived') === 'true';
   const reviewModeParam = params?.get('review') || 'all';
   const reviewMode = ['all', 'pending', 'graded'].includes(reviewModeParam)
     ? reviewModeParam
@@ -30,29 +32,34 @@ function ListKelasPageContent() {
     : reviewMode === 'graded'
     ? 'Sudah Dinilai'
     : 'Semua Hasil';
-  
+
   useEffect(() => {
     const fetchKelasData = async () => {
       setIsLoading(true);
       try {
-        const response = await request.get('/exam-results/completed-exams?limit=999');
-        
+        const endpoint = isArchived
+          ? '/exam-results/archived-exams?limit=999'
+          : '/exam-results/completed-exams?limit=999';
+        const response = await request.get(endpoint);
+
         let selectedUjian = null;
         if (response?.data?.data && Array.isArray(response.data.data)) {
           selectedUjian = response.data.data.find(u => u.exam_id === parseInt(ujianId));
         }
-        
+
+        if (selectedUjian) {
+          setExamName(selectedUjian.exam_name || mataPelajaran);
+        }
+
         if (selectedUjian && selectedUjian.participant_results) {
           const kelasMap = new Map();
-          
+
           selectedUjian.participant_results.forEach(item => {
             const shouldInclude = reviewMode === 'all'
               || (reviewMode === 'pending' && item.exam_status === 'COMPLETED')
               || (reviewMode === 'graded' && item.exam_status === 'GRADED');
 
-            if (!shouldInclude) {
-              return;
-            }
+            if (!shouldInclude) return;
 
             const kelasKey = item.student?.classroom;
             if (kelasKey) {
@@ -65,7 +72,6 @@ function ListKelasPageContent() {
                   selesai: 0,
                 });
               }
-              
               const kelasItem = kelasMap.get(kelasKey);
               kelasItem.totalSiswa += 1;
               if (item.final_score !== null && item.final_score !== undefined) {
@@ -73,9 +79,8 @@ function ListKelasPageContent() {
               }
             }
           });
-          
-          const result = Array.from(kelasMap.values());
-          setKelasData(result);
+
+          setKelasData(Array.from(kelasMap.values()));
         } else {
           setKelasData([]);
         }
@@ -91,11 +96,14 @@ function ListKelasPageContent() {
     if (ujianId) {
       fetchKelasData();
     }
-  }, [ujianId, mataPelajaran, reviewMode]);
-  
+  }, [ujianId, mataPelajaran, reviewMode, isArchived]);
+
   const filteredData = kelasData.filter(classroom =>
     classroom.full_name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
+  const archivedSuffix = isArchived ? '&archived=true' : '';
+  const displayName = examName || mataPelajaran;
 
   return (
     <TeacherLayout>
@@ -108,18 +116,28 @@ function ListKelasPageContent() {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink href='/teacher/exam-results'>Hasil Ujian</BreadcrumbLink>
+            <BreadcrumbLink href={isArchived ? '/teacher/exam-results?tab=archived' : '/teacher/exam-results'}>
+              Hasil Ujian
+            </BreadcrumbLink>
           </BreadcrumbItem>
+          {isArchived && (
+            <>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink href='/teacher/exam-results?tab=archived'>Arsip</BreadcrumbLink>
+              </BreadcrumbItem>
+            </>
+          )}
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbPage>{mataPelajaran}</BreadcrumbPage>
+            <BreadcrumbPage>{displayName}</BreadcrumbPage>
           </BreadcrumbItem>
         </BreadcrumbList>
       </Breadcrumb>
 
       <div className='space-y-6'>
         <PageHeader
-          title={mataPelajaran}
+          title={displayName}
           description={`Pilih kelas untuk melihat hasil ujian siswa (${reviewLabel})`}
         />
 
@@ -150,6 +168,7 @@ function ListKelasPageContent() {
                 ujianId={ujianId}
                 review={reviewMode}
                 index={i}
+                archived={isArchived}
               />
             ))
           ) : (
