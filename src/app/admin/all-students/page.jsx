@@ -12,7 +12,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Search, Home, Trash2, Filter, X } from 'lucide-react';
+import { Search, Home, Trash2 } from 'lucide-react';
+import FilterPanel from '@/components/filter-panel';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -245,37 +246,18 @@ export default function SemuaPenggunaPage() {
         />
 
         {/* Search and Filters */}
-        <div className='bg-white border rounded-lg shadow-sm p-3 space-y-3'>
-          <div className='flex items-center gap-2 text-sm font-medium text-muted-foreground'>
-            <Filter className='w-4 h-4' />
-            <span>Filter & Pencarian</span>
-            {(() => {
-              const active = [searchQuery, tingkatFilter !== 'all', jurusanFilter !== 'all', kelasFilter !== 'all', statusFilter !== 'all'].filter(Boolean).length;
-              return active > 0 ? <Badge variant='secondary' className='ml-1 text-[10px] h-5'>{active} aktif</Badge> : null;
-            })()}
-            <div className='flex-1' />
-            {(searchQuery || tingkatFilter !== 'all' || jurusanFilter !== 'all' || kelasFilter !== 'all' || statusFilter !== 'all') && (
-              <Button
-                type='button'
-                variant='ghost'
-                size='sm'
-                className='h-8 text-xs'
-                onClick={() => {
-                  setSearchQuery('');
-                  setTingkatFilter('all');
-                  setJurusanFilter('all');
-                  setKelasFilter('all');
-                  setStatusFilter('all');
-                  setCurrentPage(1);
-                }}
-              >
-                <X className='w-3.5 h-3.5 mr-1' />
-                Reset
-              </Button>
-            )}
-          </div>
-
-          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3'>
+        <FilterPanel
+          activeCount={[searchQuery, tingkatFilter !== 'all', jurusanFilter !== 'all', kelasFilter !== 'all', statusFilter !== 'all'].filter(Boolean).length}
+          onReset={() => {
+            setSearchQuery('');
+            setTingkatFilter('all');
+            setJurusanFilter('all');
+            setKelasFilter('all');
+            setStatusFilter('all');
+            setCurrentPage(1);
+          }}
+          gridClassName='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3'
+        >
             <div className='relative sm:col-span-2 lg:col-span-1'>
               <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
               <Input
@@ -333,8 +315,7 @@ export default function SemuaPenggunaPage() {
                 <SelectItem value='inactive'>Non-aktif {inactiveCount > 0 && `(${inactiveCount})`}</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-        </div>
+        </FilterPanel>
 
         {/* Bulk delete inactive — visible when there are any inactives.
             We don't pre-select them because students are paginated; the

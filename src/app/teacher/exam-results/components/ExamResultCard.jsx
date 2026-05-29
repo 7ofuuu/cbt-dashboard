@@ -4,12 +4,7 @@ import Link from 'next/link';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Archive } from 'lucide-react';
-
-const CARD_COLORS = ['bg-teal-700', 'bg-orange-500', 'bg-pink-500', 'bg-blue-600'];
-
-function getColor(index) {
-  return CARD_COLORS[index % CARD_COLORS.length];
-}
+import { getCardAccent } from '@/lib/card-colors';
 
 export default function HasilUjianCard({ ujian, index = 0, onSubmit, isArchived = false }) {
   const completionRate = ujian.totalSiswa > 0
@@ -21,7 +16,7 @@ export default function HasilUjianCard({ ujian, index = 0, onSubmit, isArchived 
     <div className='flex flex-col h-full'>
       <Link href={`/teacher/exam-results/by-class?mata=${encodeURIComponent(ujian.mataPelajaran)}&ujianId=${ujian.id}${isArchived ? '&archived=true' : ''}`}>
         <Card className='hover:shadow-lg transition-all cursor-pointer overflow-hidden flex flex-col group'>
-          <div className={`${getColor(index)} text-white px-5 py-4`}>
+          <div className={`${getCardAccent(index)} text-white px-5 py-4`}>
             <h3 className='text-base font-bold leading-tight'>{ujian.examName || ujian.mataPelajaran}</h3>
             {ujian.examName && ujian.mataPelajaran && (
               <p className='text-sm opacity-80 mt-0.5'>{ujian.mataPelajaran}</p>

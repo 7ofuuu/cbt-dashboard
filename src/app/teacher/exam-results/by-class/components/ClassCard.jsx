@@ -3,20 +3,10 @@
 import Link from 'next/link';
 import { Users } from 'lucide-react';
 import { Card } from '@/components/ui/card';
-
-const CARD_COLORS = [
-  { bg: 'bg-teal-700', light: 'bg-teal-50', text: 'text-teal-700', bar: 'bg-teal-500' },
-  { bg: 'bg-orange-500', light: 'bg-orange-50', text: 'text-orange-700', bar: 'bg-orange-500' },
-  { bg: 'bg-pink-500', light: 'bg-pink-50', text: 'text-pink-700', bar: 'bg-pink-500' },
-  { bg: 'bg-blue-600', light: 'bg-blue-50', text: 'text-blue-700', bar: 'bg-blue-500' },
-];
-
-function getColor(index) {
-  return CARD_COLORS[index % CARD_COLORS.length];
-}
+import { getCardAccentPalette } from '@/lib/card-colors';
 
 export default function KelasCard({ classroom, mataPelajaran, ujianId, review = 'all', index = 0, archived = false }) {
-  const color = getColor(index);
+  const color = getCardAccentPalette(index);
   const percentage = classroom.totalSiswa > 0
     ? Math.round((classroom.selesai / classroom.totalSiswa) * 100)
     : 0;

@@ -17,9 +17,10 @@ import { Badge } from '@/components/ui/badge';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { PageHeader } from '@/components/ui/page-header';
 import {
-  Home, Search, RefreshCw, AlertTriangle, ShieldAlert, Users, Filter, X,
+  Home, Search, RefreshCw, AlertTriangle, ShieldAlert, Users, X,
   Calendar, Clock, ChevronRight, BookOpen, GraduationCap, Layers,
 } from 'lucide-react';
+import FilterPanel from '@/components/filter-panel';
 import { useAuth } from '@/hooks/useAuth';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
@@ -196,24 +197,7 @@ export default function AktivitasTerblokirPage() {
         )}
 
         {/* ═══════ FILTER CARD ═══════ */}
-        <div className='bg-white border rounded-lg shadow-sm p-3 space-y-3'>
-          <div className='flex items-center gap-2 text-sm font-medium text-muted-foreground'>
-            <Filter className='w-4 h-4' />
-            <span>Filter & Pencarian</span>
-            {activeFilterCount > 0 && (
-              <Badge variant='secondary' className='ml-1 text-[10px] h-5'>
-                {activeFilterCount} aktif
-              </Badge>
-            )}
-            <div className='flex-1' />
-            {activeFilterCount > 0 && (
-              <Button type='button' variant='ghost' size='sm' className='h-8 text-xs' onClick={handleResetFilters}>
-                <X className='w-3.5 h-3.5 mr-1' />
-                Reset
-              </Button>
-            )}
-          </div>
-          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3'>
+        <FilterPanel activeCount={activeFilterCount} onReset={handleResetFilters}>
             <div className='relative sm:col-span-2'>
               <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
               <Input
@@ -248,8 +232,7 @@ export default function AktivitasTerblokirPage() {
                 ))}
               </SelectContent>
             </Select>
-          </div>
-        </div>
+        </FilterPanel>
 
         {/* ═══════ ACTIVITIES GRID ═══════ */}
         {loading ? (

@@ -10,7 +10,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { PageHeader } from '@/components/ui/page-header';
-import { Search, Home, Trash2, Filter, X } from 'lucide-react';
+import { Search, Home, Trash2 } from 'lucide-react';
+import FilterPanel from '@/components/filter-panel';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
@@ -163,30 +164,10 @@ export default function SemuaGuruPage() {
         />
 
         {/* Search + Filter */}
-        <div className='bg-white border rounded-lg shadow-sm p-3 space-y-3'>
-          <div className='flex items-center gap-2 text-sm font-medium text-muted-foreground'>
-            <Filter className='w-4 h-4' />
-            <span>Filter & Pencarian</span>
-            {(searchQuery || statusFilter !== 'all') && (
-              <Badge variant='secondary' className='ml-1 text-[10px] h-5'>
-                {(searchQuery ? 1 : 0) + (statusFilter !== 'all' ? 1 : 0)} aktif
-              </Badge>
-            )}
-            <div className='flex-1' />
-            {(searchQuery || statusFilter !== 'all') && (
-              <Button
-                type='button'
-                variant='ghost'
-                size='sm'
-                className='h-8 text-xs'
-                onClick={() => { setSearchQuery(''); setStatusFilter('all'); }}
-              >
-                <X className='w-3.5 h-3.5 mr-1' />
-                Reset
-              </Button>
-            )}
-          </div>
-          <div className='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3'>
+        <FilterPanel
+          activeCount={(searchQuery ? 1 : 0) + (statusFilter !== 'all' ? 1 : 0)}
+          onReset={() => { setSearchQuery(''); setStatusFilter('all'); }}
+        >
             <div className='relative sm:col-span-2'>
               <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
               <Input
@@ -217,8 +198,7 @@ export default function SemuaGuruPage() {
               <Trash2 className='w-4 h-4 mr-2' />
               Pilih Semua Non-aktif{inactiveCount > 0 ? ` (${inactiveCount})` : ''}
             </Button>
-          </div>
-        </div>
+        </FilterPanel>
 
         {selectedIds.size > 0 && (
           <div className='flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg'>
