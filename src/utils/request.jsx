@@ -62,6 +62,14 @@ const expiredTokenHandler = () => {
 const errorHandler = error => {
   const status = error?.response?.status;
   const apiErrorMessage = getApiErrorMessage(error);
+  const url = error?.config?.url || '';
+
+  // Login failures are shown inline on the login page itself. Don't fire the
+  // global top-right toast (which would duplicate the inline message) and
+  // don't run the session-expired redirect for a simple wrong-password 401.
+  if (url.includes('/auth/login')) {
+    return Promise.reject(error);
+  }
 
   if (status === 401) {
     if (!isHandlingAuthFailure) {
