@@ -4,21 +4,30 @@ import AdminLayout from '../adminLayout';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { PageHeader } from '@/components/ui/page-header';
 import { Search, Home, Trash2 } from 'lucide-react';
+import FilterPanel from '@/components/filter-panel';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/contexts/AuthContext';
+import toast from 'react-hot-toast';
 import request from '@/utils/request';
 
 export default function SemuaGuruPage() {
   useAuth(['admin']);
   const router = useRouter();
+  const { user: currentUser } = useAuthContext();
+  const [togglingId, setTogglingId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'inactive'
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -54,8 +63,31 @@ export default function SemuaGuruPage() {
       nama.toLowerCase().includes(searchQuery.toLowerCase()) ||
       user.username.toLowerCase().includes(searchQuery.toLowerCase()) ||
       mapel.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
+    const isActive = user.is_active !== false;
+    const matchesStatus =
+      statusFilter === 'all' ||
+      (statusFilter === 'active' && isActive) ||
+      (statusFilter === 'inactive' && !isActive);
+    return matchesSearch && matchesStatus;
   });
+
+  const inactiveCount = users.filter(u => u.is_active === false).length;
+
+  // Convenience action: select every inactive teacher (excluding super-admin
+  // and the current user; the batch endpoint skips them anyway). Pair with
+  // the existing batch-delete dialog.
+  const selectAllInactive = () => {
+    const ids = users
+      .filter(u => u.is_active === false && !u.is_super_admin && currentUser?.id?.toString() !== u.id?.toString())
+      .map(u => u.id);
+    setSelectedIds(new Set(ids));
+    setStatusFilter('inactive');
+    if (ids.length === 0) {
+      toast('Tidak ada guru non-aktif untuk dihapus.', { icon: 'ℹ️' });
+    } else {
+      toast.success(`${ids.length} guru non-aktif terpilih`);
+    }
+  };
 
   const toggleSelect = (id) => {
     setSelectedIds((prev) => {
@@ -73,6 +105,19 @@ export default function SemuaGuruPage() {
       return;
     }
     setSelectedIds(new Set(filteredUsers.map((user) => user.id)));
+  };
+
+  const handleToggleStatus = async (user) => {
+    setTogglingId(user.id);
+    try {
+      const res = await request.patch(`/users/${user.id}/status`);
+      setUsers(prev => prev.map(u => (u.id === user.id ? { ...u, is_active: res.data.is_active } : u)));
+      toast.success(res.data.message || 'Status pengguna berhasil diubah');
+    } catch (err) {
+      toast.error(err.response?.data?.error || err.response?.data?.message || 'Gagal mengubah status pengguna');
+    } finally {
+      setTogglingId(null);
+    }
   };
 
   const handleBatchDelete = async () => {
@@ -118,20 +163,42 @@ export default function SemuaGuruPage() {
           description="Kelola dan lihat semua pengguna dengan role guru"
         />
 
-        {/* Search */}
-        <div className='flex flex-col sm:flex-row gap-4'>
-          {/* Search Input */}
-          <div className='relative flex-1'>
-            <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5' />
-            <Input
-              type='text'
-              placeholder='Cari Guru'
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className='pl-10 bg-white border-gray-300'
-            />
-          </div>
-        </div>
+        {/* Search + Filter */}
+        <FilterPanel
+          activeCount={(searchQuery ? 1 : 0) + (statusFilter !== 'all' ? 1 : 0)}
+          onReset={() => { setSearchQuery(''); setStatusFilter('all'); }}
+        >
+            <div className='relative sm:col-span-2'>
+              <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
+              <Input
+                type='text'
+                placeholder='Cari nama, username, atau mapel...'
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className='pl-10 h-10 w-full'
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className='h-10 w-full'>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='all'>Semua Status</SelectItem>
+                <SelectItem value='active'>Aktif</SelectItem>
+                <SelectItem value='inactive'>Non-aktif {inactiveCount > 0 && `(${inactiveCount})`}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant='outline'
+              size='sm'
+              disabled={inactiveCount === 0}
+              className={`h-10 w-full ${inactiveCount > 0 ? 'text-red-600 hover:bg-red-50 hover:border-red-300' : ''}`}
+              onClick={selectAllInactive}
+            >
+              <Trash2 className='w-4 h-4 mr-2' />
+              Pilih Semua Non-aktif{inactiveCount > 0 ? ` (${inactiveCount})` : ''}
+            </Button>
+        </FilterPanel>
 
         {selectedIds.size > 0 && (
           <div className='flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg'>
@@ -175,13 +242,14 @@ export default function SemuaGuruPage() {
                 <TableHead className='text-white font-semibold'>Mata Pelajaran</TableHead>
                 <TableHead className='text-white font-semibold'>Koordinator</TableHead>
                 <TableHead className='text-white font-semibold'>Role</TableHead>
+                <TableHead className='text-white font-semibold'>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
                   <TableCell
-                    colSpan={8}
+                    colSpan={9}
                     className='text-center py-12 text-gray-500'
                   >
                     Loading...
@@ -190,7 +258,7 @@ export default function SemuaGuruPage() {
               ) : error ? (
                 <TableRow>
                   <TableCell
-                    colSpan={8}
+                    colSpan={9}
                     className='text-center py-12 text-red-500'
                   >
                     {error}
@@ -199,7 +267,7 @@ export default function SemuaGuruPage() {
               ) : filteredUsers.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={8}
+                    colSpan={9}
                     className='text-center py-12 text-gray-500'
                   >
                     Tidak ada data guru ditemukan
@@ -212,7 +280,7 @@ export default function SemuaGuruPage() {
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: Math.min(idx * 0.025, 0.3), duration: 0.25 }}
-                    className={`border-b transition-colors hover:bg-gray-50 cursor-pointer ${selectedIds.has(user.id) ? 'bg-blue-50' : ''}`}
+                    className={`border-b transition-colors hover:bg-gray-50 cursor-pointer ${selectedIds.has(user.id) ? 'bg-blue-50' : ''} ${user.is_active === false ? 'opacity-60' : ''}`}
                     onClick={() => router.push(`/admin/user-detail/${user.id}`)}
                   >
                     <TableCell onClick={e => e.stopPropagation()}>
@@ -242,6 +310,24 @@ export default function SemuaGuruPage() {
                       )}
                     </TableCell>
                     <TableCell className='text-gray-900 capitalize'>{user.role}</TableCell>
+                    <TableCell onClick={e => e.stopPropagation()}>
+                      {(() => {
+                        const active = user.is_active !== false;
+                        const canToggle = !user.is_super_admin && currentUser?.id?.toString() !== user.id?.toString();
+                        return (
+                          <div className='flex items-center gap-2'>
+                            <Switch
+                              checked={active}
+                              disabled={!canToggle || togglingId === user.id}
+                              onCheckedChange={() => handleToggleStatus(user)}
+                            />
+                            <Badge className={active ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-200 text-gray-600 border-gray-300'}>
+                              {active ? 'Aktif' : 'Nonaktif'}
+                            </Badge>
+                          </div>
+                        );
+                      })()}
+                    </TableCell>
                   </motion.tr>
                 ))
               )}

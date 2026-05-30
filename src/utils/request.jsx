@@ -2,11 +2,29 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 import toast from 'react-hot-toast';
 
+// Pick the backend base URL based on how the dashboard is being accessed.
+// - Opened on localhost  -> talk to the local backend (NEXT_PUBLIC_HOST).
+// - Opened via ngrok URL  -> talk to the ngrok backend (NEXT_PUBLIC_HOST_NGROK),
+//   because a remote browser can't reach the host machine's localhost.
+// This lets local dev and the forwarded setup run at the same time.
+const resolveBaseURL = () => {
+  const local = process.env.NEXT_PUBLIC_HOST;
+  const ngrok = process.env.NEXT_PUBLIC_HOST_NGROK;
+
+  if (typeof window === 'undefined') return local; // SSR fallback
+
+  const host = window.location.hostname;
+  const isLocal = host === 'localhost' || host === '127.0.0.1';
+  return isLocal ? local : ngrok || local;
+};
+
 const request = axios.create({
-  baseURL: `${process.env.NEXT_PUBLIC_HOST}`,
+  baseURL: resolveBaseURL(),
   timeout: 30000,
   headers: {
     'Content-Type': 'application/json',
+    // Skip ngrok's free-tier browser interstitial so XHR gets JSON, not HTML.
+    'ngrok-skip-browser-warning': 'true',
   },
   withCredentials: true,
 });
@@ -44,6 +62,14 @@ const expiredTokenHandler = () => {
 const errorHandler = error => {
   const status = error?.response?.status;
   const apiErrorMessage = getApiErrorMessage(error);
+  const url = error?.config?.url || '';
+
+  // Login failures are shown inline on the login page itself. Don't fire the
+  // global top-right toast (which would duplicate the inline message) and
+  // don't run the session-expired redirect for a simple wrong-password 401.
+  if (url.includes('/auth/login')) {
+    return Promise.reject(error);
+  }
 
   if (status === 401) {
     if (!isHandlingAuthFailure) {

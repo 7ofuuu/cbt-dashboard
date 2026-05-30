@@ -9,22 +9,33 @@ import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbS
 import { PageHeader } from '@/components/ui/page-header';
 import { Pagination, PaginationContent, PaginationItem, PaginationLink, PaginationNext, PaginationPrevious, PaginationEllipsis } from '@/components/ui/pagination';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Search, Home, Trash2 } from 'lucide-react';
+import FilterPanel from '@/components/filter-panel';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
+import { useAuthContext } from '@/contexts/AuthContext';
+import { useTaxonomy } from '@/contexts/TaxonomyContext';
+import toast from 'react-hot-toast';
 import request from '@/utils/request';
 
 export default function SemuaPenggunaPage() {
   useAuth(['admin']);
   const router = useRouter();
+  const { user: currentUser } = useAuthContext();
+  const { gradeLevels, majors } = useTaxonomy();
+  const [togglingId, setTogglingId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [tingkatFilter, setTingkatFilter] = useState('all');
   const [jurusanFilter, setJurusanFilter] = useState('all');
   const [kelasFilter, setKelasFilter] = useState('all');
+  const [statusFilter, setStatusFilter] = useState('all'); // 'all' | 'active' | 'inactive'
+  const [inactiveCount, setInactiveCount] = useState(0);
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -75,6 +86,9 @@ export default function SemuaPenggunaPage() {
         if (kelasFilter !== 'all') {
           params.classroom = kelasFilter;
         }
+        if (statusFilter !== 'all') {
+          params.status = statusFilter;
+        }
 
         const response = await request.get('/users/students', params);
 
@@ -89,7 +103,20 @@ export default function SemuaPenggunaPage() {
     };
 
     fetchUsers();
-  }, [currentPage, debouncedSearch, tingkatFilter, jurusanFilter, kelasFilter]);
+  }, [currentPage, debouncedSearch, tingkatFilter, jurusanFilter, kelasFilter, statusFilter]);
+
+  // Separately fetch the inactive count so the filter chip can show it even
+  // when the current view is filtered (and thus may not contain inactives).
+  useEffect(() => {
+    let cancelled = false;
+    request
+      .get('/users/students', { status: 'inactive', limit: 1, page: 1 })
+      .then((res) => {
+        if (!cancelled) setInactiveCount(res.data.pagination?.total || 0);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [users]); // refresh when list mutates (toggle, delete)
 
   // Clear selection when data changes
   useEffect(() => {
@@ -142,6 +169,19 @@ export default function SemuaPenggunaPage() {
       setSelectedIds(new Set());
     } else {
       setSelectedIds(new Set(users.map(u => u.id)));
+    }
+  };
+
+  const handleToggleStatus = async (user) => {
+    setTogglingId(user.id);
+    try {
+      const res = await request.patch(`/users/${user.id}/status`);
+      setUsers(prev => prev.map(u => (u.id === user.id ? { ...u, is_active: res.data.is_active } : u)));
+      toast.success(res.data.message || 'Status pengguna berhasil diubah');
+    } catch (err) {
+      toast.error(err.response?.data?.error || err.response?.data?.message || 'Gagal mengubah status pengguna');
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -206,65 +246,98 @@ export default function SemuaPenggunaPage() {
         />
 
         {/* Search and Filters */}
-        <div className='flex flex-col sm:flex-row gap-4'>
-          {/* Search Input */}
-          <div className='relative flex-1'>
-            <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5' />
-            <Input
-              type='text'
-              placeholder='Cari Pengguna'
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className='pl-10 bg-white border-gray-300'
-            />
+        <FilterPanel
+          activeCount={[searchQuery, tingkatFilter !== 'all', jurusanFilter !== 'all', kelasFilter !== 'all', statusFilter !== 'all'].filter(Boolean).length}
+          onReset={() => {
+            setSearchQuery('');
+            setTingkatFilter('all');
+            setJurusanFilter('all');
+            setKelasFilter('all');
+            setStatusFilter('all');
+            setCurrentPage(1);
+          }}
+          gridClassName='grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3'
+        >
+            <div className='relative sm:col-span-2 lg:col-span-1'>
+              <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
+              <Input
+                type='text'
+                placeholder='Cari nama, username, NISN...'
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className='pl-10 h-10 w-full'
+              />
+            </div>
+
+            <Select value={tingkatFilter} onValueChange={setTingkatFilter}>
+              <SelectTrigger className='h-10 w-full'>
+                <SelectValue placeholder='Semua Tingkat' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='all'>Semua Tingkat</SelectItem>
+                {gradeLevels.map((g) => (
+                  <SelectItem key={g.grade_level_id} value={g.value}>{g.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={jurusanFilter} onValueChange={setJurusanFilter}>
+              <SelectTrigger className='h-10 w-full'>
+                <SelectValue placeholder='Semua Jurusan' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='all'>Semua Jurusan</SelectItem>
+                {majors.map((m) => (
+                  <SelectItem key={m.major_id} value={m.value}>{m.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select value={kelasFilter} onValueChange={setKelasFilter}>
+              <SelectTrigger className='h-10 w-full'>
+                <SelectValue placeholder='Semua Kelas' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='all'>Semua Kelas</SelectItem>
+                <SelectItem value='1'>Kelas 1</SelectItem>
+                <SelectItem value='2'>Kelas 2</SelectItem>
+                <SelectItem value='3'>Kelas 3</SelectItem>
+              </SelectContent>
+            </Select>
+
+            <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setCurrentPage(1); }}>
+              <SelectTrigger className='h-10 w-full'>
+                <SelectValue placeholder='Status' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='all'>Semua Status</SelectItem>
+                <SelectItem value='active'>Aktif</SelectItem>
+                <SelectItem value='inactive'>Non-aktif {inactiveCount > 0 && `(${inactiveCount})`}</SelectItem>
+              </SelectContent>
+            </Select>
+        </FilterPanel>
+
+        {/* Bulk delete inactive — visible when there are any inactives.
+            We don't pre-select them because students are paginated; the
+            backend batch delete operates on explicit IDs only. Instead the
+            button switches to the inactive view so the admin can review
+            then "Pilih Semua" + delete. */}
+        {inactiveCount > 0 && statusFilter !== 'inactive' && (
+          <div className='flex items-center gap-3 p-3 bg-amber-50 border border-amber-200 rounded-lg'>
+            <Trash2 className='w-4 h-4 text-amber-600' />
+            <span className='text-sm text-amber-900 flex-1'>
+              Ada <strong>{inactiveCount}</strong> siswa non-aktif yang dapat dihapus.
+            </span>
+            <Button
+              variant='outline'
+              size='sm'
+              className='border-amber-400 text-amber-700 hover:bg-amber-100'
+              onClick={() => { setStatusFilter('inactive'); setCurrentPage(1); }}
+            >
+              Tampilkan Non-aktif
+            </Button>
           </div>
-
-          {/* Filter Dropdowns */}
-          <Select
-            value={tingkatFilter}
-            onValueChange={setTingkatFilter}
-          >
-            <SelectTrigger className='w-full sm:w-[180px] bg-white border-gray-300'>
-              <SelectValue placeholder='Semua Tingkat' />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='all'>Semua Tingkat</SelectItem>
-              <SelectItem value='X'>Kelas 10</SelectItem>
-              <SelectItem value='XI'>Kelas 11</SelectItem>
-              <SelectItem value='XII'>Kelas 12</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={jurusanFilter}
-            onValueChange={setJurusanFilter}
-          >
-            <SelectTrigger className='w-full sm:w-[180px] bg-white border-gray-300'>
-              <SelectValue placeholder='Semua Jurusan' />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='all'>Semua Jurusan</SelectItem>
-              <SelectItem value='IPA'>IPA</SelectItem>
-              <SelectItem value='IPS'>IPS</SelectItem>
-              <SelectItem value='Bahasa'>Bahasa</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select
-            value={kelasFilter}
-            onValueChange={setKelasFilter}
-          >
-            <SelectTrigger className='w-full sm:w-[180px] bg-white border-gray-300'>
-              <SelectValue placeholder='Semua Kelas' />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='all'>Semua Kelas</SelectItem>
-              <SelectItem value='1'>Kelas 1</SelectItem>
-              <SelectItem value='2'>Kelas 2</SelectItem>
-              <SelectItem value='3'>Kelas 3</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+        )}
 
         {/* Batch Actions Bar */}
         {(selectedIds.size > 0 || (tingkatFilter !== 'all' && users.length > 0)) && (
@@ -327,13 +400,14 @@ export default function SemuaPenggunaPage() {
                 <TableHead className='text-white font-semibold'>Tingkat</TableHead>
                 <TableHead className='text-white font-semibold'>Jurusan</TableHead>
                 <TableHead className='text-white font-semibold'>Role</TableHead>
+                <TableHead className='text-white font-semibold'>Status</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
               {loading ? (
                 <TableRow>
                   <TableCell
-                    colSpan={9}
+                    colSpan={10}
                     className='text-center py-12 text-gray-500'
                   >
                     Loading...
@@ -342,7 +416,7 @@ export default function SemuaPenggunaPage() {
               ) : error ? (
                 <TableRow>
                   <TableCell
-                    colSpan={9}
+                    colSpan={10}
                     className='text-center py-12 text-red-500'
                   >
                     {error}
@@ -351,7 +425,7 @@ export default function SemuaPenggunaPage() {
               ) : users.length === 0 ? (
                 <TableRow>
                   <TableCell
-                    colSpan={9}
+                    colSpan={10}
                     className='text-center py-12 text-gray-500'
                   >
                     Tidak ada data pengguna ditemukan
@@ -364,7 +438,7 @@ export default function SemuaPenggunaPage() {
                     initial={{ opacity: 0, y: 6 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: Math.min(idx * 0.025, 0.3), duration: 0.25 }}
-                    className={`border-b transition-colors hover:bg-gray-50 cursor-pointer ${selectedIds.has(user.id) ? 'bg-blue-50' : ''}`}
+                    className={`border-b transition-colors hover:bg-gray-50 cursor-pointer ${selectedIds.has(user.id) ? 'bg-blue-50' : ''} ${user.is_active === false ? 'opacity-60' : ''}`}
                   >
                     <TableCell onClick={e => e.stopPropagation()}>
                       <Checkbox
@@ -386,6 +460,24 @@ export default function SemuaPenggunaPage() {
                     <TableCell className='text-gray-900' onClick={() => router.push(`/admin/user-detail/${user.id}`)}>{user.grade_level || '-'}</TableCell>
                     <TableCell className='text-gray-900' onClick={() => router.push(`/admin/user-detail/${user.id}`)}>{user.major || '-'}</TableCell>
                     <TableCell className='text-gray-900 capitalize' onClick={() => router.push(`/admin/user-detail/${user.id}`)}>{user.role}</TableCell>
+                    <TableCell onClick={e => e.stopPropagation()}>
+                      {(() => {
+                        const active = user.is_active !== false;
+                        const canToggle = !user.is_super_admin && currentUser?.id?.toString() !== user.id?.toString();
+                        return (
+                          <div className='flex items-center gap-2'>
+                            <Switch
+                              checked={active}
+                              disabled={!canToggle || togglingId === user.id}
+                              onCheckedChange={() => handleToggleStatus(user)}
+                            />
+                            <Badge className={active ? 'bg-green-100 text-green-700 border-green-200' : 'bg-gray-200 text-gray-600 border-gray-300'}>
+                              {active ? 'Aktif' : 'Nonaktif'}
+                            </Badge>
+                          </div>
+                        );
+                      })()}
+                    </TableCell>
                   </motion.tr>
                 ))
               )}

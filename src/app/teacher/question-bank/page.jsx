@@ -5,20 +5,29 @@ import TeacherLayout from '../teacherLayout';
 import { useAuth } from '@/hooks/useAuth';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { PageHeader } from '@/components/ui/page-header';
-import { Search, Plus, RefreshCw, Eye, BookOpen, FileText, ListChecks, Home } from 'lucide-react';
+import { Search, Plus, RefreshCw, Eye, BookOpen, FileText, ListChecks, Home, Filter, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
-import { GRADE_LEVELS, MAJOR_OPTIONS, getSubjectTheme } from '@/lib/constants';
+import { useTaxonomy } from '@/contexts/TaxonomyContext';
+import { useSubjectThemes } from '@/hooks/useSubjectTheme';
+import { motion } from 'framer-motion';
+import CardSkeletonGrid from '@/components/motion/card-skeleton-grid';
+import FilterPanel from '@/components/filter-panel';
+import { StaggerList, StaggerItem } from '@/components/motion/stagger-list';
+import { AnimatedCard } from '@/components/motion/animated-card';
 
 export default function BankSoalPage() {
   useAuth(['teacher']);
   const router = useRouter();
+  const { gradeLevels, majors } = useTaxonomy();
+  const { themeFor } = useSubjectThemes();
 
   const [bankSoal, setBankSoal] = useState([]);
   const [totalSoal, setTotalSoal] = useState(0);
@@ -78,6 +87,7 @@ export default function BankSoalPage() {
       result = result.filter(
         b =>
           b.subject.toLowerCase().includes(q) ||
+          (b.bank_name && b.bank_name.toLowerCase().includes(q)) ||
           b.grade_level.toLowerCase().includes(q) ||
           (b.major && b.major.toLowerCase().includes(q))
       );
@@ -205,158 +215,155 @@ export default function BankSoalPage() {
         </div>
 
         {/* Search and Filters */}
-        <div className='flex flex-col sm:flex-row items-center gap-4'>
-          <div className='flex-1 w-full'>
-            <div className='relative'>
+        <FilterPanel
+          activeCount={[query, filterTingkat !== 'all', filterJurusan !== 'all'].filter(Boolean).length}
+          onReset={() => { setQuery(''); setFilterTingkat('all'); setFilterJurusan('all'); }}
+        >
+            <div className='relative lg:col-span-1'>
+              <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder='Cari Bank Soal (mata pelajaran, tingkat, atau jurusan)'
-                className='pr-10'
+                placeholder='Cari bank soal...'
+                className='pl-10 h-10 w-full'
               />
-              <div className='absolute right-3 top-1/2 -translate-y-1/2 text-gray-400'>
-                <Search className='w-5 h-5' />
-              </div>
             </div>
-          </div>
 
-          <Select value={filterTingkat} onValueChange={setFilterTingkat}>
-            <SelectTrigger className='w-full sm:w-40'>
-              <SelectValue placeholder='Tingkat' />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='all'>Semua Tingkat</SelectItem>
-              {GRADE_LEVELS.map((grade) => (
-                <SelectItem key={grade.value} value={grade.value}>Tingkat {grade.value}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Select value={filterTingkat} onValueChange={setFilterTingkat}>
+              <SelectTrigger className='h-10 w-full'>
+                <SelectValue placeholder='Tingkat' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='all'>Semua Tingkat</SelectItem>
+                {gradeLevels.map((g) => (
+                  <SelectItem key={g.grade_level_id} value={g.value}>{g.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <Select value={filterJurusan} onValueChange={setFilterJurusan}>
-            <SelectTrigger className='w-full sm:w-40'>
-              <SelectValue placeholder='Jurusan' />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='all'>Semua Jurusan</SelectItem>
-              {MAJOR_OPTIONS.map((major) => (
-                <SelectItem key={major.value} value={major.value}>{major.label}</SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+            <Select value={filterJurusan} onValueChange={setFilterJurusan}>
+              <SelectTrigger className='h-10 w-full'>
+                <SelectValue placeholder='Jurusan' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='all'>Semua Jurusan</SelectItem>
+                {majors.map((m) => (
+                  <SelectItem key={m.major_id} value={m.value}>{m.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
 
-          <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className='w-full sm:w-40'>
-              <SelectValue placeholder='Urutkan' />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value='terbanyak'>Terbanyak</SelectItem>
-              <SelectItem value='tersedikit'>Tersedikit</SelectItem>
-              <SelectItem value='nama-asc'>Nama A-Z</SelectItem>
-              <SelectItem value='nama-desc'>Nama Z-A</SelectItem>
-            </SelectContent>
-          </Select>
-        </div>
+            <Select value={sortBy} onValueChange={setSortBy}>
+              <SelectTrigger className='h-10 w-full'>
+                <SelectValue placeholder='Urutkan' />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='terbanyak'>Terbanyak</SelectItem>
+                <SelectItem value='tersedikit'>Tersedikit</SelectItem>
+                <SelectItem value='nama-asc'>Nama A-Z</SelectItem>
+                <SelectItem value='nama-desc'>Nama Z-A</SelectItem>
+              </SelectContent>
+            </Select>
+        </FilterPanel>
 
         {/* Bank Soal Cards */}
         {loading ? (
-          <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4'>
-            {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(i => (
-              <Card key={i} className='rounded-lg animate-pulse'>
-                <div className='-mt-6 px-6'>
-                  <div className='h-20 bg-gray-300 rounded-t-lg'></div>
-                </div>
-                <div className='px-6 pt-4 pb-6 space-y-3'>
-                  <div className='h-4 bg-gray-200 rounded w-3/4'></div>
-                  <div className='h-4 bg-gray-200 rounded w-full'></div>
-                  <div className='h-4 bg-gray-200 rounded w-2/3'></div>
-                  <div className='h-8 bg-gray-200 rounded mt-4'></div>
-                </div>
-              </Card>
-            ))}
-          </div>
+          <CardSkeletonGrid count={10} variant='bank' className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4' />
         ) : error ? (
-          <div className='text-red-600 bg-red-50 p-4 rounded-lg'>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className='text-red-600 bg-red-50 p-4 rounded-lg'
+          >
             Error: {error}
-          </div>
-        ) : (
-          <div className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4'>
-            {filteredAndSortedBanks.length === 0 && (
-              <div className='col-span-full text-center py-12'>
-                <div className='text-gray-400 mb-2'>
-                  <Search className='w-12 h-12 mx-auto mb-3' />
-                </div>
-                <p className='text-gray-500 mb-4'>
-                  {query || filterTingkat !== 'all' || filterJurusan !== 'all'
-                    ? 'Tidak ada bank soal yang cocok dengan filter'
-                    : 'Belum ada bank soal'}
-                </p>
-                {!query && filterTingkat === 'all' && filterJurusan === 'all' && (
-                  <Link href='/teacher/add-question'>
-                    <Button className='bg-[#03356C] hover:bg-[#02509E]'>
-                      <Plus className='w-4 h-4 mr-2' /> Buat Soal Pertama
-                    </Button>
-                  </Link>
-                )}
-              </div>
+          </motion.div>
+        ) : filteredAndSortedBanks.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4 }}
+            className='col-span-full text-center py-16 bg-white rounded-2xl border-2 border-dashed border-gray-200'
+          >
+            <div className='w-16 h-16 mx-auto rounded-full bg-gray-50 flex items-center justify-center mb-3'>
+              <Search className='w-8 h-8 text-gray-300' />
+            </div>
+            <p className='text-gray-700 font-medium mb-1'>
+              {query || filterTingkat !== 'all' || filterJurusan !== 'all'
+                ? 'Tidak ada bank soal yang cocok'
+                : 'Belum ada bank soal'}
+            </p>
+            <p className='text-sm text-gray-500 mb-4'>
+              {query || filterTingkat !== 'all' || filterJurusan !== 'all'
+                ? 'Coba longgarkan kata kunci atau filter Anda.'
+                : 'Mulai dengan membuat soal pertama Anda.'}
+            </p>
+            {!query && filterTingkat === 'all' && filterJurusan === 'all' && (
+              <Link href='/teacher/add-question'>
+                <Button className='bg-[#03356C] hover:bg-[#02509E]'>
+                  <Plus className='w-4 h-4 mr-2' /> Buat Soal Pertama
+                </Button>
+              </Link>
             )}
-
-            {filteredAndSortedBanks.map(bank => {
+          </motion.div>
+        ) : (
+          <StaggerList className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4'>
+            {filteredAndSortedBanks.map((bank) => {
               const classroom = `${bank.grade_level}${bank.major ? ` - ${bank.major}` : ''}`;
-              const theme = getSubjectTheme(bank.subject);
+              const theme = themeFor(bank.subject);
 
               return (
-                <Card key={bank.question_bank_id} className={`rounded-xl hover:shadow-xl transition-all duration-300 overflow-hidden shadow-md border ${theme.border}`}>
-                  {/* Header dengan Gradient */}
-                  <div className={`${theme.header} px-5 py-4 text-white`}>
-                    <h4 className='font-bold text-lg mb-1'>{bank.subject}</h4>
-                    <p className='text-sm opacity-90 lowercase'>{classroom}</p>
-                  </div>
-
-                  {/* Content */}
-                  <div className='px-5 py-4 bg-white space-y-3'>
-                    {/* Pembuat */}
-                    {bank.teacher && (
-                      <div className='flex justify-between items-center text-sm'>
-                        <span className='text-gray-600'>Pembuat:</span>
-                        <span className='font-medium text-gray-700'>{bank.teacher.full_name}</span>
-                      </div>
-                    )}
-
-                    {/* Total Soal - Featured */}
-                    <div className='flex justify-between items-center'>
-                      <span className='text-gray-600 font-medium'>Total Soal:</span>
-                      <span className='font-bold text-3xl text-gray-900'>{bank.total_questions}</span>
+                <StaggerItem key={bank.question_bank_id}>
+                  <AnimatedCard
+                    className={`rounded-xl hover:shadow-xl transition-shadow overflow-hidden shadow-md border bg-white ${theme.border} h-full flex flex-col`}
+                  >
+                    {/* Header dengan Gradient */}
+                    <div className={`${theme.header} px-5 py-4 text-white`}>
+                      <h4 className='font-bold text-lg mb-1'>{bank.subject}</h4>
+                      <p className='text-sm opacity-90 lowercase'>{classroom}</p>
                     </div>
 
-                    {/* Detail Soal */}
-                    <div className='space-y-2 text-sm'>
+                    {/* Content */}
+                    <div className='px-5 py-4 bg-white space-y-3 flex-1 flex flex-col'>
+                      {bank.teacher && (
+                        <div className='flex justify-between items-center text-sm'>
+                          <span className='text-gray-600'>Pembuat:</span>
+                          <span className='font-medium text-gray-700 truncate ml-2'>{bank.teacher.full_name}</span>
+                        </div>
+                      )}
+
                       <div className='flex justify-between items-center'>
-                        <span className='text-gray-600'>Pilihan Ganda:</span>
-                        <span className='font-semibold text-lg text-green-600'>{bank.mc_count}</span>
+                        <span className='text-gray-600 font-medium'>Total Soal:</span>
+                        <span className='font-bold text-3xl text-gray-900'>{bank.total_questions}</span>
                       </div>
-                      <div className='flex justify-between items-center'>
-                        <span className='text-gray-600'>Essay:</span>
-                        <span className='font-semibold text-lg text-purple-600'>{bank.essay_count}</span>
-                      </div>
-                    </div>
 
-                    {/* Action Button */}
-                    <div className='pt-2'>
-                      <Button
-                        onClick={() => handleViewDetail(bank)}
-                        size='sm'
-                        variant='ghost'
-                        className={`w-full flex items-center justify-center gap-2 border transition-colors hover:opacity-90 ${theme.border} ${theme.button}`}
-                      >
-                        <Eye className='w-4 h-4' />
-                        Lihat Detail
-                      </Button>
+                      <div className='space-y-2 text-sm'>
+                        <div className='flex justify-between items-center'>
+                          <span className='text-gray-600'>Pilihan Ganda:</span>
+                          <span className='font-semibold text-lg text-green-600'>{bank.mc_count}</span>
+                        </div>
+                        <div className='flex justify-between items-center'>
+                          <span className='text-gray-600'>Essay:</span>
+                          <span className='font-semibold text-lg text-purple-600'>{bank.essay_count}</span>
+                        </div>
+                      </div>
+
+                      <div className='pt-2 mt-auto'>
+                        <Button
+                          onClick={() => handleViewDetail(bank)}
+                          size='sm'
+                          variant='ghost'
+                          className={`w-full flex items-center justify-center gap-2 border transition-colors hover:opacity-90 ${theme.border} ${theme.button}`}
+                        >
+                          <Eye className='w-4 h-4' />
+                          Lihat Detail
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                </Card>
+                  </AnimatedCard>
+                </StaggerItem>
               );
             })}
-          </div>
+          </StaggerList>
         )}
       </div>
     </TeacherLayout>
