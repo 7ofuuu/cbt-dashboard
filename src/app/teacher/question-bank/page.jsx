@@ -87,6 +87,7 @@ export default function BankSoalPage() {
       result = result.filter(
         b =>
           b.subject.toLowerCase().includes(q) ||
+          (b.bank_name && b.bank_name.toLowerCase().includes(q)) ||
           b.grade_level.toLowerCase().includes(q) ||
           (b.major && b.major.toLowerCase().includes(q))
       );

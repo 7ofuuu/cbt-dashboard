@@ -41,7 +41,7 @@ export default function AktivitasPage() {
   // does date math against start_date / end_date instead of a simple field
   // match, so it uses the `match` callback form.
   const listOptions = useMemo(() => ({
-    searchFields: ['exam_type', 'subject', 'grade_level', 'major'],
+    searchFields: ['exam_name', 'exam_type', 'subject', 'grade_level', 'major'],
     filters: {
       jenisUjian: { field: 'exam_type' },
       mataPelajaran: { field: 'subject' },
