@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import TeacherLayout from '../../teacherLayout';
 import { useAuth } from '@/hooks/useAuth';
+import { resolvePreviewUrl } from '@/components/ImageUploader';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -18,7 +19,7 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
-import { ArrowLeft, FileText, Edit, Trash2, RefreshCw, AlertTriangle, Home, Settings, Image as ImageIcon } from 'lucide-react';
+import { ArrowLeft, FileText, Edit, Trash2, RefreshCw, AlertTriangle, Home, Image as ImageIcon } from 'lucide-react';
 import Link from 'next/link';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
@@ -209,14 +210,13 @@ export default function DetailBankSoalPage() {
             </div>
           </div>
           <div className='flex items-center gap-2'>
-            <Button 
+            <Button
               onClick={() => router.push(`/teacher/manage-question-bank/${params.id}`)}
               variant="outline"
               size="sm"
               className='text-blue-600 hover:bg-blue-50 hover:border-blue-300'
-              disabled={soals.length === 0}
             >
-              <Settings className='w-4 h-4 mr-2' /> Kelola Bank
+              <Edit className='w-4 h-4 mr-2' /> Edit Bank Soal
             </Button>
             <Button 
               onClick={handleDeleteBankClick}
@@ -301,7 +301,7 @@ export default function DetailBankSoalPage() {
                           {soal.question_image && (
                             <div className='mt-3'>
                               <img
-                                src={soal.question_image}
+                                src={resolvePreviewUrl(soal.question_image)}
                                 alt={`Gambar soal ${index + 1}`}
                                 className='max-h-60 rounded-lg border object-contain bg-gray-50'
                                 onError={(e) => {

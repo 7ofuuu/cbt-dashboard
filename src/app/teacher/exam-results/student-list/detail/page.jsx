@@ -18,6 +18,8 @@ function DetailNilaiPageContent() {
   const classroom = params.get('classroom') || 'XII - IPA 1';
   const ujianId = params.get('ujianId');
   const pesertaUjianId = params.get('pesertaUjianId');
+  const isArchived = params.get('archived') === 'true';
+  const archivedSuffix = isArchived ? '&archived=true' : '';
   
   const [data, setData] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -94,17 +96,27 @@ function DetailNilaiPageContent() {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink href='/teacher/exam-results'>Hasil Ujian</BreadcrumbLink>
+            <BreadcrumbLink href={isArchived ? '/teacher/exam-results?tab=archived' : '/teacher/exam-results'}>
+              Hasil Ujian
+            </BreadcrumbLink>
           </BreadcrumbItem>
+          {isArchived && (
+            <>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink href='/teacher/exam-results?tab=archived'>Arsip</BreadcrumbLink>
+              </BreadcrumbItem>
+            </>
+          )}
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink href={`/teacher/exam-results/by-class?mata=${encodeURIComponent(mataPelajaran)}&ujianId=${ujianId}`}>
+            <BreadcrumbLink href={`/teacher/exam-results/by-class?mata=${encodeURIComponent(mataPelajaran)}&ujianId=${ujianId}${archivedSuffix}`}>
               {mataPelajaran}
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink href={`/teacher/exam-results/student-list?mata=${encodeURIComponent(mataPelajaran)}&classroom=${encodeURIComponent(classroom)}&ujianId=${ujianId}`}>
+            <BreadcrumbLink href={`/teacher/exam-results/student-list?mata=${encodeURIComponent(mataPelajaran)}&classroom=${encodeURIComponent(classroom)}&ujianId=${ujianId}${archivedSuffix}`}>
               {classroom}
             </BreadcrumbLink>
           </BreadcrumbItem>

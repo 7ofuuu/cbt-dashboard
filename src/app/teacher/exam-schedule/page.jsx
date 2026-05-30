@@ -9,13 +9,16 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthContext } from '@/contexts/AuthContext';
-import { Home, Plus, Search, Pencil, Trash2, AlertTriangle, BookOpen } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Home, Plus, Search, Pencil, Trash2, AlertTriangle, BookOpen, FileEdit, X } from 'lucide-react';
 import Link from 'next/link';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
-import { SUBJECT_OPTIONS, GRADE_LEVELS, MAJOR_OPTIONS } from '@/lib/constants';
+import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { StaggerList, StaggerItem } from '@/components/motion/stagger-list';
 import { AnimatedCard } from '@/components/motion/animated-card';
+import CardSkeletonGrid from '@/components/motion/card-skeleton-grid';
+import FilterPanel from '@/components/filter-panel';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   AlertDialog,
@@ -32,10 +35,19 @@ import {
 export default function JadwalUjianPage() {
   useAuth(['teacher']);
   const { user } = useAuthContext();
+  const { subjects, gradeLevels, majors } = useTaxonomy();
   const isCoordinator = user?.is_coordinator === true;
 
   const [ujians, setUjians] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [resumeDraft, setResumeDraft] = useState(null);
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('teacher.examDraft');
+      if (raw) setResumeDraft(JSON.parse(raw));
+    } catch (_) {}
+  }, []);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMajor, setFilterMajor] = useState('all');
   const [filterGrade, setFilterGrade] = useState('all');
@@ -144,98 +156,146 @@ export default function JadwalUjianPage() {
           </Link>
         </PageHeader>
 
+        {resumeDraft && (
+          <div className="flex items-center gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3">
+            <FileEdit className="w-5 h-5 text-amber-600 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-amber-900">Draft ujian belum selesai</p>
+              <p className="text-xs text-amber-700 truncate">
+                {resumeDraft.exam_name || 'Tanpa nama'} — {resumeDraft.subject || '—'} · {resumeDraft.grade_level} {resumeDraft.major}
+              </p>
+            </div>
+            <Link
+              href="/teacher/exam-schedule/add"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-md whitespace-nowrap"
+            >
+              Lanjutkan
+            </Link>
+            <button
+              type="button"
+              onClick={() => {
+                sessionStorage.removeItem('teacher.examDraft');
+                sessionStorage.removeItem('teacher.examSelectedBank');
+                sessionStorage.removeItem('teacher.examBankFilters');
+                setResumeDraft(null);
+              }}
+              className="text-amber-500 hover:text-amber-700 p-1 rounded"
+              title="Buang draft"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           <div className="lg:col-span-3">
             {/* Search & Filters */}
-            <div className="flex flex-col sm:flex-row items-center gap-4 mb-6">
-              <div className="flex-1 w-full">
-                <div className="relative">
+            <FilterPanel
+              activeCount={[searchQuery, filterSubject !== 'all' && isCoordinator, filterGrade !== 'all', filterMajor !== 'all', filterStatus !== 'all'].filter(Boolean).length}
+              onReset={() => {
+                setSearchQuery('');
+                setFilterSubject('all');
+                setFilterGrade('all');
+                setFilterMajor('all');
+                setFilterStatus('all');
+              }}
+              gridClassName={`grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 ${isCoordinator ? 'lg:grid-cols-6' : 'lg:grid-cols-5'}`}
+            >
+                <div className={`relative ${isCoordinator ? 'lg:col-span-2' : 'lg:col-span-2'}`}>
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
                   <Input
                     type="search"
-                    placeholder="Cari ujian (nama, mapel...)"
+                    placeholder="Cari nama atau mapel..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pr-10"
+                    className="pl-10 h-10 w-full"
                   />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
-                    <Search className="w-5 h-5" />
-                  </div>
                 </div>
-              </div>
 
-              {isCoordinator && (
-                <Select value={filterSubject} onValueChange={setFilterSubject}>
-                  <SelectTrigger className="w-full sm:w-48">
-                    <SelectValue placeholder="Mata Pelajaran" />
+                {isCoordinator && (
+                  <Select value={filterSubject} onValueChange={setFilterSubject}>
+                    <SelectTrigger className="h-10 w-full">
+                      <SelectValue placeholder="Mata Pelajaran" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">Semua Mapel</SelectItem>
+                      {subjects.map((s) => (
+                        <SelectItem key={s.subject_id} value={s.name}>{s.name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+
+                <Select value={filterGrade} onValueChange={setFilterGrade}>
+                  <SelectTrigger className="h-10 w-full">
+                    <SelectValue placeholder="Tingkat" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="all">Semua Mapel</SelectItem>
-                    {SUBJECT_OPTIONS.map((subject) => (
-                      <SelectItem key={subject} value={subject}>{subject}</SelectItem>
+                    <SelectItem value="all">Semua Tingkat</SelectItem>
+                    {gradeLevels.map((g) => (
+                      <SelectItem key={g.grade_level_id} value={g.value}>{g.label}</SelectItem>
                     ))}
                   </SelectContent>
                 </Select>
-              )}
 
-              <Select value={filterGrade} onValueChange={setFilterGrade}>
-                <SelectTrigger className="w-full sm:w-40">
-                  <SelectValue placeholder="Tingkat" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Semua Tingkat</SelectItem>
-                  {GRADE_LEVELS.map((grade) => (
-                    <SelectItem key={grade.value} value={grade.value}>Tingkat {grade.value}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Select value={filterMajor} onValueChange={setFilterMajor}>
+                  <SelectTrigger className="h-10 w-full">
+                    <SelectValue placeholder="Jurusan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Jurusan</SelectItem>
+                    {majors.map((m) => (
+                      <SelectItem key={m.major_id} value={m.value}>{m.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
 
-              <Select value={filterMajor} onValueChange={setFilterMajor}>
-                <SelectTrigger className="w-full sm:w-40">
-                  <SelectValue placeholder="Jurusan" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Semua Jurusan</SelectItem>
-                  {MAJOR_OPTIONS.map((major) => (
-                    <SelectItem key={major.value} value={major.value}>{major.label}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+                <Select value={filterStatus} onValueChange={setFilterStatus}>
+                  <SelectTrigger className="h-10 w-full">
+                    <SelectValue placeholder="Status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Semua Status</SelectItem>
+                    <SelectItem value="SCHEDULED">Terjadwal</SelectItem>
+                    <SelectItem value="ONGOING">Berlangsung</SelectItem>
+                    <SelectItem value="ENDED">Selesai</SelectItem>
+                  </SelectContent>
+                </Select>
 
-              <Select value={filterStatus} onValueChange={setFilterStatus}>
-                <SelectTrigger className="w-full sm:w-40">
-                  <SelectValue placeholder="Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">Semua Status</SelectItem>
-                  <SelectItem value="SCHEDULED">Terjadwal</SelectItem>
-                  <SelectItem value="ONGOING">Berlangsung</SelectItem>
-                  <SelectItem value="ENDED">Selesai</SelectItem>
-                </SelectContent>
-              </Select>
+                <Select value={sortBy} onValueChange={setSortBy}>
+                  <SelectTrigger className="h-10 w-full">
+                    <SelectValue placeholder="Urutkan" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="terbaru">Terbaru</SelectItem>
+                    <SelectItem value="terlama">Terlama</SelectItem>
+                    <SelectItem value="nama-asc">Nama A-Z</SelectItem>
+                    <SelectItem value="nama-desc">Nama Z-A</SelectItem>
+                  </SelectContent>
+                </Select>
+            </FilterPanel>
 
-              <Select value={sortBy} onValueChange={setSortBy}>
-                <SelectTrigger className="w-full sm:w-40">
-                  <SelectValue placeholder="Urutkan" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="terbaru">Terbaru</SelectItem>
-                  <SelectItem value="terlama">Terlama</SelectItem>
-                  <SelectItem value="nama-asc">Nama A-Z</SelectItem>
-                  <SelectItem value="nama-desc">Nama Z-A</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-
+            <div className="mt-6">
             {loading ? (
-              <div className="text-center py-10">Memuat data...</div>
+              <CardSkeletonGrid count={8} variant='schedule' className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6' />
             ) : filteredUjians.length === 0 ? (
                 <motion.div
-                  initial={{ opacity: 0, y: 8 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3 }}
-                  className="text-center py-10 text-gray-500"
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.4 }}
+                  className="text-center py-16 bg-white rounded-2xl border-2 border-dashed border-gray-200"
                 >
-                  {ujians.length === 0 ? 'Belum ada jadwal ujian' : 'Tidak ada ujian yang cocok dengan filter'}
+                  <div className="w-16 h-16 mx-auto rounded-full bg-gray-50 flex items-center justify-center mb-3">
+                    <BookOpen className="w-8 h-8 text-gray-300" />
+                  </div>
+                  <p className="text-gray-700 font-medium mb-1">
+                    {ujians.length === 0 ? 'Belum ada jadwal ujian' : 'Tidak ada ujian yang cocok'}
+                  </p>
+                  <p className="text-sm text-gray-500">
+                    {ujians.length === 0
+                      ? 'Mulai dengan membuat jadwal ujian pertama.'
+                      : 'Coba longgarkan kata kunci atau filter Anda.'}
+                  </p>
                 </motion.div>
               ) : (
               <StaggerList className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -332,6 +392,7 @@ export default function JadwalUjianPage() {
                 </AnimatePresence>
               </StaggerList>
               )}
+            </div>
           </div>
         </div>
       </div>

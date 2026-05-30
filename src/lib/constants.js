@@ -1,36 +1,11 @@
 /**
- * Shared constants used across the application.
- * Centralizes duplicated values like subject lists, grade levels, and majors.
+ * Shared constants — subject visual themes and shortcut card themes.
+ *
+ * Dynamic taxonomy lists (subjects, grade levels, majors) used to live here
+ * as hardcoded arrays but were moved to TaxonomyContext / master-data so the
+ * admin can add new values without touching code. Read those via
+ * `useTaxonomy()` instead.
  */
-
-export const SUBJECT_OPTIONS = [
-  'Matematika',
-  'Bahasa Indonesia',
-  'Bahasa Inggris',
-  'Fisika',
-  'Kimia',
-  'Biologi',
-  'Sejarah',
-  'Geografi',
-  'Ekonomi',
-  'Sosiologi',
-  'PKN',
-  'Seni Budaya',
-  'Penjaskes',
-  'TIK',
-];
-
-export const GRADE_LEVELS = [
-  { value: 'X', label: 'Kelas 10' },
-  { value: 'XI', label: 'Kelas 11' },
-  { value: 'XII', label: 'Kelas 12' },
-];
-
-export const MAJOR_OPTIONS = [
-  { value: 'IPA', label: 'IPA' },
-  { value: 'IPS', label: 'IPS' },
-  { value: 'Bahasa', label: 'Bahasa' },
-];
 
 const DEFAULT_SUBJECT_THEME = {
   badge: 'bg-gray-100 text-gray-800',

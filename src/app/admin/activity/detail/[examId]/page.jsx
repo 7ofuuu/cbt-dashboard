@@ -12,7 +12,8 @@ import {
 } from '@/components/ui/select';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { PageHeader } from '@/components/ui/page-header';
-import { Home } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Home, KeyRound, Copy, Check, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/hooks/useAuth';
 import request from '@/utils/request';
@@ -32,6 +33,14 @@ export default function DetailAktivitasPage({ params }) {
   const [ujianData, setUjianData] = useState(null);
   const [pesertaData, setPesertaData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [copied, setCopied] = useState(false);
+
+  const copyPassword = (text) => {
+    navigator.clipboard.writeText(text);
+    toast.success('Password disalin');
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
 
   useEffect(() => {
     const fetchUjianDetail = async () => {
@@ -164,6 +173,43 @@ export default function DetailAktivitasPage({ params }) {
           title={ujianData ? ujianData.exam_name : 'Detail Ujian'}
           description={ujianData ? `${ujianData.subject} • Tingkat ${convertTingkat(ujianData.grade_level)}${ujianData.major ? ` • ${ujianData.major}` : ''} • ${filteredPesertaData.length} Peserta` : ''}
         />
+
+        {/* Exam access password — visible to admin only, appears H-1 */}
+        {!loading && ujianData && (
+          <div className="rounded-xl border-2 border-sky-200 bg-gradient-to-r from-sky-50 to-blue-50 p-4">
+            <div className="flex items-center gap-2 text-sky-800 mb-2">
+              <KeyRound className="w-4 h-4" />
+              <span className="text-sm font-semibold uppercase tracking-wide">Password Ujian</span>
+            </div>
+            {ujianData.access_password ? (
+              <>
+                <div className="flex flex-wrap items-center gap-3">
+                  <p className="text-2xl font-bold tracking-[0.4em] font-mono text-blue-900">
+                    {ujianData.access_password}
+                  </p>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => copyPassword(ujianData.access_password)}
+                    className="border-sky-300 text-sky-700 hover:bg-sky-100"
+                  >
+                    {copied ? <Check className="w-4 h-4 mr-1 text-green-600" /> : <Copy className="w-4 h-4 mr-1" />}
+                    {copied ? 'Disalin' : 'Salin'}
+                  </Button>
+                </div>
+                <p className="text-xs text-sky-700 mt-2">
+                  Umumkan password ini ke peserta saat ujian dimulai. Siswa memasukkannya untuk membuka paket soal yang sudah diunduh.
+                </p>
+              </>
+            ) : (
+              <p className="flex items-center gap-1.5 text-sm text-gray-500">
+                <Clock className="w-4 h-4" />
+                Password akan muncul otomatis H-1 (24 jam) sebelum ujian dimulai.
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Filters */}
         <div className="grid grid-cols-1 md:grid-cols-1 gap-4">

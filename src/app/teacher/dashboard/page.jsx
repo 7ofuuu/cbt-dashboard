@@ -6,7 +6,8 @@ import TeacherLayout from '../teacherLayout';
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthContext } from '@/contexts/AuthContext';
 import request from '@/utils/request';
-import { getShortcutCardTheme, getSubjectTheme } from '@/lib/constants';
+import { getShortcutCardTheme } from '@/lib/constants';
+import { useSubjectTheme } from '@/hooks/useSubjectTheme';
 import {
   Select,
   SelectContent,
@@ -60,7 +61,7 @@ function SubjectFeatureCard({
   href,
   actionLabel,
 }) {
-  const theme = getSubjectTheme(subject);
+  const theme = useSubjectTheme(subject);
 
   return (
     <div className={`rounded-xl border ${theme.border} bg-white overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col`}>

@@ -15,7 +15,8 @@ import { Home, Save, X, Clock, BookOpen, Users, FileText, Calendar, Loader2, Tra
 import { useAuth } from '@/hooks/useAuth';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
-import { GRADE_LEVELS, MAJOR_OPTIONS, getSubjectColor } from '@/lib/constants';
+import { getSubjectColor } from '@/lib/constants';
+import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { SubjectSelect } from '@/components/SubjectSelect';
 
 export default function EditJadwalPage() {
@@ -23,6 +24,7 @@ export default function EditJadwalPage() {
   const router = useRouter();
   const params = useParams();
   const examId = params.id;
+  const { gradeLevels, majors } = useTaxonomy();
 
   const [form, setForm] = useState({
     exam_name: '',
@@ -345,7 +347,7 @@ export default function EditJadwalPage() {
                     <Select value={form.grade_level} onValueChange={updateSelect('grade_level')} disabled={!isEditable}>
                       <SelectTrigger className="h-9"><SelectValue placeholder="Pilih" /></SelectTrigger>
                       <SelectContent>
-                        {GRADE_LEVELS.map((g) => <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>)}
+                        {gradeLevels.map((g) => <SelectItem key={g.grade_level_id} value={g.value}>{g.label}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>
@@ -354,7 +356,7 @@ export default function EditJadwalPage() {
                     <Select value={form.major} onValueChange={updateSelect('major')} disabled={!isEditable}>
                       <SelectTrigger className="h-9"><SelectValue placeholder="Pilih" /></SelectTrigger>
                       <SelectContent>
-                        {MAJOR_OPTIONS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
+                        {majors.map((m) => <SelectItem key={m.major_id} value={m.value}>{m.label}</SelectItem>)}
                       </SelectContent>
                     </Select>
                   </div>

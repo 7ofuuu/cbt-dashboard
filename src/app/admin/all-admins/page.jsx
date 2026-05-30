@@ -11,6 +11,8 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { PageHeader } from '@/components/ui/page-header';
 import { Search, Home, ShieldCheck, Trash2 } from 'lucide-react';
+import FilterPanel from '@/components/filter-panel';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { motion } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
@@ -25,6 +27,7 @@ export default function SemuaAdminPage() {
   const { user: currentUser } = useAuthContext();
   const [togglingId, setTogglingId] = useState(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -56,8 +59,28 @@ export default function SemuaAdminPage() {
   const filteredUsers = users.filter(user => {
     const nama = user.full_name || '';
     const matchesSearch = nama.toLowerCase().includes(searchQuery.toLowerCase()) || user.username.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesSearch;
+    const isActive = user.is_active !== false;
+    const matchesStatus =
+      statusFilter === 'all' ||
+      (statusFilter === 'active' && isActive) ||
+      (statusFilter === 'inactive' && !isActive);
+    return matchesSearch && matchesStatus;
   });
+
+  const inactiveCount = users.filter(u => u.is_active === false).length;
+
+  const selectAllInactive = () => {
+    const ids = users
+      .filter(u => u.is_active === false && !u.is_super_admin && currentUser?.id?.toString() !== u.id?.toString())
+      .map(u => u.id);
+    setSelectedIds(new Set(ids));
+    setStatusFilter('inactive');
+    if (ids.length === 0) {
+      toast('Tidak ada admin non-aktif untuk dihapus.', { icon: 'ℹ️' });
+    } else {
+      toast.success(`${ids.length} admin non-aktif terpilih`);
+    }
+  };
 
   const toggleSelect = (id) => {
     setSelectedIds((prev) => {
@@ -133,20 +156,42 @@ export default function SemuaAdminPage() {
           description="Kelola dan lihat semua pengguna dengan role admin"
         />
 
-        {/* Search */}
-        <div className='flex flex-col sm:flex-row gap-4'>
-          {/* Search Input */}
-          <div className='relative flex-1'>
-            <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5' />
-            <Input
-              type='text'
-              placeholder='Cari admin'
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className='pl-10 bg-white border-gray-300'
-            />
-          </div>
-        </div>
+        {/* Search + Filter */}
+        <FilterPanel
+          activeCount={(searchQuery ? 1 : 0) + (statusFilter !== 'all' ? 1 : 0)}
+          onReset={() => { setSearchQuery(''); setStatusFilter('all'); }}
+        >
+            <div className='relative sm:col-span-2'>
+              <Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground' />
+              <Input
+                type='text'
+                placeholder='Cari nama atau username...'
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className='pl-10 h-10 w-full'
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className='h-10 w-full'>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value='all'>Semua Status</SelectItem>
+                <SelectItem value='active'>Aktif</SelectItem>
+                <SelectItem value='inactive'>Non-aktif {inactiveCount > 0 && `(${inactiveCount})`}</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant='outline'
+              size='sm'
+              disabled={inactiveCount === 0}
+              className={`h-10 w-full ${inactiveCount > 0 ? 'text-red-600 hover:bg-red-50 hover:border-red-300' : ''}`}
+              onClick={selectAllInactive}
+            >
+              <Trash2 className='w-4 h-4 mr-2' />
+              Pilih Semua Non-aktif{inactiveCount > 0 ? ` (${inactiveCount})` : ''}
+            </Button>
+        </FilterPanel>
 
         {selectedIds.size > 0 && (
           <div className='flex items-center gap-3 p-3 bg-blue-50 border border-blue-200 rounded-lg'>

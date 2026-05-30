@@ -16,7 +16,7 @@ import { Plus, Trash2, Copy, Image as ImageIcon, X, Home, Save, Loader2, GripVer
 import { useRouter } from 'next/navigation';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
-import { GRADE_LEVELS, MAJOR_OPTIONS } from '@/lib/constants';
+import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { SubjectSelect } from '@/components/SubjectSelect';
 
 function uid(prefix = "id") {
@@ -62,6 +62,7 @@ function validateQuestion(q, idx) {
 export default function TambahSoalPage() {
   useAuth(["teacher"]);
   const router = useRouter();
+  const { gradeLevels, majors } = useTaxonomy();
 
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
@@ -136,16 +137,13 @@ export default function TambahSoalPage() {
 
         // Handle image upload if present
         if (q.imageFile) {
-          const formData = new FormData();
-          formData.append('image', q.imageFile);
           try {
-            const uploadRes = await request.post('/upload', formData, {
-              headers: { 'Content-Type': 'multipart/form-data' },
-            });
+            const uploadRes = await request.postMultipart('/upload/question-image', { file: q.imageFile });
             payload.question_image = uploadRes.data.url || uploadRes.data.path;
-          } catch {
-            // Continue without image if upload fails
-            console.warn('Image upload failed, continuing without image');
+          } catch (err) {
+            // Surface the failure so the teacher knows the image was dropped
+            console.warn('Image upload failed', err);
+            toast.error(`Gagal mengunggah gambar untuk salah satu soal: ${err?.response?.data?.error || err?.message || ''}`);
           }
         } else if (q.imageUrl && q.imageUrl.trim()) {
           // Use URL directly (e.g., Google Drive link)
@@ -350,8 +348,8 @@ export default function TambahSoalPage() {
                       <SelectValue placeholder="Pilih Tingkat" />
                     </SelectTrigger>
                     <SelectContent>
-                      {GRADE_LEVELS.map(g => (
-                        <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>
+                      {gradeLevels.map(g => (
+                        <SelectItem key={g.grade_level_id} value={g.value}>{g.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
@@ -363,8 +361,8 @@ export default function TambahSoalPage() {
                       <SelectValue placeholder="Pilih Jurusan (opsional)" />
                     </SelectTrigger>
                     <SelectContent>
-                      {MAJOR_OPTIONS.map(m => (
-                        <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>
+                      {majors.map(m => (
+                        <SelectItem key={m.major_id} value={m.value}>{m.label}</SelectItem>
                       ))}
                     </SelectContent>
                   </Select>

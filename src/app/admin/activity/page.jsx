@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import useListPage from '@/hooks/useListPage';
 import { useRouter } from 'next/navigation';
 import AdminLayout from '../adminLayout';
 import {
@@ -13,27 +14,21 @@ import {
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { PageHeader } from '@/components/ui/page-header';
-import { Home, Search, X, RefreshCw } from 'lucide-react';
+import { Home, Search, RefreshCw } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
+import { StaggerList, StaggerItem } from '@/components/motion/stagger-list';
+import CardSkeletonGrid from '@/components/motion/card-skeleton-grid';
+import FilterPanel from '@/components/filter-panel';
+import { AnimatePresence, motion } from 'framer-motion';
 
 export default function AktivitasPage() {
   useAuth(['admin']);
 
   const router = useRouter();
-  const [filters, setFilters] = useState({
-    search: '',
-    jenisUjian: 'all',
-    mataPelajaran: 'all',
-    major: 'all',
-    grade_level: 'all',
-    status: 'all',
-    sortBy: 'terbaru',
-  });
 
   const [activities, setActivities] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -41,6 +36,39 @@ export default function AktivitasPage() {
   const [uniqueJenisUjian, setUniqueJenisUjian] = useState([]);
   const [uniqueTingkat, setUniqueTingkat] = useState([]);
   const [uniqueJurusan, setUniqueJurusan] = useState([]);
+
+  // Filter / search / sort state — managed by useListPage. The status filter
+  // does date math against start_date / end_date instead of a simple field
+  // match, so it uses the `match` callback form.
+  const listOptions = useMemo(() => ({
+    searchFields: ['exam_name', 'exam_type', 'subject', 'grade_level', 'major'],
+    filters: {
+      jenisUjian: { field: 'exam_type' },
+      mataPelajaran: { field: 'subject' },
+      major: { field: 'major' },
+      grade_level: { field: 'grade_level' },
+      status: {
+        match: (a, value) => {
+          const now = new Date();
+          const mulai = new Date(a.start_date);
+          const selesai = new Date(a.end_date);
+          if (value === 'NOT_STARTED') return now < mulai;
+          if (value === 'SEDANG_BERLANGSUNG') return now >= mulai && now <= selesai;
+          if (value === 'COMPLETED') return now > selesai;
+          return true;
+        },
+      },
+    },
+    sortBy: {
+      terbaru: (a, b) => new Date(b.start_date) - new Date(a.start_date),
+      terlama: (a, b) => new Date(a.start_date) - new Date(b.start_date),
+      'peserta-terbanyak': (a, b) => (b.participant_count || 0) - (a.participant_count || 0),
+      'peserta-tersedikit': (a, b) => (a.participant_count || 0) - (b.participant_count || 0),
+    },
+    defaultSort: 'terbaru',
+  }), []);
+
+  const list = useListPage(activities, listOptions);
 
   useEffect(() => {
     fetchActivities();
@@ -83,106 +111,7 @@ export default function AktivitasPage() {
     }
   };
 
-  const handleFilterChange = (filterName, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [filterName]: value,
-    }));
-  };
-
-  const handleResetFilters = () => {
-    setFilters({
-      search: '',
-      jenisUjian: 'all',
-      mataPelajaran: 'all',
-      major: 'all',
-      grade_level: 'all',
-      status: 'all',
-      sortBy: 'terbaru',
-    });
-  };
-
-  const getActiveFilterCount = () => {
-    let count = 0;
-    if (filters.search) count++;
-    if (filters.jenisUjian !== 'all') count++;
-    if (filters.mataPelajaran !== 'all') count++;
-    if (filters.major !== 'all') count++;
-    if (filters.grade_level !== 'all') count++;
-    if (filters.status !== 'all') count++;
-    return count;
-  };
-
-  const filteredAndSortedActivities = () => {
-    let result = [...activities];
-
-    // Search filter
-    if (filters.search.trim()) {
-      const q = filters.search.toLowerCase();
-      result = result.filter(a =>
-        a.exam_type?.toLowerCase().includes(q) ||
-        a.subject?.toLowerCase().includes(q) ||
-        a.grade_level?.toLowerCase().includes(q) ||
-        a.major?.toLowerCase().includes(q)
-      );
-    }
-
-    // Jenis Ujian filter
-    if (filters.jenisUjian !== 'all') {
-      result = result.filter(a => a.exam_type === filters.jenisUjian);
-    }
-
-    // Mata Pelajaran filter
-    if (filters.mataPelajaran !== 'all') {
-      result = result.filter(a => a.subject === filters.mataPelajaran);
-    }
-
-    // Jurusan filter
-    if (filters.major !== 'all') {
-      result = result.filter(a => a.major === filters.major);
-    }
-
-    // Tingkat filter
-    if (filters.grade_level !== 'all') {
-      result = result.filter(a => a.grade_level === filters.grade_level);
-    }
-
-    // Status filter - based on exam status
-    if (filters.status !== 'all') {
-      result = result.filter(a => {
-        const now = new Date();
-        const mulai = new Date(a.start_date);
-        const selesai = new Date(a.end_date);
-        
-        if (filters.status === 'NOT_STARTED') {
-          return now < mulai;
-        } else if (filters.status === 'SEDANG_BERLANGSUNG') {
-          return now >= mulai && now <= selesai;
-        } else if (filters.status === 'COMPLETED') {
-          return now > selesai;
-        }
-        return true;
-      });
-    }
-
-    // Sorting
-    result.sort((a, b) => {
-      switch (filters.sortBy) {
-        case 'terbaru':
-          return new Date(b.start_date) - new Date(a.start_date);
-        case 'terlama':
-          return new Date(a.start_date) - new Date(b.start_date);
-        case 'peserta-terbanyak':
-          return (b.participant_count || 0) - (a.participant_count || 0);
-        case 'peserta-tersedikit':
-          return (a.participant_count || 0) - (b.participant_count || 0);
-        default:
-          return 0;
-      }
-    });
-
-    return result;
-  };
+  const filteredAndSortedActivities = list.items;
 
   const handleCardClick = (ujianId) => {
     router.push(`/admin/activity/detail/${ujianId}`);
@@ -236,73 +165,69 @@ export default function AktivitasPage() {
           </Button>
         </PageHeader>
 
-        {/* Search Bar */}
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
-          <Input
-            type="text"
-            placeholder="Cari ujian, mata pelajaran, tingkat, atau jurusan..."
-            value={filters.search}
-            onChange={(e) => handleFilterChange('search', e.target.value)}
-            className="pl-10 pr-4"
-          />
-        </div>
+        {/* Filter & Search card */}
+        <FilterPanel activeCount={list.activeCount} onReset={list.reset}>
+            <div className="relative sm:col-span-2">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder="Cari ujian, mapel, tingkat, jurusan..."
+                value={list.query}
+                onChange={(e) => list.setQuery(e.target.value)}
+                className="pl-10 h-10 w-full"
+              />
+            </div>
 
-        {/* Filters */}
-        <div className="space-y-3">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <Select value={filters.jenisUjian} onValueChange={(value) => handleFilterChange('jenisUjian', value)}>
-              <SelectTrigger className="w-full">
+            <Select value={list.filters.jenisUjian} onValueChange={(v) => list.setFilter('jenisUjian', v)}>
+              <SelectTrigger className="h-10 w-full">
                 <SelectValue placeholder="Jenis Ujian" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Jenis Ujian</SelectItem>
-                {uniqueJenisUjian.map(jenis => (
+                {uniqueJenisUjian.map((jenis) => (
                   <SelectItem key={jenis} value={jenis}>{jenis}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
-            <Select value={filters.mataPelajaran} onValueChange={(value) => handleFilterChange('mataPelajaran', value)}>
-              <SelectTrigger className="w-full">
+            <Select value={list.filters.mataPelajaran} onValueChange={(v) => list.setFilter('mataPelajaran', v)}>
+              <SelectTrigger className="h-10 w-full">
                 <SelectValue placeholder="Mata Pelajaran" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Semua Mata Pelajaran</SelectItem>
-                {uniqueMapel.map(mapel => (
+                <SelectItem value="all">Semua Mapel</SelectItem>
+                {uniqueMapel.map((mapel) => (
                   <SelectItem key={mapel} value={mapel}>{mapel}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
-            <Select value={filters.grade_level} onValueChange={(value) => handleFilterChange('grade_level', value)}>
-              <SelectTrigger className="w-full">
+            <Select value={list.filters.grade_level} onValueChange={(v) => list.setFilter('grade_level', v)}>
+              <SelectTrigger className="h-10 w-full">
                 <SelectValue placeholder="Tingkat" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Tingkat</SelectItem>
-                {uniqueTingkat.map(grade_level => (
-                  <SelectItem key={grade_level} value={grade_level}>Kelas {grade_level}</SelectItem>
+                {uniqueTingkat.map((g) => (
+                  <SelectItem key={g} value={g}>Kelas {g}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
-            <Select value={filters.major} onValueChange={(value) => handleFilterChange('major', value)}>
-              <SelectTrigger className="w-full">
+            <Select value={list.filters.major} onValueChange={(v) => list.setFilter('major', v)}>
+              <SelectTrigger className="h-10 w-full">
                 <SelectValue placeholder="Jurusan" />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Semua Jurusan</SelectItem>
-                {uniqueJurusan.map(major => (
-                  <SelectItem key={major} value={major}>{major}</SelectItem>
+                {uniqueJurusan.map((m) => (
+                  <SelectItem key={m} value={m}>{m}</SelectItem>
                 ))}
               </SelectContent>
             </Select>
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-            <Select value={filters.status} onValueChange={(value) => handleFilterChange('status', value)}>
-              <SelectTrigger className="w-full">
+            <Select value={list.filters.status} onValueChange={(v) => list.setFilter('status', v)}>
+              <SelectTrigger className="h-10 w-full">
                 <SelectValue placeholder="Status" />
               </SelectTrigger>
               <SelectContent>
@@ -313,8 +238,8 @@ export default function AktivitasPage() {
               </SelectContent>
             </Select>
 
-            <Select value={filters.sortBy} onValueChange={(value) => handleFilterChange('sortBy', value)}>
-              <SelectTrigger className="w-full">
+            <Select value={list.sort} onValueChange={list.setSort}>
+              <SelectTrigger className="h-10 w-full">
                 <SelectValue placeholder="Urutkan" />
               </SelectTrigger>
               <SelectContent>
@@ -324,87 +249,73 @@ export default function AktivitasPage() {
                 <SelectItem value="peserta-tersedikit">Peserta Tersedikit</SelectItem>
               </SelectContent>
             </Select>
-          </div>
-
-          {/* Active Filters Badge and Reset Button */}
-          {getActiveFilterCount() > 0 && (
-            <div className="flex items-center gap-3">
-              <Badge variant="secondary" className="flex items-center gap-1">
-                {getActiveFilterCount()} Filter Aktif
-              </Badge>
-              <Button
-                onClick={handleResetFilters}
-                variant="ghost"
-                size="sm"
-                className="flex items-center gap-2 text-gray-600 hover:text-gray-900"
-              >
-                <X className="w-4 h-4" /> Reset Filter
-              </Button>
-            </div>
-          )}
-        </div>
+        </FilterPanel>
 
         {/* Activities Grid */}
         {loading ? (
-          <div className="col-span-full text-center py-12 text-gray-500">
-            <p className="text-lg">Memuat data...</p>
-          </div>
+          <CardSkeletonGrid count={6} variant='activity' className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' />
+        ) : filteredAndSortedActivities.length === 0 ? (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.4 }}
+            className="text-center py-12 bg-white rounded-2xl border-2 border-dashed border-gray-200 text-gray-500"
+          >
+            <p className="text-lg">
+              {activities.length === 0 ? 'Belum ada aktivitas ujian' : 'Tidak ada hasil yang sesuai dengan filter'}
+            </p>
+          </motion.div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {filteredAndSortedActivities().length === 0 ? (
-              <div className="col-span-full text-center py-12 text-gray-500">
-                <p className="text-lg">
-                  {activities.length === 0 ? 'Belum ada aktivitas ujian' : 'Tidak ada hasil yang sesuai dengan filter'}
-                </p>
-              </div>
-            ) : (
-              filteredAndSortedActivities().map(activity => (
-                <Card
-                  key={activity.exam_id}
-                  className="hover:shadow-lg transition-shadow cursor-pointer overflow-hidden border"
-                  onClick={() => handleCardClick(activity.exam_id)}
-                >
-                  <div className={`${getCardColor(activity.exam_type)} text-white p-4`}>
-                    <h3 className="text-xl font-semibold">{activity.exam_name}</h3>
-                  </div>
-                  <CardContent className="p-4">
-                    <div className="space-y-2 text-sm text-gray-700">
-                      <div className="flex justify-between border-b py-1">
-                        <span className="font-medium">Mapel:</span>
-                        <span>{activity.subject}</span>
-                      </div>
-                      <div className="flex justify-between border-b py-1">
-                        <span className="font-medium">Tingkat/Jurusan:</span>
-                        <span>{activity.grade_level} - {activity.major || 'Umum'}</span>
-                      </div>
-                      <div className="flex justify-between border-b py-1">
-                        <span className="font-medium">Peserta:</span>
-                        <span>{activity.participant_count}</span>
-                      </div>
-                      <div className="flex justify-between border-b py-1">
-                        <span className="font-medium">Status:</span>
-                        <span>{activity.status}</span>
-                      </div>
-                      <div className="flex flex-col mt-2">
-                        <span className="font-medium text-xs text-gray-400 uppercase">Mulai:</span>
-                        <span>{formatDate(activity.start_date)}</span>
-                      </div>
-                      <div className="flex flex-col mt-1">
-                        <span className="font-medium text-xs text-gray-400 uppercase">Selesai:</span>
-                        <span>{formatDate(activity.end_date)}</span>
-                      </div>
+          <StaggerList className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <AnimatePresence mode="popLayout">
+              {filteredAndSortedActivities.map(activity => (
+                <StaggerItem key={activity.exam_id}>
+                  <Card
+                    className="hover:shadow-lg transition-shadow cursor-pointer overflow-hidden border h-full"
+                    onClick={() => handleCardClick(activity.exam_id)}
+                  >
+                    <div className={`${getCardColor(activity.exam_type)} text-white p-4`}>
+                      <h3 className="text-xl font-semibold">{activity.exam_name}</h3>
                     </div>
-                  </CardContent>
-                </Card>
-              ))
-            )}
-          </div>
+                    <CardContent className="p-4">
+                      <div className="space-y-2 text-sm text-gray-700">
+                        <div className="flex justify-between border-b py-1">
+                          <span className="font-medium">Mapel:</span>
+                          <span>{activity.subject}</span>
+                        </div>
+                        <div className="flex justify-between border-b py-1">
+                          <span className="font-medium">Tingkat/Jurusan:</span>
+                          <span>{activity.grade_level} - {activity.major || 'Umum'}</span>
+                        </div>
+                        <div className="flex justify-between border-b py-1">
+                          <span className="font-medium">Peserta:</span>
+                          <span>{activity.participant_count}</span>
+                        </div>
+                        <div className="flex justify-between border-b py-1">
+                          <span className="font-medium">Status:</span>
+                          <span>{activity.status}</span>
+                        </div>
+                        <div className="flex flex-col mt-2">
+                          <span className="font-medium text-xs text-gray-400 uppercase">Mulai:</span>
+                          <span>{formatDate(activity.start_date)}</span>
+                        </div>
+                        <div className="flex flex-col mt-1">
+                          <span className="font-medium text-xs text-gray-400 uppercase">Selesai:</span>
+                          <span>{formatDate(activity.end_date)}</span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                </StaggerItem>
+              ))}
+            </AnimatePresence>
+          </StaggerList>
         )}
 
         {/* Results Counter */}
-        {!loading && filteredAndSortedActivities().length > 0 && (
+        {!loading && filteredAndSortedActivities.length > 0 && (
           <div className="text-center py-4 text-gray-600">
-            Menampilkan {filteredAndSortedActivities().length} dari {activities.length} ujian
+            Menampilkan {filteredAndSortedActivities.length} dari {activities.length} ujian
           </div>
         )}
       </div>
