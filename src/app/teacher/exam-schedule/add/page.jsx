@@ -28,7 +28,7 @@ const DRAFT_KEY = 'teacher.examDraft';
 export default function TambahJadwalPage() {
   useAuth(['teacher']);
   const router = useRouter();
-  const { gradeLevels, majors } = useTaxonomy();
+  const { gradeLevels, majors, loading: taxonomyLoading } = useTaxonomy();
 
   const [form, setForm] = useState({
     exam_name: '',
@@ -40,15 +40,23 @@ export default function TambahJadwalPage() {
     duration_minutes: 120,
     is_shuffle_questions: true,
   });
+  const [hydrated, setHydrated] = useState(false);
 
   // Rehydrate the form if the teacher came back from the select-bank step.
+  // We wait for the taxonomy to finish loading first: the Select components
+  // (subject/grade/major) only display a value when a matching option already
+  // exists. If we restored the draft while the dropdowns still held the
+  // fallback list, Radix would silently drop values not in that fallback —
+  // which is why subject/grade/major appeared blank after going "Kembali".
   useEffect(() => {
+    if (taxonomyLoading || hydrated) return;
     try {
       const raw = sessionStorage.getItem(DRAFT_KEY);
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional one-shot rehydration from sessionStorage on mount
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional one-shot rehydration from sessionStorage once taxonomy is ready
       if (raw) setForm((s) => ({ ...s, ...JSON.parse(raw) }));
     } catch (_) {}
-  }, []);
+    setHydrated(true);
+  }, [taxonomyLoading, hydrated]);
 
   const update = (field) => (e) => setForm((s) => ({ ...s, [field]: e.target.value }));
   const updateSelect = (field) => (value) => setForm((s) => ({ ...s, [field]: value }));
@@ -91,6 +99,19 @@ export default function TambahJadwalPage() {
   const durationLabel = form.duration_minutes
     ? `${Math.floor(form.duration_minutes / 60)} jam ${form.duration_minutes % 60} menit`
     : '—';
+
+  // Hold the form back until the draft has been restored (after taxonomy load)
+  // so the Select fields mount with their final values and render correctly.
+  if (!hydrated) {
+    return (
+      <TeacherLayout>
+        <div className="flex items-center justify-center py-24 text-muted-foreground">
+          <span className="w-5 h-5 mr-2 rounded-full border-2 border-sky-600 border-t-transparent animate-spin" />
+          Memuat...
+        </div>
+      </TeacherLayout>
+    );
+  }
 
   return (
     <TeacherLayout>

@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { useAuth } from '@/hooks/useAuth';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { Badge } from '@/components/ui/badge';
-import { Home, Plus, Search, Pencil, Trash2, AlertTriangle, BookOpen } from 'lucide-react';
+import { Home, Plus, Search, Pencil, Trash2, AlertTriangle, BookOpen, FileEdit, X } from 'lucide-react';
 import Link from 'next/link';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
@@ -40,6 +40,14 @@ export default function JadwalUjianPage() {
 
   const [ujians, setUjians] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [resumeDraft, setResumeDraft] = useState(null);
+
+  useEffect(() => {
+    try {
+      const raw = sessionStorage.getItem('teacher.examDraft');
+      if (raw) setResumeDraft(JSON.parse(raw));
+    } catch (_) {}
+  }, []);
   const [searchQuery, setSearchQuery] = useState('');
   const [filterMajor, setFilterMajor] = useState('all');
   const [filterGrade, setFilterGrade] = useState('all');
@@ -148,6 +156,37 @@ export default function JadwalUjianPage() {
           </Link>
         </PageHeader>
 
+        {resumeDraft && (
+          <div className="flex items-center gap-3 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3">
+            <FileEdit className="w-5 h-5 text-amber-600 flex-shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-amber-900">Draft ujian belum selesai</p>
+              <p className="text-xs text-amber-700 truncate">
+                {resumeDraft.exam_name || 'Tanpa nama'} — {resumeDraft.subject || '—'} · {resumeDraft.grade_level} {resumeDraft.major}
+              </p>
+            </div>
+            <Link
+              href="/teacher/exam-schedule/add"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold bg-amber-600 hover:bg-amber-700 text-white px-3 py-1.5 rounded-md whitespace-nowrap"
+            >
+              Lanjutkan
+            </Link>
+            <button
+              type="button"
+              onClick={() => {
+                sessionStorage.removeItem('teacher.examDraft');
+                sessionStorage.removeItem('teacher.examSelectedBank');
+                sessionStorage.removeItem('teacher.examBankFilters');
+                setResumeDraft(null);
+              }}
+              className="text-amber-500 hover:text-amber-700 p-1 rounded"
+              title="Buang draft"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
           <div className="lg:col-span-3">
             {/* Search & Filters */}
@@ -236,6 +275,7 @@ export default function JadwalUjianPage() {
                 </Select>
             </FilterPanel>
 
+            <div className="mt-6">
             {loading ? (
               <CardSkeletonGrid count={8} variant='schedule' className='grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6' />
             ) : filteredUjians.length === 0 ? (
@@ -352,6 +392,7 @@ export default function JadwalUjianPage() {
                 </AnimatePresence>
               </StaggerList>
               )}
+            </div>
           </div>
         </div>
       </div>
