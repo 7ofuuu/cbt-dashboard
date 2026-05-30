@@ -13,7 +13,8 @@ Web-based admin and teacher dashboard for Computer-Based Test (CBT) system. Mana
 - **User Management** — CRUD admin/teacher/student, batch CSV import, activate/deactivate
 - **User Detail View** — Full profile, role management, password reset
 - **Super Admin Protection** — Special admin account cannot be deleted or downgraded
-- **Exam Activity Monitoring** — Real-time participant status (not started, in progress, completed) with staggered card animation
+- **Exam Activity Monitoring** — Real-time participant status (not started, in progress, completed) with staggered card animation; searchable by exam name
+- **Exam Access Password** — Per-exam password card on the activity detail page (admin-only, appears H-1) that students enter to open the pre-downloaded encrypted package
 - **Block/Unblock Participants** — Bento-grid blocked participant page, unlock code generation
 - **Activity Logs** — View login history, exam events (start/finish), auto-finish records
 - **School Profile** — Hero preview card, drag-and-drop logo upload, full identity form
@@ -37,7 +38,7 @@ Web-based admin and teacher dashboard for Computer-Based Test (CBT) system. Mana
 - **Essay Grading** — Manual grading interface for essay questions, finalize scores
 
 ### Authentication & Authorization
-- **Login Portal** — Role-based login with JWT cookie storage
+- **Login Portal** — Branded split-screen login (school logo + name) with role-based JWT cookie storage; errors shown inline near the form (no corner toast)
 - **Role-Based Redirect** — Auto-route to Admin Dashboard or Teacher Dashboard
 - **Student Block** — Students shown error message directing to mobile app
 - **Super Admin Badge** — Visual indicator for Super Admin accounts
