@@ -22,6 +22,8 @@ function ListSiswaPageContent() {
     ? reviewModeParam
     : 'all';
 
+  const isArchived = params.get('archived') === 'true';
+
   const reviewLabel = reviewMode === 'pending'
     ? 'Belum Dinilai'
     : reviewMode === 'graded'
@@ -30,19 +32,25 @@ function ListSiswaPageContent() {
 
   const [query, setQuery] = useState('');
   const [siswaData, setSiswaData] = useState([]);
+  const [examName, setExamName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
   useEffect(() => {
     const fetchSiswaList = async () => {
       setIsLoading(true);
       try {
-        const response = await request.get('/exam-results/completed-exams?limit=999');
-        
+        const endpoint = isArchived
+          ? '/exam-results/archived-exams?limit=999'
+          : '/exam-results/completed-exams?limit=999';
+        const response = await request.get(endpoint);
+
         let selectedUjian = null;
         if (response?.data?.data && Array.isArray(response.data.data)) {
           selectedUjian = response.data.data.find(u => u.exam_id === parseInt(ujianId));
         }
-        
+
+        if (selectedUjian) setExamName(selectedUjian.exam_name || '');
+
         if (selectedUjian && selectedUjian.participant_results) {
           const filteredSiswa = selectedUjian.participant_results.filter(item => {
             const sameClassroom = item.student?.classroom === classroom;
@@ -51,8 +59,8 @@ function ListSiswaPageContent() {
               || (reviewMode === 'graded' && item.exam_status === 'GRADED');
             return sameClassroom && matchReview;
           });
-          
-          const transformedSiswa = filteredSiswa.map((item) => ({
+
+          setSiswaData(filteredSiswa.map((item) => ({
             id: item.exam_participant_id,
             email: item.student?.email || '-',
             full_name: item.student?.full_name || 'Unknown',
@@ -60,9 +68,7 @@ function ListSiswaPageContent() {
             classroom: item.student?.classroom || '-',
             selesai: item.submit_date ? new Date(item.submit_date).toLocaleDateString('id-ID') : '-',
             statusUjian: item.exam_status,
-          }));
-          
-          setSiswaData(transformedSiswa);
+          })));
         } else {
           setSiswaData([]);
         }
@@ -78,15 +84,18 @@ function ListSiswaPageContent() {
     if (ujianId) {
       fetchSiswaList();
     }
-  }, [ujianId, classroom, reviewMode]);
+  }, [ujianId, classroom, reviewMode, isArchived]);
 
   const filtered = siswaData.filter((s) => {
     const target = `${s.email} ${s.full_name} ${s.classroom}`.toLowerCase();
     return target.includes(query.toLowerCase());
   });
 
+  const archivedSuffix = isArchived ? '&archived=true' : '';
+  const displayExamName = examName || mataPelajaran;
+
   const handleRowClick = (studentId) => {
-    router.push(`/teacher/exam-results/student-list/detail?mata=${encodeURIComponent(mataPelajaran)}&classroom=${encodeURIComponent(classroom)}&ujianId=${ujianId}&pesertaUjianId=${studentId}`);
+    router.push(`/teacher/exam-results/student-list/detail?mata=${encodeURIComponent(mataPelajaran)}&classroom=${encodeURIComponent(classroom)}&ujianId=${ujianId}&pesertaUjianId=${studentId}${archivedSuffix}`);
   };
 
   return (
@@ -100,12 +109,22 @@ function ListSiswaPageContent() {
           </BreadcrumbItem>
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink href='/teacher/exam-results'>Hasil Ujian</BreadcrumbLink>
+            <BreadcrumbLink href={isArchived ? '/teacher/exam-results?tab=archived' : '/teacher/exam-results'}>
+              Hasil Ujian
+            </BreadcrumbLink>
           </BreadcrumbItem>
+          {isArchived && (
+            <>
+              <BreadcrumbSeparator />
+              <BreadcrumbItem>
+                <BreadcrumbLink href='/teacher/exam-results?tab=archived'>Arsip</BreadcrumbLink>
+              </BreadcrumbItem>
+            </>
+          )}
           <BreadcrumbSeparator />
           <BreadcrumbItem>
-            <BreadcrumbLink href={`/teacher/exam-results/by-class?mata=${encodeURIComponent(mataPelajaran)}&ujianId=${ujianId}`}>
-              {mataPelajaran}
+            <BreadcrumbLink href={`/teacher/exam-results/by-class?mata=${encodeURIComponent(mataPelajaran)}&ujianId=${ujianId}${archivedSuffix}`}>
+              {displayExamName}
             </BreadcrumbLink>
           </BreadcrumbItem>
           <BreadcrumbSeparator />

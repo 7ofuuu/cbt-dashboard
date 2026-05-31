@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import TeacherLayout from '../../teacherLayout';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
@@ -10,17 +10,25 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Home, Save, X, Clock, BookOpen, Users, FileText, Calendar, ArrowRight, Info, Loader2 } from 'lucide-react';
+import {
+  Home, X, Clock, BookOpen, Users, FileText, Calendar, ArrowRight, Info,
+  GraduationCap, Layers, Shuffle, Sparkles,
+} from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import request from '@/utils/request';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
-import { GRADE_LEVELS, MAJOR_OPTIONS } from '@/lib/constants';
+import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { SubjectSelect } from '@/components/SubjectSelect';
+
+// Key used to hand the exam draft to the select-bank step. The exam is not
+// created in the backend until the teacher completes both steps — closing the
+// tab or navigating away discards the draft, so no orphan exams are produced.
+const DRAFT_KEY = 'teacher.examDraft';
 
 export default function TambahJadwalPage() {
   useAuth(['teacher']);
   const router = useRouter();
+  const { gradeLevels, majors, loading: taxonomyLoading } = useTaxonomy();
 
   const [form, setForm] = useState({
     exam_name: '',
@@ -32,82 +40,78 @@ export default function TambahJadwalPage() {
     duration_minutes: 120,
     is_shuffle_questions: true,
   });
+  const [hydrated, setHydrated] = useState(false);
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // Rehydrate the form if the teacher came back from the select-bank step.
+  // We wait for the taxonomy to finish loading first: the Select components
+  // (subject/grade/major) only display a value when a matching option already
+  // exists. If we restored the draft while the dropdowns still held the
+  // fallback list, Radix would silently drop values not in that fallback —
+  // which is why subject/grade/major appeared blank after going "Kembali".
+  useEffect(() => {
+    if (taxonomyLoading || hydrated) return;
+    try {
+      const raw = sessionStorage.getItem(DRAFT_KEY);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional one-shot rehydration from sessionStorage once taxonomy is ready
+      if (raw) setForm((s) => ({ ...s, ...JSON.parse(raw) }));
+    } catch (_) {}
+    setHydrated(true);
+  }, [taxonomyLoading, hydrated]);
 
   const update = (field) => (e) => setForm((s) => ({ ...s, [field]: e.target.value }));
   const updateSelect = (field) => (value) => setForm((s) => ({ ...s, [field]: value }));
 
-  async function handleSubmit(e) {
+  function handleSubmit(e) {
     e.preventDefault();
-    if (isSubmitting) return;
 
     if (!form.exam_name || !form.tanggal || !form.pukul || !form.grade_level || !form.major || !form.subject) {
       toast.error('Harap lengkapi semua field yang wajib diisi.');
       return;
     }
 
-    const startTime = new Date(`${form.tanggal}T${form.pukul}:00.000+07:00`);
-    const duration = parseInt(form.duration_minutes) || 120;
-    const endTime = new Date(startTime.getTime() + duration * 60000);
-
     try {
-      setIsSubmitting(true);
-
-      const examPayload = {
-        exam_name: form.exam_name,
-        subject: form.subject,
-        grade_level: form.grade_level,
-        major: form.major,
-        start_date: startTime.toISOString(),
-        end_date: endTime.toISOString(),
-        duration_minutes: duration,
-        is_shuffle_questions: form.is_shuffle_questions,
-      };
-
-      const createRes = await request.post('/exams', examPayload);
-      const newUjianId = createRes.data.exam.exam_id;
-      const siswaAssigned = createRes.data.auto_assigned_students || 0;
-
-      if (siswaAssigned > 0) {
-        toast.success(`Jadwal berhasil dibuat! ${siswaAssigned} siswa telah di-assign secara otomatis.`, {
-          duration: 4000
-        });
-      } else {
-        toast.success('Jadwal berhasil dibuat!', { duration: 2000 });
-        toast('Tidak ada siswa yang cocok untuk di-assign otomatis.', {
-          icon: '⚠️',
-          duration: 5000,
-          style: {
-            background: '#FEF3C7',
-            color: '#92400E',
-            border: '1px solid #FCD34D'
-          }
-        });
-      }
-
-      router.push(`/teacher/exam-schedule/add/select-bank?ujianId=${newUjianId}`);
-
-    } catch (error) {
-      let errorMessage = 'Gagal membuat jadwal ujian.';
-
-      if (error.response) {
-        const status = error.response.status;
-        if (status === 400) errorMessage = 'Data yang dikirim tidak valid. Periksa kembali form Anda.';
-        else if (status === 403) errorMessage = 'Anda tidak memiliki akses untuk membuat jadwal ujian.';
-        else if (status === 409) errorMessage = 'Jadwal ujian dengan data tersebut sudah ada.';
-        else errorMessage = 'Terjadi kesalahan pada server. Silakan coba lagi.';
-      } else if (error.request) {
-        errorMessage = 'Server tidak merespons. Pastikan koneksi internet Anda.';
-      }
-
-      toast.error(errorMessage, { duration: 5000 });
-    } finally {
-      setIsSubmitting(false);
+      sessionStorage.setItem(DRAFT_KEY, JSON.stringify(form));
+    } catch (_) {
+      toast.error('Browser tidak mendukung penyimpanan sementara.');
+      return;
     }
+
+    router.push('/teacher/exam-schedule/add/select-bank');
   }
 
   const formComplete = form.exam_name && form.tanggal && form.pukul && form.grade_level && form.major && form.subject;
+
+  const endPreview = useMemo(() => {
+    if (!form.tanggal || !form.pukul || !form.duration_minutes) return null;
+    try {
+      const start = new Date(`${form.tanggal}T${form.pukul}`);
+      const end = new Date(start.getTime() + (parseInt(form.duration_minutes) || 0) * 60000);
+      return {
+        dayLabel: start.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }),
+        startLabel: form.pukul,
+        endLabel: end.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }),
+      };
+    } catch (_) {
+      return null;
+    }
+  }, [form.tanggal, form.pukul, form.duration_minutes]);
+
+  const durationLabel = form.duration_minutes
+    ? `${Math.floor(form.duration_minutes / 60)} jam ${form.duration_minutes % 60} menit`
+    : '—';
+
+  // Hold the form back until the draft has been restored (after taxonomy load)
+  // so the Select fields mount with their final values and render correctly.
+  if (!hydrated) {
+    return (
+      <TeacherLayout>
+        <div className="flex items-center justify-center py-24 text-muted-foreground">
+          <span className="w-5 h-5 mr-2 rounded-full border-2 border-sky-600 border-t-transparent animate-spin" />
+          Memuat...
+        </div>
+      </TeacherLayout>
+    );
+  }
 
   return (
     <TeacherLayout>
@@ -132,22 +136,30 @@ export default function TambahJadwalPage() {
         description="Buat jadwal ujian baru untuk siswa"
       />
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Left column: Form */}
-        <div className="lg:col-span-2 space-y-4">
-          <form onSubmit={handleSubmit}>
-            {/* Info + Subject */}
-            <div className="bg-white border rounded-lg shadow-sm mb-4">
-              <div className="flex items-center gap-2 px-4 py-3 border-b bg-gray-50/50 rounded-t-lg">
-                <FileText className="w-4 h-4 text-sky-700" />
-                <h3 className="font-semibold text-sm text-gray-800">Informasi Ujian</h3>
-              </div>
-              <div className="p-4 space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div className="space-y-1.5">
-                    <Label htmlFor="exam_name" className="text-xs">Nama Ujian <span className="text-red-500">*</span></Label>
-                    <Input id="exam_name" required placeholder="UTS Matematika" value={form.exam_name} onChange={update('exam_name')} className="h-9" />
-                  </div>
+      <form onSubmit={handleSubmit}>
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+          {/* ════════════ MAIN FORM (lg col-span-8) ════════════ */}
+          <div className="lg:col-span-8 space-y-4">
+            {/* Bento row 1: HERO (Nama + Subject) — full width */}
+            <BentoCard
+              icon={<FileText className="w-4 h-4" />}
+              title="Informasi Ujian"
+              accent="sky"
+              className="overflow-hidden"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-5 gap-3">
+                <div className="md:col-span-3 space-y-1.5">
+                  <Label htmlFor="exam_name" className="text-xs">Nama Ujian <span className="text-red-500">*</span></Label>
+                  <Input
+                    id="exam_name"
+                    required
+                    placeholder="UTS Matematika"
+                    value={form.exam_name}
+                    onChange={update('exam_name')}
+                    className="h-10 w-full"
+                  />
+                </div>
+                <div className="md:col-span-2">
                   <SubjectSelect
                     id="subject"
                     required
@@ -156,214 +168,237 @@ export default function TambahJadwalPage() {
                   />
                 </div>
               </div>
-            </div>
+            </BentoCard>
 
-            {/* Target Peserta + Waktu */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-              {/* Target Peserta */}
-              <div className="bg-white border rounded-lg shadow-sm">
-                <div className="flex items-center gap-2 px-4 py-3 border-b bg-gray-50/50 rounded-t-lg">
-                  <Users className="w-4 h-4 text-sky-700" />
-                  <h3 className="font-semibold text-sm text-gray-800">Target Peserta</h3>
-                </div>
-                <div className="p-4 space-y-3">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Tingkat <span className="text-red-500">*</span></Label>
-                    <Select value={form.grade_level} onValueChange={updateSelect('grade_level')}>
-                      <SelectTrigger className="h-9"><SelectValue placeholder="Pilih" /></SelectTrigger>
-                      <SelectContent>
-                        {GRADE_LEVELS.map((g) => <SelectItem key={g.value} value={g.value}>{g.label}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Jurusan <span className="text-red-500">*</span></Label>
-                    <Select value={form.major} onValueChange={updateSelect('major')}>
-                      <SelectTrigger className="h-9"><SelectValue placeholder="Pilih" /></SelectTrigger>
-                      <SelectContent>
-                        {MAJOR_OPTIONS.map((m) => <SelectItem key={m.value} value={m.value}>{m.label}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                  </div>
+            {/* Bento row 2: Tingkat + Jurusan + Shuffle (3 cards in 1 row) */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <BentoCard
+                icon={<GraduationCap className="w-4 h-4" />}
+                title="Tingkat"
+                accent="violet"
+                compact
+              >
+                <Select value={form.grade_level} onValueChange={updateSelect('grade_level')}>
+                  <SelectTrigger className="h-10 w-full">
+                    <SelectValue placeholder="Pilih tingkat *" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {gradeLevels.map((g) => (
+                      <SelectItem key={g.grade_level_id} value={g.value}>{g.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </BentoCard>
 
-                  {form.grade_level && form.major && (
-                    <div className="p-2.5 bg-blue-50 border border-blue-200 rounded-lg">
-                      <p className="text-xs font-medium text-blue-900">
-                        Siswa Tingkat {form.grade_level} Jurusan {form.major} akan otomatis di-assign.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </div>
+              <BentoCard
+                icon={<Layers className="w-4 h-4" />}
+                title="Jurusan"
+                accent="emerald"
+                compact
+              >
+                <Select value={form.major} onValueChange={updateSelect('major')}>
+                  <SelectTrigger className="h-10 w-full">
+                    <SelectValue placeholder="Pilih jurusan *" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {majors.map((m) => (
+                      <SelectItem key={m.major_id} value={m.value}>{m.label}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </BentoCard>
 
-              {/* Waktu & Durasi */}
-              <div className="bg-white border rounded-lg shadow-sm">
-                <div className="flex items-center gap-2 px-4 py-3 border-b bg-gray-50/50 rounded-t-lg">
-                  <Calendar className="w-4 h-4 text-sky-700" />
-                  <h3 className="font-semibold text-sm text-gray-800">Waktu & Durasi</h3>
-                </div>
-                <div className="p-4 space-y-3">
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Tanggal <span className="text-red-500">*</span></Label>
-                    <Input type="date" required value={form.tanggal} onChange={update('tanggal')} className="h-9" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Waktu Mulai <span className="text-red-500">*</span></Label>
-                    <Input type="time" required value={form.pukul} onChange={update('pukul')} className="h-9" />
-                  </div>
-                  <div className="space-y-1.5">
-                    <Label className="text-xs">Durasi (menit) <span className="text-red-500">*</span></Label>
-                    <div className="flex items-center gap-2">
-                      <Input type="number" required min="1" max="480" className="w-24 h-9" value={form.duration_minutes} onChange={(e) => setForm(s => ({ ...s, duration_minutes: e.target.value }))} />
-                      <span className="text-xs text-gray-500 flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
-                        {form.duration_minutes ? `${Math.floor(form.duration_minutes / 60)}j ${form.duration_minutes % 60}m` : '—'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {form.tanggal && form.pukul && form.duration_minutes && (
-                    <div className="p-2 bg-gray-50 border rounded text-xs text-gray-600">
-                      {new Date(`${form.tanggal}T${form.pukul}`).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })},{' '}
-                      {form.pukul} — {(() => {
-                        const end = new Date(new Date(`${form.tanggal}T${form.pukul}`).getTime() + (parseInt(form.duration_minutes) || 0) * 60000);
-                        return end.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-                      })()} WIB
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Pengaturan + Actions */}
-            <div className="bg-white border rounded-lg shadow-sm mb-4">
-              <div className="px-4 py-3 flex items-center justify-between">
-                <label className="flex items-center gap-2.5 cursor-pointer">
+              <BentoCard
+                icon={<Shuffle className="w-4 h-4" />}
+                title="Acak Soal"
+                accent="amber"
+                compact
+              >
+                <label className="flex items-center gap-2.5 cursor-pointer h-10">
                   <input
                     type="checkbox"
                     checked={form.is_shuffle_questions}
                     onChange={(e) => setForm(s => ({ ...s, is_shuffle_questions: e.target.checked }))}
                     className="w-4 h-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
                   />
-                  <div>
-                    <span className="text-sm font-medium text-gray-800">Acak Urutan Soal</span>
-                    <p className="text-xs text-gray-500">Diacak per siswa</p>
-                  </div>
+                  <span className="text-sm text-gray-700">
+                    {form.is_shuffle_questions ? 'Diacak per siswa' : 'Urutan tetap'}
+                  </span>
                 </label>
-              </div>
+              </BentoCard>
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex justify-end gap-3">
+            {/* Auto-assign banner — informative only when both filled */}
+            {form.grade_level && form.major && (
+              <div className="rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-sky-50 px-4 py-3 flex items-center gap-3">
+                <Sparkles className="w-4 h-4 text-sky-700 flex-shrink-0" />
+                <p className="text-xs text-sky-900 font-medium">
+                  Siswa <strong>Tingkat {form.grade_level} – {form.major}</strong> akan otomatis di-assign sebagai peserta.
+                </p>
+              </div>
+            )}
+
+            {/* Bento row 3: WAKTU (full-width card with internal 3-col grid) */}
+            <BentoCard
+              icon={<Calendar className="w-4 h-4" />}
+              title="Waktu & Durasi"
+              accent="rose"
+            >
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Tanggal <span className="text-red-500">*</span></Label>
+                  <Input type="date" required value={form.tanggal} onChange={update('tanggal')} className="h-10 w-full" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Waktu Mulai <span className="text-red-500">*</span></Label>
+                  <Input type="time" required value={form.pukul} onChange={update('pukul')} className="h-10 w-full" />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-xs">Durasi (menit) <span className="text-red-500">*</span></Label>
+                  <Input
+                    type="number"
+                    required
+                    min="1"
+                    max="480"
+                    value={form.duration_minutes}
+                    onChange={(e) => setForm(s => ({ ...s, duration_minutes: e.target.value }))}
+                    className="h-10 w-full"
+                  />
+                </div>
+              </div>
+
+              {endPreview && (
+                <div className="mt-3 rounded-lg border bg-gray-50 px-3 py-2.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs">
+                  <div className="flex items-center gap-1.5 text-gray-700">
+                    <Calendar className="w-3.5 h-3.5 text-gray-500" />
+                    <span className="font-medium">{endPreview.dayLabel}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-gray-700">
+                    <Clock className="w-3.5 h-3.5 text-gray-500" />
+                    <span className="font-mono">{endPreview.startLabel}</span>
+                    <ArrowRight className="w-3 h-3 text-gray-400" />
+                    <span className="font-mono">{endPreview.endLabel}</span>
+                    <span className="text-gray-500">WIB</span>
+                  </div>
+                  <Badge variant="secondary" className="ml-auto text-[10px]">{durationLabel}</Badge>
+                </div>
+              )}
+            </BentoCard>
+
+            {/* Actions */}
+            <div className="flex justify-end gap-2">
               <Button type="button" variant="outline" size="sm" asChild>
                 <Link href="/teacher/exam-schedule"><X className="w-4 h-4 mr-1" /> Batal</Link>
               </Button>
-              <Button
-                type="submit"
-                size="sm"
-                disabled={isSubmitting}
-                className="bg-sky-800 hover:bg-sky-900"
-              >
-                {isSubmitting ? (
-                  <><Loader2 className="w-4 h-4 mr-1 animate-spin" /> Menyimpan...</>
-                ) : (
-                  <>
-                    <Save className="w-4 h-4 mr-1" /> Simpan & Pilih Soal
-                    <ArrowRight className="w-4 h-4 ml-1" />
-                  </>
-                )}
+              <Button type="submit" size="sm" className="bg-sky-800 hover:bg-sky-900">
+                Lanjut Pilih Soal
+                <ArrowRight className="w-4 h-4 ml-1" />
               </Button>
             </div>
-          </form>
-        </div>
+          </div>
 
-        {/* Right column: Info & Steps */}
-        <div className="space-y-4">
-          {/* Step Progress */}
-          <div className="bg-white border rounded-lg shadow-sm">
-            <div className="flex items-center gap-2 px-4 py-3 border-b bg-gray-50/50 rounded-t-lg">
-              <Info className="w-4 h-4 text-sky-700" />
-              <h3 className="font-semibold text-sm text-gray-800">Langkah Pembuatan</h3>
-            </div>
-            <div className="p-4">
-              <div className="space-y-3">
-                {/* Step 1 */}
-                <div className="flex gap-3">
-                  <div className="flex flex-col items-center">
-                    <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold ${formComplete ? 'bg-green-100 text-green-700 border-2 border-green-400' : 'bg-sky-100 text-sky-700 border-2 border-sky-400 animate-pulse'}`}>1</div>
-                    <div className="w-0.5 h-full bg-gray-200 mt-1" />
-                  </div>
-                  <div className="flex-1 pb-4">
-                    <p className="text-sm font-semibold text-gray-800">Isi Data Ujian</p>
-                    <p className="text-xs text-gray-500 mt-0.5">Lengkapi informasi, target peserta, dan waktu ujian.</p>
+          {/* ════════════ SIDEBAR (lg col-span-4) ════════════ */}
+          <aside className="lg:col-span-4 space-y-4 lg:sticky lg:top-4 self-start">
+            {/* Step Progress */}
+            <BentoCard
+              icon={<Info className="w-4 h-4" />}
+              title="Langkah Pembuatan"
+              accent="sky"
+              compact
+            >
+              <ol className="space-y-3">
+                <li className="flex gap-3">
+                  <StepDot active={!formComplete} done={formComplete} n={1} />
+                  <div className="flex-1 -mt-0.5">
+                    <p className={`text-sm font-semibold ${formComplete ? 'text-green-700' : 'text-gray-800'}`}>Isi Data Ujian</p>
+                    <p className="text-xs text-gray-500 mt-0.5">Informasi, target, dan waktu ujian.</p>
                     {formComplete && (
                       <Badge className="mt-1.5 text-[10px] bg-green-50 text-green-700 border-green-200" variant="outline">Lengkap</Badge>
                     )}
                   </div>
-                </div>
-
-                {/* Step 2 */}
-                <div className="flex gap-3">
-                  <div className="flex flex-col items-center">
-                    <div className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold bg-gray-100 text-gray-400 border-2 border-gray-300">2</div>
-                  </div>
-                  <div className="flex-1">
+                </li>
+                <li className="flex gap-3">
+                  <StepDot n={2} />
+                  <div className="flex-1 -mt-0.5">
                     <p className="text-sm font-semibold text-gray-400">Pilih Bank Soal</p>
-                    <p className="text-xs text-gray-400 mt-0.5">Setelah simpan, Anda akan memilih bank soal untuk ujian ini.</p>
+                    <p className="text-xs text-gray-400 mt-0.5">Pilih bank soal yang akan dipakai.</p>
                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
+                </li>
+              </ol>
+            </BentoCard>
 
-          {/* Summary Preview */}
-          <div className="bg-white border rounded-lg shadow-sm">
-            <div className="flex items-center gap-2 px-4 py-3 border-b bg-gray-50/50 rounded-t-lg">
-              <BookOpen className="w-4 h-4 text-sky-700" />
-              <h3 className="font-semibold text-sm text-gray-800">Ringkasan</h3>
-            </div>
-            <div className="p-4">
+            {/* Summary */}
+            <BentoCard
+              icon={<BookOpen className="w-4 h-4" />}
+              title="Ringkasan"
+              accent="emerald"
+              compact
+            >
               {formComplete ? (
-                <div className="space-y-2.5 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-gray-500 text-xs">Nama</span>
-                    <span className="font-medium text-xs text-right max-w-[60%] truncate">{form.exam_name}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500 text-xs">Mapel</span>
-                    <Badge variant="secondary" className="text-[10px]">{form.subject}</Badge>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500 text-xs">Target</span>
-                    <span className="font-medium text-xs">{form.grade_level} — {form.major}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500 text-xs">Waktu</span>
-                    <span className="font-medium text-xs">{form.tanggal} {form.pukul}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-gray-500 text-xs">Durasi</span>
-                    <span className="font-medium text-xs">{form.duration_minutes} menit</span>
-                  </div>
-                  <div className="border-t pt-2.5 mt-1">
-                    <div className="flex justify-between">
-                      <span className="text-gray-500 text-xs">Acak Soal</span>
-                      <Badge variant={form.is_shuffle_questions ? "default" : "secondary"} className="text-[10px]">
-                        {form.is_shuffle_questions ? 'Ya' : 'Tidak'}
-                      </Badge>
-                    </div>
-                  </div>
-                </div>
+                <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
+                  <dt className="text-gray-500">Nama</dt>
+                  <dd className="text-right font-medium truncate">{form.exam_name}</dd>
+                  <dt className="text-gray-500">Mapel</dt>
+                  <dd className="text-right"><Badge variant="secondary" className="text-[10px]">{form.subject}</Badge></dd>
+                  <dt className="text-gray-500">Target</dt>
+                  <dd className="text-right font-medium">{form.grade_level} – {form.major}</dd>
+                  <dt className="text-gray-500">Tanggal</dt>
+                  <dd className="text-right font-medium">{form.tanggal}</dd>
+                  <dt className="text-gray-500">Waktu</dt>
+                  <dd className="text-right font-mono">{form.pukul} WIB</dd>
+                  <dt className="text-gray-500">Durasi</dt>
+                  <dd className="text-right font-medium">{durationLabel}</dd>
+                  <dt className="text-gray-500">Acak Soal</dt>
+                  <dd className="text-right">
+                    <Badge variant={form.is_shuffle_questions ? 'default' : 'secondary'} className="text-[10px]">
+                      {form.is_shuffle_questions ? 'Ya' : 'Tidak'}
+                    </Badge>
+                  </dd>
+                </dl>
               ) : (
-                <div className="text-center py-4">
-                  <FileText className="w-8 h-8 mx-auto text-gray-300 mb-2" />
+                <div className="text-center py-3">
+                  <FileText className="w-7 h-7 mx-auto text-gray-300 mb-1.5" />
                   <p className="text-xs text-gray-400">Lengkapi form untuk melihat ringkasan</p>
                 </div>
               )}
-            </div>
-          </div>
+            </BentoCard>
+          </aside>
         </div>
-      </div>
+      </form>
     </TeacherLayout>
+  );
+}
+
+// ─── Local components ─────────────────────────────────────────────────────
+
+const ACCENT = {
+  sky: { iconBg: 'bg-sky-100', iconText: 'text-sky-700' },
+  violet: { iconBg: 'bg-violet-100', iconText: 'text-violet-700' },
+  emerald: { iconBg: 'bg-emerald-100', iconText: 'text-emerald-700' },
+  amber: { iconBg: 'bg-amber-100', iconText: 'text-amber-700' },
+  rose: { iconBg: 'bg-rose-100', iconText: 'text-rose-700' },
+};
+
+function BentoCard({ icon, title, accent = 'sky', compact = false, className = '', children }) {
+  const a = ACCENT[accent] || ACCENT.sky;
+  return (
+    <div className={`bg-white border rounded-xl shadow-sm hover:shadow-md transition-shadow ${className}`}>
+      <div className="flex items-center gap-2 px-4 py-2.5 border-b">
+        <div className={`w-7 h-7 rounded-lg ${a.iconBg} ${a.iconText} flex items-center justify-center`}>{icon}</div>
+        <h3 className="font-semibold text-sm text-gray-800">{title}</h3>
+      </div>
+      <div className={compact ? 'p-3' : 'p-4'}>{children}</div>
+    </div>
+  );
+}
+
+function StepDot({ n, active = false, done = false }) {
+  let cls = 'bg-gray-100 text-gray-400 border-gray-300';
+  if (done) cls = 'bg-green-100 text-green-700 border-green-400';
+  else if (active) cls = 'bg-sky-100 text-sky-700 border-sky-400 animate-pulse';
+  return (
+    <div className="flex flex-col items-center pt-0.5">
+      <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 ${cls}`}>{n}</div>
+    </div>
   );
 }

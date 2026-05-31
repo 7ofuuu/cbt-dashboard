@@ -13,14 +13,17 @@ Web-based admin and teacher dashboard for Computer-Based Test (CBT) system. Mana
 - **User Management** — CRUD admin/teacher/student, batch CSV import, activate/deactivate
 - **User Detail View** — Full profile, role management, password reset
 - **Super Admin Protection** — Special admin account cannot be deleted or downgraded
-- **Exam Activity Monitoring** — Real-time participant status (not started, in progress, completed)
-- **Block/Unblock Participants** — Block cheating students mid-exam, generate unlock codes
+- **Exam Activity Monitoring** — Real-time participant status (not started, in progress, completed) with staggered card animation; searchable by exam name
+- **Exam Access Password** — Per-exam password card on the activity detail page (admin-only, appears H-1) that students enter to open the pre-downloaded encrypted package
+- **Block/Unblock Participants** — Bento-grid blocked participant page, unlock code generation
 - **Activity Logs** — View login history, exam events (start/finish), auto-finish records
-- **School Profile** — Update school name, logo, and contact information
+- **School Profile** — Hero preview card, drag-and-drop logo upload, full identity form
+- **Master Data** — Manage subjects (with HEX color picker), grade levels, and majors with cascade rename
+- **Profil Saya** — Super-admin-only self-profile (sidebar item hidden + route guarded for regular admins)
 
 ### Teacher Panel
 - **Dashboard** — Exam overview, question bank summary, quick-access stats
-- **Question Banks** — Create, edit, delete banks with globally unique names
+- **Question Banks** — Create, edit, delete banks with globally unique names; question cards support image upload via `ImageUploader`
 - **Question Management** — Create/edit questions in three types:
   - Single Choice (4 options, 1 correct)
   - Multiple Choice (multiple correct answers)
@@ -31,11 +34,11 @@ Web-based admin and teacher dashboard for Computer-Based Test (CBT) system. Mana
   - Enable/disable question randomization
   - Set global deadline and duration
 - **Question Bank Picker** — Inline search, add banks to exams, warning badges
-- **Exam Results** — View/filter results by exam, class, or student
+- **Exam Results** — Active / Arsip tabs, filter + sort + search panel, submit-to-archive action
 - **Essay Grading** — Manual grading interface for essay questions, finalize scores
 
 ### Authentication & Authorization
-- **Login Portal** — Role-based login with JWT cookie storage
+- **Login Portal** — Branded split-screen login (school logo + name) with role-based JWT cookie storage; errors shown inline near the form (no corner toast)
 - **Role-Based Redirect** — Auto-route to Admin Dashboard or Teacher Dashboard
 - **Student Block** — Students shown error message directing to mobile app
 - **Super Admin Badge** — Visual indicator for Super Admin accounts
@@ -43,10 +46,14 @@ Web-based admin and teacher dashboard for Computer-Based Test (CBT) system. Mana
 
 ### UI/UX
 - **Responsive Design** — Mobile-friendly sidebar + main content layout
-- **Dark/Light Mode** — Theme toggle (optional, via Tailwind)
+- **Stagger Animations** — Cards on list pages fade-in via shared `StaggerList` / `StaggerItem` (framer-motion)
+- **Reusable Skeletons** — `<CardSkeletonGrid variant="exam|bank|schedule|activity">` replaces per-page placeholder code
+- **Filter Panel** — `<FilterPanel>` chrome with active-count badge + reset, shared across 6+ list pages
+- **HEX Color Picker** — `react-colorful` slider + preset swatches for subject theming
+- **Image Uploader** — `<ImageUploader>` component used by school profile and question authoring
 - **Toast Notifications** — Real-time feedback for actions (success, error, warning)
 - **Modal Dialogs** — Confirmation, forms, detailed views
-- **Loading States** — Skeleton loaders and spinners
+- **Page Transitions** — Smooth slide-fade transitions on route change, scroll-to-top on layout
 - **Error Boundaries** — Graceful error handling and user messages
 
 ---
@@ -63,6 +70,8 @@ Web-based admin and teacher dashboard for Computer-Based Test (CBT) system. Mana
 | HTTP Client | Axios | Latest |
 | Auth | JWT (via js-cookie) | Latest |
 | Notifications | sonner, react-hot-toast | Latest |
+| Animation | framer-motion | Latest |
+| Color Picker | react-colorful | Latest |
 | Language | JavaScript (JSX) | ES2020+ |
 
 ---
@@ -211,6 +220,15 @@ cbt-dashboard/
 │   │   │   ├── ExamResultsTable.jsx
 │   │   │   └── ...
 │   │   │
+│   │   ├── motion/
+│   │   │   ├── animated-card.jsx
+│   │   │   ├── card-skeleton-grid.jsx
+│   │   │   ├── page-transition.jsx
+│   │   │   └── stagger-list.jsx
+│   │   ├── filter-panel.jsx        # Reusable Filter & Pencarian chrome
+│   │   ├── ImageUploader.jsx       # File picker + preview + URL fallback
+│   │   ├── SubjectSelect.jsx       # Subject picker honouring teacher subject lock
+│   │   │
 │   │   └── examples/                # Demo/example components
 │   │
 │   ├── contexts/
@@ -218,11 +236,14 @@ cbt-dashboard/
 │   │
 │   ├── hooks/
 │   │   ├── useAuth.js               # Get current user + login/logout
-│   │   ├── useSchoolProfile.js      # Fetch school info
+│   │   ├── useSchoolProfile.js      # Fetch school info (cached)
+│   │   ├── useListPage.js           # Search + filter + sort + reset machine
+│   │   ├── useSubjectTheme.js       # useSubjectThemes().themeFor(name)
 │   │   └── use-mobile.js            # Mobile detection
 │   │
 │   ├── lib/
-│   │   ├── constants.js             # Shared constants (subjects, grades, colors)
+│   │   ├── constants.js             # Legacy SUBJECT_THEMES + SHORTCUT_CARD_THEMES
+│   │   ├── card-colors.js           # getCardAccent / getCardAccentPalette cycle
 │   │   └── utils.js                 # Helper utilities
 │   │
 │   └── utils/
@@ -372,7 +393,12 @@ cbt-dashboard/
 | `/admin/user-detail/[id]` | User detail + edit + role management |
 | `/admin/activity` | Exam activity monitoring |
 | `/admin/activity/detail/[examId]` | Exam participant details |
-| `/admin/activity/blocked` | Blocked participants list |
+| `/admin/activity/blocked` | Blocked participants list (bento-grid) |
+| `/admin/activity/blocked/[examParticipantId]` | Blocked participant detail + unblock |
+| `/admin/master-data` | Subjects (HEX color picker) + Grade Levels + Majors |
+| `/admin/school-profile` | School identity + hero preview + logo upload |
+| `/admin/profile` | Super-admin self profile (guarded for non-super) |
+| `/admin/change-password` | Self password change |
 
 ### Teacher (`/teacher/...`)
 
@@ -393,6 +419,23 @@ cbt-dashboard/
 | `/teacher/exam-results/student-list` | Student list per exam |
 | `/teacher/exam-results/student-list/detail` | Student result detail |
 | `/teacher/exam-results/student-list/detail/essay` | Essay answer review + grading |
+
+### Shared Building Blocks
+
+| Path | Purpose |
+|------|---------|
+| `src/components/filter-panel.jsx` | `<FilterPanel>` chrome for Filter & Pencarian card |
+| `src/components/ImageUploader.jsx` | File picker + preview + URL fallback (logos, question images) |
+| `src/components/motion/card-skeleton-grid.jsx` | `<CardSkeletonGrid variant>` with stagger fade-in |
+| `src/components/motion/stagger-list.jsx` | `StaggerList` + `StaggerItem` wrappers |
+| `src/components/motion/animated-card.jsx` | Hover/press lift card primitive |
+| `src/components/motion/page-transition.jsx` | Per-page slide-fade transition |
+| `src/hooks/useListPage.js` | Search / filter / sort / reset state machine |
+| `src/hooks/useSubjectTheme.js` | `useSubjectThemes().themeFor(name)` — prefers HEX from TaxonomyContext, falls back to legacy hardcoded palette |
+| `src/hooks/useSchoolProfile.js` | Fetch school profile (cached per session) |
+| `src/contexts/TaxonomyContext.js` | Provides `{ subjects, gradeLevels, majors }` from `/api/taxonomy` |
+| `src/lib/card-colors.js` | `getCardAccent` / `getCardAccentPalette` cycle |
+| `src/lib/constants.js` | Legacy subject-name → Tailwind theme map (fallback for `useSubjectTheme`) |
 
 ## Authentication Flow
 

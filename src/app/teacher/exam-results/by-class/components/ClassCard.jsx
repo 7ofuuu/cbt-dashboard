@@ -3,26 +3,18 @@
 import Link from 'next/link';
 import { Users } from 'lucide-react';
 import { Card } from '@/components/ui/card';
+import { getCardAccentPalette } from '@/lib/card-colors';
 
-const CARD_COLORS = [
-  { bg: 'bg-teal-700', light: 'bg-teal-50', text: 'text-teal-700', bar: 'bg-teal-500' },
-  { bg: 'bg-orange-500', light: 'bg-orange-50', text: 'text-orange-700', bar: 'bg-orange-500' },
-  { bg: 'bg-pink-500', light: 'bg-pink-50', text: 'text-pink-700', bar: 'bg-pink-500' },
-  { bg: 'bg-blue-600', light: 'bg-blue-50', text: 'text-blue-700', bar: 'bg-blue-500' },
-];
-
-function getColor(index) {
-  return CARD_COLORS[index % CARD_COLORS.length];
-}
-
-export default function KelasCard({ classroom, mataPelajaran, ujianId, review = 'all', index = 0 }) {
-  const color = getColor(index);
+export default function KelasCard({ classroom, mataPelajaran, ujianId, review = 'all', index = 0, archived = false }) {
+  const color = getCardAccentPalette(index);
   const percentage = classroom.totalSiswa > 0
     ? Math.round((classroom.selesai / classroom.totalSiswa) * 100)
     : 0;
 
+  const archivedSuffix = archived ? '&archived=true' : '';
+
   return (
-    <Link href={`/teacher/exam-results/student-list?mata=${encodeURIComponent(classroom.mataPelajaran || mataPelajaran || 'Matematika')}&classroom=${encodeURIComponent(classroom.full_name)}&ujianId=${ujianId}&review=${encodeURIComponent(review)}`}>
+    <Link href={`/teacher/exam-results/student-list?mata=${encodeURIComponent(classroom.mataPelajaran || mataPelajaran || 'Matematika')}&classroom=${encodeURIComponent(classroom.full_name)}&ujianId=${ujianId}&review=${encodeURIComponent(review)}${archivedSuffix}`}>
       <Card className='hover:shadow-lg transition-all h-full overflow-hidden cursor-pointer group'>
         <div className={`${color.bg} text-white px-5 py-4`}>
           <div className='flex items-center justify-between'>

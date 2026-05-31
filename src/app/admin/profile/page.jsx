@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import { Home, Save, UserCog } from 'lucide-react';
 import AdminLayout from '../adminLayout';
@@ -16,7 +17,16 @@ import { PageHeader } from '@/components/ui/page-header';
 
 export default function AdminProfilePage() {
   useAuth(['admin']);
-  const { login: syncAuthUser } = useAuthContext();
+  const router = useRouter();
+  const { login: syncAuthUser, user } = useAuthContext();
+
+  // Only the super admin may edit their profile from the dashboard.
+  useEffect(() => {
+    if (user && !user.is_super_admin) {
+      toast.error('Halaman profil hanya untuk Super Admin');
+      router.replace('/admin/dashboard');
+    }
+  }, [user, router]);
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

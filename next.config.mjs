@@ -19,6 +19,10 @@ const ngrokApiOrigin = process.env.NEXT_PUBLIC_HOST_NGROK
 
 const connectSrc = ["'self'", apiOrigin, ngrokApiOrigin].filter(Boolean).join(' ');
 
+// User-uploaded images (logos, question attachments) are served by the API
+// origin, so img-src must include the same hosts as connect-src.
+const imgSrc = ["'self'", 'data:', 'blob:', apiOrigin, ngrokApiOrigin].filter(Boolean).join(' ');
+
 const nextConfig = {
   // Let Next's dev server accept asset requests when reached via ngrok.
   allowedDevOrigins: ['*.ngrok-free.app', '*.ngrok.app'],
@@ -39,7 +43,7 @@ const nextConfig = {
               "script-src 'self' 'unsafe-eval' 'unsafe-inline'",
               "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
               "font-src 'self' https://fonts.gstatic.com",
-              "img-src 'self' data: blob:",
+              "img-src " + imgSrc,
               "connect-src " + connectSrc,
             ].join('; '),
           },
