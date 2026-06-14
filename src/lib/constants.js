@@ -1,5 +1,5 @@
 /**
- * Shared constants — subject visual themes and shortcut card themes.
+ * Shared constants - subject visual themes and shortcut card themes.
  *
  * Dynamic taxonomy lists (subjects, grade levels, majors) used to live here
  * as hardcoded arrays but were moved to TaxonomyContext / master-data so the

@@ -300,7 +300,7 @@ export default function EditJadwalPage() {
         <div className="mb-4 p-3 bg-yellow-50 border border-yellow-300 rounded-lg flex items-center gap-2">
           <AlertTriangle className="w-4 h-4 text-yellow-700" />
           <p className="text-sm font-medium text-yellow-800">
-            Ujian <strong>{examStatus}</strong> — hanya bank soal yang bisa diubah.
+            Ujian <strong>{examStatus}</strong> - hanya bank soal yang bisa diubah.
           </p>
         </div>
       )}
@@ -364,7 +364,7 @@ export default function EditJadwalPage() {
                   {categoryChanged && isEditable && (
                     <div className="p-2.5 bg-amber-50 border border-amber-200 rounded-lg">
                       <p className="text-xs font-medium text-amber-900 mb-2">
-                        Kategori diubah — peserta akan di-reassign saat simpan.
+                        Kategori diubah - peserta akan di-reassign saat simpan.
                       </p>
                       <Button type="button" size="sm" variant="outline" className="h-7 text-xs border-amber-300 text-amber-800 hover:bg-amber-100" onClick={handleReassignStudents} disabled={reassigning}>
                         {reassigning ? <Loader2 className="w-3 h-3 mr-1 animate-spin" /> : <RefreshCw className="w-3 h-3 mr-1" />}
@@ -396,7 +396,7 @@ export default function EditJadwalPage() {
                       <Input type="number" required min="1" max="480" className="w-24 h-9" disabled={!isEditable} value={form.duration_minutes} onChange={(e) => setForm(s => ({ ...s, duration_minutes: e.target.value }))} />
                       <span className="text-xs text-gray-500 flex items-center gap-1">
                         <Clock className="w-3 h-3" />
-                        {form.duration_minutes ? `${Math.floor(form.duration_minutes / 60)}j ${form.duration_minutes % 60}m` : '—'}
+                        {form.duration_minutes ? `${Math.floor(form.duration_minutes / 60)}j ${form.duration_minutes % 60}m` : '-'}
                       </span>
                     </div>
                   </div>
@@ -404,7 +404,7 @@ export default function EditJadwalPage() {
                   {form.tanggal && form.pukul && form.duration_minutes && (
                     <div className="p-2 bg-gray-50 border rounded text-xs text-gray-600">
                       {new Date(`${form.tanggal}T${form.pukul}`).toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })},{' '}
-                      {form.pukul} — {(() => {
+                      {form.pukul} - {(() => {
                         const end = new Date(new Date(`${form.tanggal}T${form.pukul}`).getTime() + (parseInt(form.duration_minutes) || 0) * 60000);
                         return end.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
                       })()} WIB

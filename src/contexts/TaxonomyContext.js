@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import request from '@/utils/request';
 
-// Hard-coded fallback used if the API is unreachable on first paint — keeps
+// Hard-coded fallback used if the API is unreachable on first paint - keeps
 // dropdowns functional during dev (e.g. backend hasn't restarted after the
 // taxonomy migration) and matches the values seeded by prisma seed.
 const FALLBACK = {

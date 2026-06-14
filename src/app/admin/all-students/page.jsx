@@ -317,7 +317,7 @@ export default function SemuaPenggunaPage() {
             </Select>
         </FilterPanel>
 
-        {/* Bulk delete inactive — visible when there are any inactives.
+        {/* Bulk delete inactive - visible when there are any inactives.
             We don't pre-select them because students are paginated; the
             backend batch delete operates on explicit IDs only. Instead the
             button switches to the inactive view so the admin can review
