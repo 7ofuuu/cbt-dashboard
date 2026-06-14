@@ -98,8 +98,8 @@ export default function BatchImportDialog({ open, onOpenChange, role = 'student'
       csvContent += 'Contoh Siswa 3,siswa003,password123,XII-Bahasa-1,XII,Bahasa\n';
     } else if (role === 'teacher') {
       csvContent = 'full_name,username,password,subject,is_coordinator,nip\n';
-      csvContent += 'Contoh Guru 1,guru001,password123,Matematika,false,198501012010011001\n';
-      csvContent += 'Contoh Guru 2,guru002,password123,Fisika,true,198602022011012002\n';
+      csvContent += 'Contoh Guru 1,guru001,password123,Matematika,false,100000000000000001\n';
+      csvContent += 'Contoh Guru 2,guru002,password123,Fisika,true,100000000000000002\n';
     } else if (role === 'admin') {
       csvContent = 'full_name,username,password\n';
       csvContent += 'Contoh Admin 1,admin001,password123\n';
@@ -447,7 +447,8 @@ export default function BatchImportDialog({ open, onOpenChange, role = 'student'
                 <>
                   <li>Kolom subject wajib diisi (contoh: Matematika, Fisika)</li>
                   <li>Kolom is_coordinator opsional (true/false)</li>
-                  <li>Kolom nip opsional</li>
+                  <li>Kolom nip opsional, tetapi jika diisi harus unik (tidak boleh sama antar guru atau dengan guru yang sudah ada)</li>
+                  <li>Ganti nilai contoh nip pada template dengan NIP asli masing-masing guru</li>
                 </>
               )}
             </ul>
