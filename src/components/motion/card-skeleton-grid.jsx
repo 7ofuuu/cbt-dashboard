@@ -1,11 +1,11 @@
 'use client';
 
 /**
- * CardSkeletonGrid — placeholder cards shown while a list is loading.
+ * CardSkeletonGrid - placeholder cards shown while a list is loading.
  *
  * Three pages were each inlining their own near-identical skeleton: a
  * gradient header bar over a few animated lines. This consolidates that
- * pattern. Variants intentionally stay narrow — anything that diverges
+ * pattern. Variants intentionally stay narrow - anything that diverges
  * meaningfully should keep its own bespoke skeleton rather than balloon
  * this component with branching.
  */

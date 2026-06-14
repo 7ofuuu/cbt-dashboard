@@ -243,7 +243,7 @@ export default function AddUserForm({ role = 'general' }) {
   return (
     <div className="space-y-6">
       <form onSubmit={handleSubmitClick} className="w-full space-y-4" autoComplete="off" noValidate>
-        {/* Identity row — Nama / Username / Password / Role fill the full width */}
+        {/* Identity row - Nama / Username / Password / Role fill the full width */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-3">
           <div className="space-y-1.5">
             <Label htmlFor="full_name" className="text-xs">Nama <span className="text-red-500">*</span></Label>
@@ -446,7 +446,7 @@ export default function AddUserForm({ role = 'general' }) {
               </div>
             </div>
 
-            {/* Generated classroom preview — compact strip */}
+            {/* Generated classroom preview - compact strip */}
             <div className="flex items-center gap-2 rounded-md border bg-white px-3 py-2">
               <Label className="text-xs text-gray-500 m-0">Kelas:</Label>
               {formData.grade_level && formData.major && formData.nomorKelas ? (

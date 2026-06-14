@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * useListPage — boilerplate-free state for any "search + filter + sort + list"
+ * useListPage - boilerplate-free state for any "search + filter + sort + list"
  * page. List pages were each reimplementing:
  *   - a query input
  *   - 2-4 selects that compare item fields against 'all'
@@ -30,7 +30,7 @@
  *   list.sort / list.setSort
  *   list.activeCount / list.reset()
  *
- * Existing pages stay in control of which UI to render — the hook only
+ * Existing pages stay in control of which UI to render - the hook only
  * tracks state and runs the standard filter/sort pipeline.
  */
 import { useCallback, useMemo, useState } from 'react';
@@ -48,7 +48,7 @@ export default function useListPage(data, options = {}) {
   const filterKeys = Object.keys(filterDefs);
   const initialFilters = useMemo(
     () => Object.fromEntries(filterKeys.map((k) => [k, ALL])),
-    // The list of filter keys is the only thing that affects this — and it
+    // The list of filter keys is the only thing that affects this - and it
     // never changes within a mounted page in practice.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [filterKeys.join('|')],

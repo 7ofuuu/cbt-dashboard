@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * FilterPanel — shared shell for the "Filter & Pencarian" card.
+ * FilterPanel - shared shell for the "Filter & Pencarian" card.
  *
  * Five list pages had reinvented the same chrome: header row with a Filter
  * icon, label, active-count badge, and a Reset button on the right; below it

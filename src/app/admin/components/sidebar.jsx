@@ -33,7 +33,7 @@ const BOTTOM_ITEMS_BASE = [
   { name: 'Aktivitas', href: '/admin/activity', icon: <History className='w-5 h-5' /> },
   { name: 'Master Data', href: '/admin/master-data', icon: <Database className='w-5 h-5' /> },
   { name: 'Profil Sekolah', href: '/admin/school-profile', icon: <School className='w-5 h-5' /> },
-  // Profil Saya — super-admin only (inserted at render time)
+  // Profil Saya - super-admin only (inserted at render time)
   { name: 'Ubah Password', href: '/admin/change-password', icon: <KeyRound className='w-5 h-5' /> },
 ];
 
@@ -72,13 +72,13 @@ export default function Sidebar() {
   const [indicator, setIndicator] = useState({ top: 0, height: 0, visible: false });
 
   // Measure the active item's position relative to the (scrollable) container so
-  // the highlight is placed in container coordinates — correct regardless of
+  // the highlight is placed in container coordinates - correct regardless of
   // scroll offset (fixes the bottom->top jump).
   const measureIndicator = () => {
     const container = containerRef.current;
     // Normally the highlight tracks the link matching the current path. But when
     // the path is a User Management child AND the group is collapsed, that child
-    // is hidden — so track the parent toggle button instead, letting the
+    // is hidden - so track the parent toggle button instead, letting the
     // highlight slide up to it as the dropdown closes.
     const activeEl =
       isUserMgmtPath && !groupOpen ? groupBtnRef.current : itemRefs.current[pathname];
@@ -100,7 +100,7 @@ export default function Sidebar() {
 
   // Hold the latest measureIndicator in a ref (updated in an effect, never during
   // render). The panel's onAnimationComplete must re-measure after the expand
-  // animation so items BELOW the panel — pushed down as it grows — land correctly.
+  // animation so items BELOW the panel - pushed down as it grows - land correctly.
   // But AnimatePresence keeps the OLD panel mounted for its exit animation, whose
   // onAnimationComplete carries a stale closure (groupOpen=true). Calling through
   // this ref always runs the current closure, so closing no longer bounces back.
