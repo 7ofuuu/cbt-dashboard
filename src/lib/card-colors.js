@@ -1,6 +1,6 @@
 /**
  * Card accent colors used by exam-result, schedule, activity, and by-class
- * card grids. All four pages had their own `CARD_COLORS = [...]` + helper —
+ * card grids. All four pages had their own `CARD_COLORS = [...]` + helper -
  * this is the single source of truth.
  *
  * The "solid" variant returns a Tailwind background class for cards whose

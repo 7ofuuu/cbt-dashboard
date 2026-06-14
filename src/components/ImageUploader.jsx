@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * ImageUploader — file picker + preview + URL fallback.
+ * ImageUploader - file picker + preview + URL fallback.
  *
  * On file pick, posts to `/api/upload/<bucket>` and reports the returned URL
  * via onChange. The "value" is whatever the parent stores in DB (a path like
@@ -25,7 +25,7 @@ export const resolvePreviewUrl = (value) => {
   if (/^(https?:|data:)/i.test(value)) return value;
   if (value.startsWith('/uploads')) {
     const base = process.env.NEXT_PUBLIC_HOST || '';
-    // NEXT_PUBLIC_HOST is "http://host:3000/api/" — strip "/api/" for static
+    // NEXT_PUBLIC_HOST is "http://host:3000/api/" - strip "/api/" for static
     const origin = base.replace(/\/api\/?$/, '');
     return `${origin}${value}`;
   }
@@ -132,7 +132,7 @@ export default function ImageUploader({
           </div>
           <p className="text-[11px] text-gray-500">{hint}</p>
           {value && previewError && (
-            <p className="text-[11px] text-amber-600">Pratinjau gagal dimuat — periksa URL.</p>
+            <p className="text-[11px] text-amber-600">Pratinjau gagal dimuat - periksa URL.</p>
           )}
         </div>
 
@@ -145,7 +145,7 @@ export default function ImageUploader({
         />
       </div>
 
-      {/* URL fallback (optional) — for pasting external links */}
+      {/* URL fallback (optional) - for pasting external links */}
       {allowUrlInput && (
         <div className="space-y-1.5">
           <Label className="text-[11px] text-gray-500 flex items-center gap-1">

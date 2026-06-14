@@ -57,7 +57,7 @@ export function middleware(request) {
           return NextResponse.redirect(new URL(redirectUrl, request.url));
         }
       } catch {
-        // Invalid cookie — redirect to login
+        // Invalid cookie - redirect to login
         return NextResponse.redirect(new URL('/login', request.url));
       }
     }

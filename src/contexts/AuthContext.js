@@ -33,7 +33,7 @@ export function AuthProvider({ children }) {
           if (userData && userData.id && userData.role && typeof userData.username === 'string') {
             setUser(userData);
           } else {
-            // Invalid user data shape — clear auth
+            // Invalid user data shape - clear auth
             Cookies.remove('token');
             Cookies.remove('user');
             setUser(null);

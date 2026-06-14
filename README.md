@@ -9,52 +9,52 @@ Web-based admin and teacher dashboard for Computer-Based Test (CBT) system. Mana
 ## Features
 
 ### Admin Panel
-- **Dashboard** — Overview statistics, recent activity logs, active users (last 24 hours)
-- **User Management** — CRUD admin/teacher/student, batch CSV import, activate/deactivate
-- **User Detail View** — Full profile, role management, password reset
-- **Super Admin Protection** — Special admin account cannot be deleted or downgraded
-- **Exam Activity Monitoring** — Real-time participant status (not started, in progress, completed) with staggered card animation; searchable by exam name
-- **Exam Access Password** — Per-exam password card on the activity detail page (admin-only, appears H-1) that students enter to open the pre-downloaded encrypted package
-- **Block/Unblock Participants** — Bento-grid blocked participant page, unlock code generation
-- **Activity Logs** — View login history, exam events (start/finish), auto-finish records
-- **School Profile** — Hero preview card, drag-and-drop logo upload, full identity form
-- **Master Data** — Manage subjects (with HEX color picker), grade levels, and majors with cascade rename
-- **Profil Saya** — Super-admin-only self-profile (sidebar item hidden + route guarded for regular admins)
+- **Dashboard** - Overview statistics, recent activity logs, active users (last 24 hours)
+- **User Management** - CRUD admin/teacher/student, batch CSV import, activate/deactivate
+- **User Detail View** - Full profile, role management, password reset
+- **Super Admin Protection** - Special admin account cannot be deleted or downgraded
+- **Exam Activity Monitoring** - Real-time participant status (not started, in progress, completed) with staggered card animation; searchable by exam name
+- **Exam Access Password** - Per-exam password card on the activity detail page (admin-only, appears H-1) that students enter to open the pre-downloaded encrypted package
+- **Block/Unblock Participants** - Bento-grid blocked participant page, unlock code generation
+- **Activity Logs** - View login history, exam events (start/finish), auto-finish records
+- **School Profile** - Hero preview card, drag-and-drop logo upload, full identity form
+- **Master Data** - Manage subjects (with HEX color picker), grade levels, and majors with cascade rename
+- **Profil Saya** - Super-admin-only self-profile (sidebar item hidden + route guarded for regular admins)
 
 ### Teacher Panel
-- **Dashboard** — Exam overview, question bank summary, quick-access stats
-- **Question Banks** — Create, edit, delete banks with globally unique names; question cards support image upload via `ImageUploader`
-- **Question Management** — Create/edit questions in three types:
+- **Dashboard** - Exam overview, question bank summary, quick-access stats
+- **Question Banks** - Create, edit, delete banks with globally unique names; question cards support image upload via `ImageUploader`
+- **Question Management** - Create/edit questions in three types:
   - Single Choice (4 options, 1 correct)
   - Multiple Choice (multiple correct answers)
   - Essay (teacher grades manually)
-- **Exam Schedule** — Create/edit/delete exams with clean 3-column layout
+- **Exam Schedule** - Create/edit/delete exams with clean 3-column layout
   - Assign questions from banks individually or in bulk
   - Assign students by grade level + major (auto or manual)
   - Enable/disable question randomization
   - Set global deadline and duration
-- **Question Bank Picker** — Inline search, add banks to exams, warning badges
-- **Exam Results** — Active / Arsip tabs, filter + sort + search panel, submit-to-archive action
-- **Essay Grading** — Manual grading interface for essay questions, finalize scores
+- **Question Bank Picker** - Inline search, add banks to exams, warning badges
+- **Exam Results** - Active / Arsip tabs, filter + sort + search panel, submit-to-archive action
+- **Essay Grading** - Manual grading interface for essay questions, finalize scores
 
 ### Authentication & Authorization
-- **Login Portal** — Branded split-screen login (school logo + name) with role-based JWT cookie storage; errors shown inline near the form (no corner toast)
-- **Role-Based Redirect** — Auto-route to Admin Dashboard or Teacher Dashboard
-- **Student Block** — Students shown error message directing to mobile app
-- **Super Admin Badge** — Visual indicator for Super Admin accounts
-- **Session Persistence** — JWT stored in secure HTTP-only cookies
+- **Login Portal** - Branded split-screen login (school logo + name) with role-based JWT cookie storage; errors shown inline near the form (no corner toast)
+- **Role-Based Redirect** - Auto-route to Admin Dashboard or Teacher Dashboard
+- **Student Block** - Students shown error message directing to mobile app
+- **Super Admin Badge** - Visual indicator for Super Admin accounts
+- **Session Persistence** - JWT stored in secure HTTP-only cookies
 
 ### UI/UX
-- **Responsive Design** — Mobile-friendly sidebar + main content layout
-- **Stagger Animations** — Cards on list pages fade-in via shared `StaggerList` / `StaggerItem` (framer-motion)
-- **Reusable Skeletons** — `<CardSkeletonGrid variant="exam|bank|schedule|activity">` replaces per-page placeholder code
-- **Filter Panel** — `<FilterPanel>` chrome with active-count badge + reset, shared across 6+ list pages
-- **HEX Color Picker** — `react-colorful` slider + preset swatches for subject theming
-- **Image Uploader** — `<ImageUploader>` component used by school profile and question authoring
-- **Toast Notifications** — Real-time feedback for actions (success, error, warning)
-- **Modal Dialogs** — Confirmation, forms, detailed views
-- **Page Transitions** — Smooth slide-fade transitions on route change, scroll-to-top on layout
-- **Error Boundaries** — Graceful error handling and user messages
+- **Responsive Design** - Mobile-friendly sidebar + main content layout
+- **Stagger Animations** - Cards on list pages fade-in via shared `StaggerList` / `StaggerItem` (framer-motion)
+- **Reusable Skeletons** - `<CardSkeletonGrid variant="exam|bank|schedule|activity">` replaces per-page placeholder code
+- **Filter Panel** - `<FilterPanel>` chrome with active-count badge + reset, shared across 6+ list pages
+- **HEX Color Picker** - `react-colorful` slider + preset swatches for subject theming
+- **Image Uploader** - `<ImageUploader>` component used by school profile and question authoring
+- **Toast Notifications** - Real-time feedback for actions (success, error, warning)
+- **Modal Dialogs** - Confirmation, forms, detailed views
+- **Page Transitions** - Smooth slide-fade transitions on route change, scroll-to-top on layout
+- **Error Boundaries** - Graceful error handling and user messages
 
 ---
 
@@ -108,8 +108,8 @@ NEXT_PUBLIC_HOST_NGROK=https://cbt-be.ngrok-free.app/api/
 ```
 
 **Environment Variables Reference:**
-- `NEXT_PUBLIC_HOST` — Backend API base URL for **local** access (must end with `/api/`)
-- `NEXT_PUBLIC_HOST_NGROK` — Backend URL via ngrok static domain; used automatically when the dashboard is opened through an ngrok URL. Replace with your reserved domain. See [NGROK-FIREBASE-SETUP.md](../NGROK-FIREBASE-SETUP.md).
+- `NEXT_PUBLIC_HOST` - Backend API base URL for **local** access (must end with `/api/`)
+- `NEXT_PUBLIC_HOST_NGROK` - Backend URL via ngrok static domain; used automatically when the dashboard is opened through an ngrok URL. Replace with your reserved domain. See [NGROK-FIREBASE-SETUP.md](../NGROK-FIREBASE-SETUP.md).
 
 > **Deploy to Vercel:** the dashboard can be hosted on Vercel while the backend
 > stays local + exposed via ngrok. Set both env vars above to your ngrok backend
@@ -255,12 +255,12 @@ cbt-dashboard/
 
 ### Key Directories Explained
 
-- **`app/`** — Next.js App Router pages and layouts
-- **`components/ui/`** — shadcn/ui component library (pre-built, customizable)
-- **`components/_shared/`** — Navigation, sidebars, common UI
-- **`contexts/AuthContext.js`** — Global auth state (current user, login status)
-- **`utils/request.jsx`** — Shared Axios instance that auto-attaches JWT to requests
-- **`lib/constants.js`** — Subject names, grade levels, major options, color schemes
+- **`app/`** - Next.js App Router pages and layouts
+- **`components/ui/`** - shadcn/ui component library (pre-built, customizable)
+- **`components/_shared/`** - Navigation, sidebars, common UI
+- **`contexts/AuthContext.js`** - Global auth state (current user, login status)
+- **`utils/request.jsx`** - Shared Axios instance that auto-attaches JWT to requests
+- **`lib/constants.js`** - Subject names, grade levels, major options, color schemes
 
 ---
 
@@ -279,10 +279,10 @@ cbt-dashboard/
 
 ### Component Patterns
 
-- **Client Components** — Use `"use client"` directive for interactive components (forms, buttons, modals)
-- **Server Components** — Default; fetch data on server, pass as props
-- **Hooks with useSearchParams** — Wrap in `Suspense` to avoid CSR bailout in production builds
-- **Error Handling** — Use `error?.response?.data?.error` for backend error messages
+- **Client Components** - Use `"use client"` directive for interactive components (forms, buttons, modals)
+- **Server Components** - Default; fetch data on server, pass as props
+- **Hooks with useSearchParams** - Wrap in `Suspense` to avoid CSR bailout in production builds
+- **Error Handling** - Use `error?.response?.data?.error` for backend error messages
 
 ### Authentication Flow
 
@@ -315,13 +315,13 @@ cbt-dashboard/
 
 ### Code Style
 
-- **App Router** — All pages under `src/app/` using Next.js App Router conventions
-- **Client Components** — Use `"use client"` directive on pages that need interactivity
-- **API Calls** — Use the shared Axios instance from `utils/request.jsx` which auto-attaches JWT from cookies
-- **UI Components** — Use shadcn/ui components from `components/ui/` (40+ components available)
-- **Auth Context** — Use `AuthContext` via `useAuth()` hook for authentication state
-- **Error Handling** — Read `error?.response?.data?.error` from backend responses (backend uses `error` key)
-- **Layouts** — Admin and Teacher have separate layout wrappers (`adminLayout.jsx`, `teacherLayout.jsx`) with sidebar + header
+- **App Router** - All pages under `src/app/` using Next.js App Router conventions
+- **Client Components** - Use `"use client"` directive on pages that need interactivity
+- **API Calls** - Use the shared Axios instance from `utils/request.jsx` which auto-attaches JWT from cookies
+- **UI Components** - Use shadcn/ui components from `components/ui/` (40+ components available)
+- **Auth Context** - Use `AuthContext` via `useAuth()` hook for authentication state
+- **Error Handling** - Read `error?.response?.data?.error` from backend responses (backend uses `error` key)
+- **Layouts** - Admin and Teacher have separate layout wrappers (`adminLayout.jsx`, `teacherLayout.jsx`) with sidebar + header
 
 ### Project Structure
 
@@ -431,7 +431,7 @@ cbt-dashboard/
 | `src/components/motion/animated-card.jsx` | Hover/press lift card primitive |
 | `src/components/motion/page-transition.jsx` | Per-page slide-fade transition |
 | `src/hooks/useListPage.js` | Search / filter / sort / reset state machine |
-| `src/hooks/useSubjectTheme.js` | `useSubjectThemes().themeFor(name)` — prefers HEX from TaxonomyContext, falls back to legacy hardcoded palette |
+| `src/hooks/useSubjectTheme.js` | `useSubjectThemes().themeFor(name)` - prefers HEX from TaxonomyContext, falls back to legacy hardcoded palette |
 | `src/hooks/useSchoolProfile.js` | Fetch school profile (cached per session) |
 | `src/contexts/TaxonomyContext.js` | Provides `{ subjects, gradeLevels, majors }` from `/api/taxonomy` |
 | `src/lib/card-colors.js` | `getCardAccent` / `getCardAccentPalette` cycle |
@@ -449,7 +449,7 @@ cbt-dashboard/
 
 ## Global Deadline
 
-The dashboard displays `end_date` as the exam deadline. All students share the same deadline — there are no per-student deadlines. When creating an exam, the teacher sets `start_date` (when students can begin) and `end_date` (when all students must finish). The `duration_minutes` field is for informational display only.
+The dashboard displays `end_date` as the exam deadline. All students share the same deadline - there are no per-student deadlines. When creating an exam, the teacher sets `start_date` (when students can begin) and `end_date` (when all students must finish). The `duration_minutes` field is for informational display only.
 
 ## License
 

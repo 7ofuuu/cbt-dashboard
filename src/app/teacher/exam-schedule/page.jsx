@@ -162,7 +162,7 @@ export default function JadwalUjianPage() {
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-amber-900">Draft ujian belum selesai</p>
               <p className="text-xs text-amber-700 truncate">
-                {resumeDraft.exam_name || 'Tanpa nama'} — {resumeDraft.subject || '—'} · {resumeDraft.grade_level} {resumeDraft.major}
+                {resumeDraft.exam_name || 'Tanpa nama'} - {resumeDraft.subject || '-'} · {resumeDraft.grade_level} {resumeDraft.major}
               </p>
             </div>
             <Link
@@ -344,7 +344,7 @@ export default function JadwalUjianPage() {
                       {(u._count?.exam_questions === 0) && (
                         <div className="mt-2 p-2 bg-red-50 border border-red-200 rounded flex items-center gap-1.5">
                           <AlertTriangle className="w-3.5 h-3.5 text-red-500 flex-shrink-0" />
-                          <span className="text-xs text-red-700 font-medium">Belum ada bank soal — ujian tidak bisa dimulai</span>
+                          <span className="text-xs text-red-700 font-medium">Belum ada bank soal - ujian tidak bisa dimulai</span>
                         </div>
                       )}
                     </div>

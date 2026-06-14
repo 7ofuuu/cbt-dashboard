@@ -1,12 +1,12 @@
 'use client';
 
 /**
- * useSubjectThemes — return a `themeFor(name)` lookup for use inside a list
+ * useSubjectThemes - return a `themeFor(name)` lookup for use inside a list
  * render. Resolution order per call:
  *
- *   1. Subject row in TaxonomyContext carries a HEX `color` — preferred now
+ *   1. Subject row in TaxonomyContext carries a HEX `color` - preferred now
  *      that the master-data picker writes HEX. Renders via inline style.
- *   2. Legacy hardcoded `SUBJECT_THEMES` map keyed by subject name — kept so
+ *   2. Legacy hardcoded `SUBJECT_THEMES` map keyed by subject name - kept so
  *      decks seeded before the migration still render with the Tailwind
  *      class palette.
  *   3. Default neutral theme.

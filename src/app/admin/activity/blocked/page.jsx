@@ -154,14 +154,14 @@ export default function AktivitasTerblokirPage() {
       <div className='space-y-5'>
         <PageHeader
           title='Aktivitas Terblokir'
-          description='Daftar ujian yang memiliki peserta terblokir — klik kartu untuk mengelola unlock code'
+          description='Daftar ujian yang memiliki peserta terblokir - klik kartu untuk mengelola unlock code'
         >
           <Button onClick={handleRefresh} variant='outline' className='flex items-center gap-2'>
             <RefreshCw className='w-4 h-4' /> Segarkan
           </Button>
         </PageHeader>
 
-        {/* ═══════ STATS — Bento grid ═══════ */}
+        {/* ═══════ STATS - Bento grid ═══════ */}
         {!loading && (
           <div className='grid grid-cols-2 lg:grid-cols-4 gap-3'>
             <StatCard

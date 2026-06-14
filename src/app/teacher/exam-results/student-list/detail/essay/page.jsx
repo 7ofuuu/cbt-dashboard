@@ -68,10 +68,10 @@ function EssayQuestion({ jawabanId, number, text, answer, initialScore }) {
         {answer || <span className='text-gray-400 italic'>Tidak ada jawaban</span>}
       </div>
       {!hasAnswer ? (
-        <p className='text-gray-400 italic text-sm'>Siswa tidak menjawab — nilai otomatis 0</p>
+        <p className='text-gray-400 italic text-sm'>Siswa tidak menjawab - nilai otomatis 0</p>
       ) : (
         <div className='flex items-center gap-3'>
-          <span className='text-gray-700 font-medium text-sm'>Nilai (0–100):</span>
+          <span className='text-gray-700 font-medium text-sm'>Nilai (0-100):</span>
           <input
             type='number' min={0} max={100} step={1} value={score} onChange={handleChange}
             onKeyDown={(e) => { if (e.key === 'Enter') handleSubmit(); }}
