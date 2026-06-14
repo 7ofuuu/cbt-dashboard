@@ -8,10 +8,11 @@ import { PageHeader } from '@/components/ui/page-header';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
-  Home, X, Clock, BookOpen, Users, FileText, Calendar, ArrowRight, Info,
+  Home, X, Clock, BookOpen, FileText, Calendar, ArrowRight, Info,
   GraduationCap, Layers, Shuffle, Sparkles,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
@@ -19,9 +20,11 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { useTaxonomy } from '@/contexts/TaxonomyContext';
 import { SubjectSelect } from '@/components/SubjectSelect';
+import { DatePicker } from '@/components/DatePicker';
+import { TimePicker } from '@/components/TimePicker';
 
 // Key used to hand the exam draft to the select-bank step. The exam is not
-// created in the backend until the teacher completes both steps — closing the
+// created in the backend until the teacher completes both steps - closing the
 // tab or navigating away discards the draft, so no orphan exams are produced.
 const DRAFT_KEY = 'teacher.examDraft';
 
@@ -46,7 +49,7 @@ export default function TambahJadwalPage() {
   // We wait for the taxonomy to finish loading first: the Select components
   // (subject/grade/major) only display a value when a matching option already
   // exists. If we restored the draft while the dropdowns still held the
-  // fallback list, Radix would silently drop values not in that fallback —
+  // fallback list, Radix would silently drop values not in that fallback -
   // which is why subject/grade/major appeared blank after going "Kembali".
   useEffect(() => {
     if (taxonomyLoading || hydrated) return;
@@ -98,7 +101,7 @@ export default function TambahJadwalPage() {
 
   const durationLabel = form.duration_minutes
     ? `${Math.floor(form.duration_minutes / 60)} jam ${form.duration_minutes % 60} menit`
-    : '—';
+    : '-';
 
   // Hold the form back until the draft has been restored (after taxonomy load)
   // so the Select fields mount with their final values and render correctly.
@@ -140,7 +143,7 @@ export default function TambahJadwalPage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
           {/* ════════════ MAIN FORM (lg col-span-8) ════════════ */}
           <div className="lg:col-span-8 space-y-4">
-            {/* Bento row 1: HERO (Nama + Subject) — full width */}
+            {/* Bento row 1: HERO (Nama + Subject) - full width */}
             <BentoCard
               icon={<FileText className="w-4 h-4" />}
               title="Informasi Ujian"
@@ -214,26 +217,23 @@ export default function TambahJadwalPage() {
                 accent="amber"
                 compact
               >
-                <label className="flex items-center gap-2.5 cursor-pointer h-10">
-                  <input
-                    type="checkbox"
-                    checked={form.is_shuffle_questions}
-                    onChange={(e) => setForm(s => ({ ...s, is_shuffle_questions: e.target.checked }))}
-                    className="w-4 h-4 rounded border-gray-300 text-sky-600 focus:ring-sky-500"
-                  />
-                  <span className="text-sm text-gray-700">
-                    {form.is_shuffle_questions ? 'Diacak per siswa' : 'Urutan tetap'}
-                  </span>
-                </label>
+                <RadioGroup
+                  value={form.is_shuffle_questions ? 'true' : 'false'}
+                  onValueChange={(v) => setForm(s => ({ ...s, is_shuffle_questions: v === 'true' }))}
+                  className="gap-2"
+                >
+                  <ShuffleOption value="true" label="Diacak per siswa" checked={form.is_shuffle_questions} />
+                  <ShuffleOption value="false" label="Urutan tetap" checked={!form.is_shuffle_questions} />
+                </RadioGroup>
               </BentoCard>
             </div>
 
-            {/* Auto-assign banner — informative only when both filled */}
+            {/* Auto-assign banner - informative only when both filled */}
             {form.grade_level && form.major && (
               <div className="rounded-lg border border-blue-200 bg-gradient-to-r from-blue-50 to-sky-50 px-4 py-3 flex items-center gap-3">
                 <Sparkles className="w-4 h-4 text-sky-700 flex-shrink-0" />
                 <p className="text-xs text-sky-900 font-medium">
-                  Siswa <strong>Tingkat {form.grade_level} – {form.major}</strong> akan otomatis di-assign sebagai peserta.
+                  Siswa <strong>Tingkat {form.grade_level} - {form.major}</strong> akan otomatis di-assign sebagai peserta.
                 </p>
               </div>
             )}
@@ -247,11 +247,11 @@ export default function TambahJadwalPage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
                 <div className="space-y-1.5">
                   <Label className="text-xs">Tanggal <span className="text-red-500">*</span></Label>
-                  <Input type="date" required value={form.tanggal} onChange={update('tanggal')} className="h-10 w-full" />
+                  <DatePicker value={form.tanggal} onChange={updateSelect('tanggal')} placeholder="Pilih tanggal *" />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Waktu Mulai <span className="text-red-500">*</span></Label>
-                  <Input type="time" required value={form.pukul} onChange={update('pukul')} className="h-10 w-full" />
+                  <TimePicker value={form.pukul} onChange={updateSelect('pukul')} placeholder="Pilih waktu *" />
                 </div>
                 <div className="space-y-1.5">
                   <Label className="text-xs">Durasi (menit) <span className="text-red-500">*</span></Label>
@@ -341,7 +341,7 @@ export default function TambahJadwalPage() {
                   <dt className="text-gray-500">Mapel</dt>
                   <dd className="text-right"><Badge variant="secondary" className="text-[10px]">{form.subject}</Badge></dd>
                   <dt className="text-gray-500">Target</dt>
-                  <dd className="text-right font-medium">{form.grade_level} – {form.major}</dd>
+                  <dd className="text-right font-medium">{form.grade_level} - {form.major}</dd>
                   <dt className="text-gray-500">Tanggal</dt>
                   <dd className="text-right font-medium">{form.tanggal}</dd>
                   <dt className="text-gray-500">Waktu</dt>
@@ -400,5 +400,23 @@ function StepDot({ n, active = false, done = false }) {
     <div className="flex flex-col items-center pt-0.5">
       <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold border-2 ${cls}`}>{n}</div>
     </div>
+  );
+}
+
+function ShuffleOption({ value, label, checked }) {
+  return (
+    <Label
+      htmlFor={`shuffle-${value}`}
+      className={`flex items-center gap-2.5 cursor-pointer rounded-lg border px-3 h-9 transition-colors ${
+        checked ? 'border-amber-300 bg-amber-50' : 'border-gray-200 hover:bg-gray-50'
+      }`}
+    >
+      <RadioGroupItem
+        id={`shuffle-${value}`}
+        value={value}
+        className="text-amber-600 border-amber-400 focus-visible:ring-amber-500/40"
+      />
+      <span className={`text-sm ${checked ? 'text-amber-900 font-medium' : 'text-gray-600'}`}>{label}</span>
+    </Label>
   );
 }

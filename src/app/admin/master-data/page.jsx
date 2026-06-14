@@ -55,7 +55,7 @@ export default function MasterDataPage() {
   const [gradeLevels, setGradeLevels] = useState([]);
   const [majors, setMajors] = useState([]);
 
-  // Modal states — one dialog reused per tab
+  // Modal states - one dialog reused per tab
   const [editing, setEditing] = useState(null); // { kind, item } | null
   const [showDeactivateConfirm, setShowDeactivateConfirm] = useState(null);
   const [saving, setSaving] = useState(false);
@@ -191,7 +191,7 @@ export default function MasterDataPage() {
                   { key: 'name', label: 'Nama', primary: true },
                   { key: 'color', label: 'Warna', render: (v) => {
                     const hex = resolveColor(v);
-                    if (!hex) return '—';
+                    if (!hex) return '-';
                     return (
                       <span className="flex items-center gap-1.5">
                         <span className="inline-block w-4 h-4 rounded-full border border-white shadow-sm" style={{ backgroundColor: hex }} />
@@ -278,7 +278,7 @@ export default function MasterDataPage() {
 }
 
 // ---------------------------------------------------------------------------
-// Table component — reused for all 3 taxonomies
+// Table component - reused for all 3 taxonomies
 // ---------------------------------------------------------------------------
 function TaxonomyTable({ kind, items, idKey, columns, onAdd, onEdit, onDeactivate, onReactivate }) {
   const [showInactive, setShowInactive] = useState(false);
@@ -332,7 +332,7 @@ function TaxonomyTable({ kind, items, idKey, columns, onAdd, onEdit, onDeactivat
                   <tr key={item[idKey]} className={`hover:bg-gray-50/50 ${!item.is_active ? 'opacity-60' : ''}`}>
                     {columns.map((col) => (
                       <td key={col.key} className={`px-4 py-2.5 ${col.primary ? 'font-medium' : 'text-gray-600'}`}>
-                        {col.render ? col.render(item[col.key], item) : (item[col.key] ?? '—')}
+                        {col.render ? col.render(item[col.key], item) : (item[col.key] ?? '-')}
                       </td>
                     ))}
                     <td className="px-4 py-2.5 text-center">
@@ -370,7 +370,7 @@ function TaxonomyTable({ kind, items, idKey, columns, onAdd, onEdit, onDeactivat
 }
 
 // ---------------------------------------------------------------------------
-// Add/Edit dialog — adapts fields per kind
+// Add/Edit dialog - adapts fields per kind
 // ---------------------------------------------------------------------------
 function EditDialog({ editing, onClose, onSave, saving }) {
   const [form, setForm] = useState({});
@@ -510,7 +510,7 @@ function EditDialog({ editing, onClose, onSave, saving }) {
 }
 
 // ---------------------------------------------------------------------------
-// Subject color picker — HEX slider + manual input + preset swatches
+// Subject color picker - HEX slider + manual input + preset swatches
 // ---------------------------------------------------------------------------
 function SubjectColorPicker({ value, onChange }) {
   const safe = (value || '#3b82f6').toUpperCase();

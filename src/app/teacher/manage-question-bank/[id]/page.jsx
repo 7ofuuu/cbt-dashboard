@@ -181,7 +181,7 @@ export default function EditBankSoalPage() {
   };
 
   const handleSave = async () => {
-    // Front-end validation first — never call the API for partially-filled
+    // Front-end validation first - never call the API for partially-filled
     // forms; the user gets a clearer message faster.
     if (!bankName.trim()) return toast.error('Judul bank soal wajib diisi');
     if (!subject) return toast.error('Mata pelajaran wajib dipilih');
@@ -244,7 +244,7 @@ export default function EditBankSoalPage() {
             questionImage = up.data.url || up.data.path;
           } catch (err) {
             console.warn('Image upload failed', err);
-            // Fall back to existing/url if upload fails — don't block save.
+            // Fall back to existing/url if upload fails - don't block save.
           }
         } else if (q.imageUrl && q.imageUrl.trim()) {
           questionImage = q.imageUrl.trim();
@@ -287,7 +287,7 @@ export default function EditBankSoalPage() {
       }
 
       if (failures.length > 0) {
-        // Partial success — keep user on the page and tell them what to retry.
+        // Partial success - keep user on the page and tell them what to retry.
         toast.error(`Sebagian gagal: ${failures[0]}`, { duration: 6000 });
         // Refresh from server so the page reflects the canonical state.
         await loadBank();
@@ -347,7 +347,7 @@ export default function EditBankSoalPage() {
     setQuestions(qs => {
       const q = qs.find(x => x._localId === localId);
       if (!q) return qs;
-      // Duplicate becomes a brand-new question — strip server ids and mark dirty.
+      // Duplicate becomes a brand-new question - strip server ids and mark dirty.
       return [...qs, {
         ...q,
         _localId: uid('q'),
@@ -373,7 +373,7 @@ export default function EditBankSoalPage() {
       if (q.options.length === 0) {
         return { ...q, type: newType, _dirty: true, options: [createOption(), createOption(), createOption(), createOption()] };
       }
-      // Switching between single and multi — reset correct flags
+      // Switching between single and multi - reset correct flags
       return { ...q, type: newType, _dirty: true, options: q.options.map(o => ({ ...o, correct: false })) };
     }));
   }
@@ -484,7 +484,7 @@ export default function EditBankSoalPage() {
         <div>
           <h2 className="text-xl font-bold">Edit Bank Soal</h2>
           <p className="text-xs text-muted-foreground">
-            Ubah detail bank, edit soal, atau tambah soal baru — semua dalam satu halaman.
+            Ubah detail bank, edit soal, atau tambah soal baru - semua dalam satu halaman.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -610,7 +610,7 @@ export default function EditBankSoalPage() {
             </div>
           </div>
 
-          {/* Questions (drag to reorder — visual only, sequence is server-managed) */}
+          {/* Questions (drag to reorder - visual only, sequence is server-managed) */}
           <Reorder.Group axis="y" values={questions} onReorder={setQuestions} className="space-y-4">
             {questions
               .filter(q => !pendingDeletes.has(q.question_id))
@@ -652,15 +652,15 @@ export default function EditBankSoalPage() {
               <CardContent className="space-y-3 text-sm">
                 <div className="flex justify-between gap-3">
                   <span className="text-gray-500 text-xs">Judul</span>
-                  <span className="font-medium text-xs text-right max-w-[60%] truncate">{bankName || '—'}</span>
+                  <span className="font-medium text-xs text-right max-w-[60%] truncate">{bankName || '-'}</span>
                 </div>
                 <div className="flex justify-between items-center gap-3">
                   <span className="text-gray-500 text-xs">Mapel</span>
-                  {subject ? <Badge variant="secondary" className="text-[10px]">{subject}</Badge> : <span className="text-xs text-gray-400">—</span>}
+                  {subject ? <Badge variant="secondary" className="text-[10px]">{subject}</Badge> : <span className="text-xs text-gray-400">-</span>}
                 </div>
                 <div className="flex justify-between gap-3">
                   <span className="text-gray-500 text-xs">Tingkat / Jurusan</span>
-                  <span className="font-medium text-xs">{gradeLevel || '—'}{major ? ` — ${major}` : ''}</span>
+                  <span className="font-medium text-xs">{gradeLevel || '-'}{major ? ` - ${major}` : ''}</span>
                 </div>
 
                 <div className="border-t pt-3 space-y-1.5">

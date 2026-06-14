@@ -37,7 +37,7 @@ export default function AktivitasPage() {
   const [uniqueTingkat, setUniqueTingkat] = useState([]);
   const [uniqueJurusan, setUniqueJurusan] = useState([]);
 
-  // Filter / search / sort state — managed by useListPage. The status filter
+  // Filter / search / sort state - managed by useListPage. The status filter
   // does date math against start_date / end_date instead of a simple field
   // match, so it uses the `match` callback form.
   const listOptions = useMemo(() => ({

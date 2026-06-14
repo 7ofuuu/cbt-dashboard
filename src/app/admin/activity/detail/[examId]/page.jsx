@@ -174,7 +174,7 @@ export default function DetailAktivitasPage({ params }) {
           description={ujianData ? `${ujianData.subject} • Tingkat ${convertTingkat(ujianData.grade_level)}${ujianData.major ? ` • ${ujianData.major}` : ''} • ${filteredPesertaData.length} Peserta` : ''}
         />
 
-        {/* Exam access password — visible to admin only, appears H-1 */}
+        {/* Exam access password - visible to admin only, appears H-1 */}
         {!loading && ujianData && (
           <div className="rounded-xl border-2 border-sky-200 bg-gradient-to-r from-sky-50 to-blue-50 p-4">
             <div className="flex items-center gap-2 text-sky-800 mb-2">

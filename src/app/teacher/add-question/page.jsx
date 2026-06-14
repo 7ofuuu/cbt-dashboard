@@ -426,15 +426,15 @@ export default function TambahSoalPage() {
               <CardContent className="space-y-3 text-sm">
                 <div className="flex justify-between gap-3">
                   <span className="text-gray-500 text-xs">Judul</span>
-                  <span className="font-medium text-xs text-right max-w-[60%] truncate">{title || '—'}</span>
+                  <span className="font-medium text-xs text-right max-w-[60%] truncate">{title || '-'}</span>
                 </div>
                 <div className="flex justify-between items-center gap-3">
                   <span className="text-gray-500 text-xs">Mapel</span>
-                  {subject ? <Badge variant="secondary" className="text-[10px]">{subject}</Badge> : <span className="text-xs text-gray-400">—</span>}
+                  {subject ? <Badge variant="secondary" className="text-[10px]">{subject}</Badge> : <span className="text-xs text-gray-400">-</span>}
                 </div>
                 <div className="flex justify-between gap-3">
                   <span className="text-gray-500 text-xs">Tingkat / Jurusan</span>
-                  <span className="font-medium text-xs">{gradeLevel || '—'}{major ? ` — ${major}` : ''}</span>
+                  <span className="font-medium text-xs">{gradeLevel || '-'}{major ? ` - ${major}` : ''}</span>
                 </div>
 
                 <div className="border-t pt-3 space-y-1.5">

@@ -14,7 +14,7 @@ export default function useSchoolProfile() {
       const res = await request.get('/school-profile');
       setProfile(res.data?.data || null);
     } catch {
-      // Silently fail — header will show fallback
+      // Silently fail - header will show fallback
     } finally {
       setLoading(false);
     }
