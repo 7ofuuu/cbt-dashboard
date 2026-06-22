@@ -93,6 +93,11 @@ export default function SchoolProfilePage() {
       return;
     }
 
+    if (!profile.logo_url) {
+      toast.error('Logo sekolah wajib diunggah');
+      return;
+    }
+
     setSaving(true);
     try {
       await request.put('/school-profile', profile);
@@ -307,14 +312,19 @@ export default function SchoolProfilePage() {
           accent='violet'
         >
           <div className='space-y-4'>
-            <ImageUploader
-              value={profile.logo_url}
-              onChange={(url) => handleChange('logo_url', url)}
-              bucket='logo'
-              label='Logo Sekolah'
-              hint='Direkomendasikan PNG transparan, rasio 1:1, maks 5MB'
-              previewClassName='w-20 h-20'
-            />
+            <div className='space-y-1.5'>
+              <Label className='text-xs flex items-center gap-1'>
+                <ImageIcon className='w-3 h-3' /> Logo Sekolah <span className='text-red-500'>*</span>
+              </Label>
+              <ImageUploader
+                value={profile.logo_url}
+                onChange={(url) => handleChange('logo_url', url)}
+                bucket='logo'
+                label='Logo Sekolah'
+                hint='Wajib diunggah - PNG transparan, rasio 1:1, maks 5MB'
+                previewClassName='w-20 h-20'
+              />
+            </div>
 
             <div className='space-y-1.5'>
               <Label htmlFor='website' className='text-xs flex items-center gap-1'><Globe className='w-3 h-3' /> Website</Label>
