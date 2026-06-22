@@ -1,19 +1,17 @@
 'use client';
 
 /**
- * ImageUploader - file picker + preview + URL fallback.
+ * ImageUploader - file picker + preview (upload-only).
  *
  * On file pick, posts to `/api/upload/<bucket>` and reports the returned URL
  * via onChange. The "value" is whatever the parent stores in DB (a path like
- * `/uploads/logos/xxx.png` or any absolute URL). For preview, paths beginning
- * with `/uploads` are prefixed with the backend origin so the image resolves
- * even though the dashboard runs on a different port.
+ * `/uploads/logos/xxx.png`). For preview, paths beginning with `/uploads` are
+ * prefixed with the backend origin so the image resolves even though the
+ * dashboard runs on a different port.
  */
 import { useRef, useState } from 'react';
-import { Upload, X, ImageIcon, Loader2, Link2 } from 'lucide-react';
+import { Upload, X, ImageIcon, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import request from '@/utils/request';
 import toast from 'react-hot-toast';
 
@@ -39,13 +37,24 @@ export default function ImageUploader({
   label = 'Gambar',
   hint = 'PNG, JPG, WEBP atau GIF (maks 5MB)',
   previewClassName = 'w-20 h-20',
-  allowUrlInput = true,
 }) {
   const fileRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [previewError, setPreviewError] = useState(false);
   const previewSrc = resolvePreviewUrl(value);
   const showImage = !!previewSrc && !previewError;
+
+  // Track files uploaded during THIS session (not yet persisted). When one of
+  // them is superseded or removed before saving, we delete it from disk so it
+  // doesn't orphan. We never touch the originally-saved value - only our own.
+  const sessionUploads = useRef(new Set());
+
+  const cleanupSessionUpload = (url) => {
+    if (url && sessionUploads.current.has(url)) {
+      sessionUploads.current.delete(url);
+      request.delete('/upload', { url }).catch(() => {});
+    }
+  };
 
   const handlePick = () => fileRef.current?.click();
 
@@ -68,8 +77,12 @@ export default function ImageUploader({
       const res = await request.postMultipart(`/upload/${bucket}`, { file });
       const url = res?.data?.url;
       if (!url) throw new Error('Server did not return a URL');
+      const superseded = value;
       setPreviewError(false);
       onChange?.(url);
+      sessionUploads.current.add(url);
+      // Drop the file this one replaces, if we uploaded it this session.
+      cleanupSessionUpload(superseded);
       toast.success('Gambar berhasil diunggah');
     } catch (err) {
       toast.error(err?.response?.data?.error || 'Gagal mengunggah gambar');
@@ -79,8 +92,11 @@ export default function ImageUploader({
   };
 
   const handleRemove = () => {
+    const current = value;
     onChange?.('');
     setPreviewError(false);
+    // If this was a fresh, unsaved upload, delete it from disk too.
+    cleanupSessionUpload(current);
   };
 
   return (
@@ -132,7 +148,7 @@ export default function ImageUploader({
           </div>
           <p className="text-[11px] text-gray-500">{hint}</p>
           {value && previewError && (
-            <p className="text-[11px] text-amber-600">Pratinjau gagal dimuat - periksa URL.</p>
+            <p className="text-[11px] text-amber-600">Pratinjau gagal dimuat - coba unggah ulang.</p>
           )}
         </div>
 
@@ -144,21 +160,6 @@ export default function ImageUploader({
           className="hidden"
         />
       </div>
-
-      {/* URL fallback (optional) - for pasting external links */}
-      {allowUrlInput && (
-        <div className="space-y-1.5">
-          <Label className="text-[11px] text-gray-500 flex items-center gap-1">
-            <Link2 className="w-3 h-3" /> atau tempel URL eksternal
-          </Label>
-          <Input
-            value={value || ''}
-            onChange={(e) => { setPreviewError(false); onChange?.(e.target.value); }}
-            placeholder="https://... atau /uploads/logos/xxx.png"
-            className="h-9 text-xs"
-          />
-        </div>
-      )}
     </div>
   );
 }

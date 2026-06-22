@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation';
 import Cookies from 'js-cookie';
 import request from '@/utils/request';
 import { resolvePreviewUrl } from '@/components/ImageUploader';
+import useSchoolProfile from '@/hooks/useSchoolProfile';
 import { useAuthContext } from '@/contexts/AuthContext';
 import { PageTransition } from '@/components/motion/page-transition';
 
@@ -23,8 +24,13 @@ export default function LoginPage() {
   const [data, setData] = useState({ username: '', password: '' });
   const [isLoading, setIsLoading] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
-  const [school, setSchool] = useState({ name: 'SMAN 1 Parigi', logoUrl: '' });
   const [logoError, setLogoError] = useState(false);
+
+  // Pull the school identity from the same source used by the dashboard headers,
+  // so the logo + name shown here stay in sync with the school-profile feature.
+  const { profile: school } = useSchoolProfile();
+  const schoolName = school?.school_name || 'CBT Dashboard';
+  const logoUrl = school?.logo_url || '';
 
   const usernameRef = useRef(null);
 
@@ -47,24 +53,10 @@ export default function LoginPage() {
     }
   }, [router]);
 
-  // Pull school identity (public endpoint) so the login screen is branded.
+  // A freshly-loaded (or freshly-updated) logo deserves another paint attempt.
   useEffect(() => {
-    let active = true;
-    request
-      .get('/school-profile')
-      .then(res => {
-        const d = res?.data?.data;
-        if (active && d) {
-          setSchool({ name: d.school_name || 'SMAN 1 Parigi', logoUrl: d.logo_url || '' });
-        }
-      })
-      .catch(() => {
-        // Keep the default name + icon if the profile can't be loaded.
-      });
-    return () => {
-      active = false;
-    };
-  }, []);
+    setLogoError(false);
+  }, [logoUrl]);
 
   const onSubmit = async e => {
     e.preventDefault();
@@ -126,8 +118,8 @@ export default function LoginPage() {
     }
   };
 
-  const showLogo = school.logoUrl && !logoError;
-  const logoSrc = resolvePreviewUrl(school.logoUrl);
+  const showLogo = logoUrl && !logoError;
+  const logoSrc = resolvePreviewUrl(logoUrl);
 
   const LogoMark = ({ size = 'md' }) => {
     const box = size === 'lg' ? 'w-16 h-16' : 'w-12 h-12';
@@ -137,7 +129,7 @@ export default function LoginPage() {
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img
           src={logoSrc}
-          alt={`Logo ${school.name}`}
+          alt={`Logo ${schoolName}`}
           className='max-w-full max-h-full object-contain'
           onError={() => setLogoError(true)}
         />
@@ -164,7 +156,7 @@ export default function LoginPage() {
           <LogoMark size='md' />
           <div>
             <p className='text-[11px] uppercase tracking-[0.2em] text-white/60'>Portal</p>
-            <h1 className='text-xl font-bold leading-tight'>{school.name}</h1>
+            <h1 className='text-xl font-bold leading-tight'>{schoolName}</h1>
           </div>
         </div>
 
@@ -178,7 +170,7 @@ export default function LoginPage() {
         </div>
 
         <p className='relative text-xs text-white/55'>
-          © {new Date().getFullYear()} {school.name} · CBT System
+          © {new Date().getFullYear()} {schoolName} · CBT System
         </p>
       </div>
 
@@ -190,7 +182,7 @@ export default function LoginPage() {
             <div style={{ color: PRIMARY }}>
               <LogoMark size='lg' />
             </div>
-            <h1 className='mt-3 text-lg font-bold text-gray-900'>{school.name}</h1>
+            <h1 className='mt-3 text-lg font-bold text-gray-900'>{schoolName}</h1>
           </div>
 
           <div className='mb-8'>
