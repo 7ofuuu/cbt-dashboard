@@ -1,15 +1,17 @@
 'use client';
 
 import { Suspense, useEffect, useState } from 'react';
-import { Search, Home } from 'lucide-react';
+import { Search, Home, Download } from 'lucide-react';
 import { useSearchParams } from 'next/navigation';
 import { Breadcrumb, BreadcrumbList, BreadcrumbItem, BreadcrumbLink, BreadcrumbSeparator, BreadcrumbPage } from '@/components/ui/breadcrumb';
 import { PageHeader } from '@/components/ui/page-header';
+import { Button } from '@/components/ui/button';
 import TeacherLayout from '../../teacherLayout';
 import KelasCard from './components/ClassCard';
 import request from '@/utils/request';
 import { useAuth } from '@/hooks/useAuth';
 import toast from 'react-hot-toast';
+import { downloadFile, readBlobError } from '@/utils/downloadFile';
 
 function ListKelasPageContent() {
   useAuth(['teacher']);
@@ -18,6 +20,7 @@ function ListKelasPageContent() {
   const [kelasData, setKelasData] = useState([]);
   const [examName, setExamName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const mataPelajaran = params?.get('mata') || 'Matematika';
   const ujianId = params?.get('ujianId');
@@ -105,6 +108,20 @@ function ListKelasPageContent() {
   const archivedSuffix = isArchived ? '&archived=true' : '';
   const displayName = examName || mataPelajaran;
 
+  const handleExport = async () => {
+    if (!ujianId) return;
+    setIsExporting(true);
+    try {
+      await downloadFile(`/exam-results/exam/${ujianId}/export`, 'Nilai.xlsx');
+      toast.success('File nilai berhasil diunduh');
+    } catch (error) {
+      const msg = await readBlobError(error);
+      toast.error(msg || 'Gagal mengekspor nilai');
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <TeacherLayout>
       <Breadcrumb className="mb-6">
@@ -139,7 +156,12 @@ function ListKelasPageContent() {
         <PageHeader
           title={displayName}
           description={`Pilih kelas untuk melihat hasil ujian siswa (${reviewLabel})`}
-        />
+        >
+          <Button onClick={handleExport} disabled={isExporting || !ujianId} className='gap-2'>
+            <Download className='w-4 h-4' />
+            {isExporting ? 'Mengekspor...' : 'Export Excel'}
+          </Button>
+        </PageHeader>
 
         {/* Search Bar */}
         <div className='relative'>
