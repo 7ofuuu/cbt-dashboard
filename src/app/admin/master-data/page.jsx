@@ -79,7 +79,7 @@ export default function MasterDataPage() {
   }, []);
 
   // Dispatch save based on dialog kind
-  const handleSave = async (form, { cascade = false } = {}) => {
+  const handleSave = async (form) => {
     setSaving(true);
     try {
       const { kind, item } = editing;
@@ -89,20 +89,8 @@ export default function MasterDataPage() {
         : `/taxonomy/${kind}/${item[kind === 'subjects' ? 'subject_id' : kind === 'grade-levels' ? 'grade_level_id' : 'major_id']}`;
       const method = isNew ? 'post' : 'put';
 
-      const body = { ...form };
-      if (!isNew && cascade) body.cascade_rename = true;
-
-      const res = await request[method](url, body);
-
-      // Surface cascade summary if any
-      if (res.data.cascade) {
-        const c = res.data.cascade;
-        const parts = Object.entries(c).filter(([, n]) => n > 0).map(([k, n]) => `${n} ${k.replace('_', ' ')}`);
-        if (parts.length) toast.success(`Tersimpan + sinkron: ${parts.join(', ')}.`);
-        else toast.success('Tersimpan');
-      } else {
-        toast.success('Tersimpan');
-      }
+      await request[method](url, { ...form });
+      toast.success('Tersimpan');
 
       setEditing(null);
       await loadAll();
@@ -374,7 +362,6 @@ function TaxonomyTable({ kind, items, idKey, columns, onAdd, onEdit, onDeactivat
 // ---------------------------------------------------------------------------
 function EditDialog({ editing, onClose, onSave, saving }) {
   const [form, setForm] = useState({});
-  const [cascadeRename, setCascadeRename] = useState(false);
 
   useEffect(() => {
     if (!editing) return;
@@ -386,7 +373,6 @@ function EditDialog({ editing, onClose, onSave, saving }) {
         ? { name: '', color: '#3b82f6', sort_order: 0 }
         : { value: '', label: '', sort_order: 0 });
     }
-    setCascadeRename(false);
   }, [editing]);
 
   if (!editing) return null;
@@ -395,16 +381,9 @@ function EditDialog({ editing, onClose, onSave, saving }) {
   const isEdit = !!editing.item;
   const titleNoun = isSubjects ? 'Mata Pelajaran' : editing.kind === 'grade-levels' ? 'Tingkat' : 'Jurusan';
 
-  // For non-subject kinds, the "stored snapshot" key is `value`; renaming it
-  // triggers a cascade across Exam/QuestionBank/Question/Student rows.
-  const valueChanged = isEdit && (
-    (isSubjects && form.name !== editing.item.name) ||
-    (!isSubjects && form.value !== editing.item.value)
-  );
-
   const submit = (e) => {
     e.preventDefault();
-    onSave(form, { cascade: cascadeRename });
+    onSave(form);
   };
 
   return (
@@ -427,10 +406,14 @@ function EditDialog({ editing, onClose, onSave, saving }) {
                 <Input
                   id="name"
                   required
+                  disabled={isEdit}
                   value={form.name || ''}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
                   placeholder="Contoh: Matematika"
                 />
+                {isEdit && (
+                  <p className="text-[11px] text-muted-foreground">Nama tidak bisa diubah setelah dibuat.</p>
+                )}
               </div>
               <div className="space-y-2">
                 <Label className="text-xs">Warna Tema</Label>
@@ -447,12 +430,15 @@ function EditDialog({ editing, onClose, onSave, saving }) {
                 <Input
                   id="value"
                   required
+                  disabled={isEdit}
                   value={form.value || ''}
                   onChange={(e) => setForm({ ...form, value: e.target.value })}
                   placeholder={editing.kind === 'grade-levels' ? 'Contoh: X, XI, XII' : 'Contoh: IPA, IPS'}
                 />
                 <p className="text-[11px] text-muted-foreground">
-                  Nilai yang disimpan di data ujian & siswa.
+                  {isEdit
+                    ? 'Kode tidak bisa diubah setelah dibuat.'
+                    : 'Nilai yang disimpan di data ujian & siswa.'}
                 </p>
               </div>
               <div className="space-y-1.5">
@@ -477,25 +463,6 @@ function EditDialog({ editing, onClose, onSave, saving }) {
               onChange={(e) => setForm({ ...form, sort_order: parseInt(e.target.value, 10) || 0 })}
             />
           </div>
-
-          {isEdit && valueChanged && (
-            <label className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 rounded-md cursor-pointer">
-              <input
-                type="checkbox"
-                checked={cascadeRename}
-                onChange={(e) => setCascadeRename(e.target.checked)}
-                className="mt-0.5 w-4 h-4 accent-amber-600"
-              />
-              <div className="flex-1">
-                <p className="text-xs font-medium text-amber-900">
-                  Sinkronkan ke data historis juga
-                </p>
-                <p className="text-[11px] text-amber-800 mt-0.5">
-                  Update semua ujian, bank soal, soal{!isSubjects ? ', dan siswa' : ' dan guru'} yang masih menyimpan label lama. Tanpa centang, hanya dropdown baru yang berubah; data lama tetap memakai label aslinya.
-                </p>
-              </div>
-            </label>
-          )}
 
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose}>Batal</Button>

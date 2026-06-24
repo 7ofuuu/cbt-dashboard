@@ -3,29 +3,10 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import request from '@/utils/request';
 
-// Hard-coded fallback used if the API is unreachable on first paint - keeps
-// dropdowns functional during dev (e.g. backend hasn't restarted after the
-// taxonomy migration) and matches the values seeded by prisma seed.
-const FALLBACK = {
-  subjects: [
-    { subject_id: -1, name: 'Matematika', color: 'blue', sort_order: 0, is_active: true },
-    { subject_id: -2, name: 'Bahasa Indonesia', color: 'green', sort_order: 1, is_active: true },
-    { subject_id: -3, name: 'Bahasa Inggris', color: 'pink', sort_order: 2, is_active: true },
-    { subject_id: -4, name: 'Fisika', color: 'sky', sort_order: 3, is_active: true },
-    { subject_id: -5, name: 'Kimia', color: 'fuchsia', sort_order: 4, is_active: true },
-    { subject_id: -6, name: 'Biologi', color: 'emerald', sort_order: 5, is_active: true },
-  ],
-  grade_levels: [
-    { grade_level_id: -1, value: 'X', label: 'Kelas 10', sort_order: 0, is_active: true },
-    { grade_level_id: -2, value: 'XI', label: 'Kelas 11', sort_order: 1, is_active: true },
-    { grade_level_id: -3, value: 'XII', label: 'Kelas 12', sort_order: 2, is_active: true },
-  ],
-  majors: [
-    { major_id: -1, value: 'IPA', label: 'IPA', sort_order: 0, is_active: true },
-    { major_id: -2, value: 'IPS', label: 'IPS', sort_order: 1, is_active: true },
-    { major_id: -3, value: 'Bahasa', label: 'Bahasa', sort_order: 2, is_active: true },
-  ],
-};
+// Taksonomi adalah satu-satunya sumber kebenaran (di-fetch dari backend). Tidak
+// ada fallback hardcoded supaya tidak ada sumber data ganda: jika backend tidak
+// terjangkau, dropdown kosong (jujur) daripada menampilkan data palsu.
+const FALLBACK = { subjects: [], grade_levels: [], majors: [] };
 
 const TaxonomyContext = createContext(null);
 
