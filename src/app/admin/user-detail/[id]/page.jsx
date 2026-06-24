@@ -26,7 +26,7 @@ export default function UserDetailPage() {
   const params = useParams();
   const userId = params.id;
   const { user: currentUser } = useAuthContext();
-  const { subjects } = useTaxonomy();
+  const { subjects, gradeLevels, majors } = useTaxonomy();
 
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -413,9 +413,9 @@ export default function UserDetailPage() {
                         <SelectValue placeholder="Pilih Tingkat" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value='X'>X</SelectItem>
-                        <SelectItem value='XI'>XI</SelectItem>
-                        <SelectItem value='XII'>XII</SelectItem>
+                        {gradeLevels.map((g) => (
+                          <SelectItem key={g.grade_level_id} value={g.value}>{g.label}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
@@ -436,9 +436,9 @@ export default function UserDetailPage() {
                         <SelectValue placeholder="Pilih Jurusan" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value='IPA'>IPA</SelectItem>
-                        <SelectItem value='IPS'>IPS</SelectItem>
-                        <SelectItem value='Bahasa'>Bahasa</SelectItem>
+                        {majors.map((m) => (
+                          <SelectItem key={m.major_id} value={m.value}>{m.label}</SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </div>
